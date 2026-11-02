@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alertItems, rainAhead } from '../src/views/compact';
+import { alertItems, pressureAhead, rainAhead, windAhead } from '../src/views/compact';
 import { airPanels } from '../src/views/single';
 import { displayed } from '../src/display';
 import type { AlertPoint, Slot, TickerPoint, WeatherView } from '../src/view';
@@ -19,6 +19,22 @@ describe('The rain card', () => {
     expect(rainAhead(view({ hours: [slot(23, 0), slot(0, .5)] })).next).toBe('minuit');
     expect(rainAhead(view({ hours: [slot(11, 0), slot(12, 1)] })).next).toBe('midi');
     expect(rainAhead(view({ hours: [slot(11, 0), slot(12, .1)] })).next).toBeUndefined();
+  });
+});
+
+describe('The wind and pressure to come', () => {
+  const at = (hour: number, extra: Partial<Slot>): Slot => ({ ...slot(hour, 0), ...extra });
+  it('keeps the strongest wind and gust of the next six hours, and when it turns strong', () => {
+    const hours = [at(14, { wind: 10, gust: 20 }), at(15, { wind: 18, gust: 42 }), at(16, { wind: 25 }), at(17, {}), at(18, {}), at(19, {}), at(20, { wind: 60, gust: 90 })];
+    expect(windAhead(view({ hours }))).toEqual({ wind: 25, gust: 42, strong: '15 h' });
+    expect(windAhead(view({ hours: [at(14, { wind: 29, gust: 39 })] }))).toEqual({ wind: 29, gust: 39, strong: undefined });
+    expect(windAhead(view({ hours: [at(14, {})] }))).toEqual({ wind: undefined, gust: undefined, strong: undefined });
+  });
+  it('says the change of pressure over six hours, only when the provider forecasts it', () => {
+    const hours = [at(14, { pressure: 1015 }), at(15, {}), at(17, { pressure: 1012 }), at(20, { pressure: 1009.4 }), at(21, {}), at(22, {}), at(23, {}), at(0, { pressure: 990 })];
+    expect(pressureAhead(view({ hours }))).toEqual({ change: 1009.4 - 1015, last: 1009.4, hour: '20 h' });
+    // Météo-France gives no pressure.
+    expect(pressureAhead(view({ hours: [at(14, {}), at(15, {})] }))).toBeUndefined();
   });
 });
 

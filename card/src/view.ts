@@ -117,6 +117,8 @@ export interface Slot {
   wind?: number; gust?: number; bearing?: number;
   /** Seconds: where the hour sits on the banner's timeline. */
   time?: number;
+  /** Forecast pressure in hPa, when the weather provider gives it (2.9.8 and later; never with Météo-France). */
+  pressure?: number;
 }
 export interface DayForecast {
   label: string; today: boolean; condition: string; conditionLabel: string; icon: string;

@@ -18,7 +18,7 @@ const sections=[{stage:0,label:fr('Sources météo'),icon:'weather'},{stage:1,la
 const repository='https://github.com/hestiaFB/hestia-weather-integration';
 const sectionStage=(section:string)=>categories.indexOf(section);
 // The same words and colours as Hestia Confort's general settings: blue when used, orange when something is to do.
-const extIcon:Record<string,string>={hestia_comfort:'home',meteo_france:'weather',atmo:'air',waqi:'air',vigieau:'pollen',blitzortung:'weather',polleninformation:'pollen',irm_kmi:'pollen',swiss_pollen:'pollen',kleenex_pollenradar:'pollen'};
+const extIcon:Record<string,string>={hestia_comfort:'home',meteo_france:'weather',open_meteo:'weather',atmo:'air',waqi:'air',vigieau:'pollen',blitzortung:'weather',polleninformation:'pollen',irm_kmi:'pollen',swiss_pollen:'pollen',kleenex_pollenradar:'pollen'};
 const hacsUrl=(url:string)=>{const [owner,repository]=url.replace('https://github.com/','').split('/');return `https://my.home-assistant.io/redirect/hacs_repository/?owner=${owner}&repository=${repository}&category=integration`;};
 
 @customElement('hestia-weather-setup')
@@ -319,9 +319,10 @@ export class WeatherSetup extends LitElement {
     const used=mine.filter(x=>x.e.configured);
     const go=used.length===1?html`<button class="nk-edit" ?disabled=${this.busy} @click=${()=>void this.open(used[0].p.entry_id,e.stage)}>${t('Régler')}</button>`:nothing;
     return extensionCard({icon:extIcon[e.id.replace(/^atmo-.*/,'atmo')]??'settings',name:e.name,use:e.description,
-     pill:!e.installed?{text:t('non installée'),level:'none'}:used.length?{text:t('liée'),level:'ok'}:{text:t('installée'),level:'none'},
-     detail:e.id==='meteo_france'?t('Obligatoire : les prévisions et la vigilance du lieu.'):used.length&&several?t('Utilisée pour « {places} ».',{places:used.map(x=>x.p.title).join(', ')}):'',
-     action:!e.installed?(e.url.startsWith('https://github.com/')?html`<a class="ex-act" href=${hacsUrl(e.url)} target="_blank" rel="noreferrer">${t('Installer avec HACS')}</a>`
+     pill:e.online?(mine.some(x=>x.e.configured||x.e.air_configured)?{text:t('service en ligne utilisé'),level:'ok'}:{text:t('service en ligne'),level:'none'})
+      :!e.installed?{text:t('non installée'),level:'none'}:used.length?{text:t('liée'),level:'ok'}:{text:t('installée'),level:'none'},
+     detail:e.online?(several?mine.map(x=>`${x.p.title} : ${x.e.detail??''}`).join(' · '):mine[0]?.e.detail??''):e.id==='meteo_france'?t('Obligatoire : les prévisions et la vigilance du lieu.'):used.length&&several?t('Utilisée pour « {places} ».',{places:used.map(x=>x.p.title).join(', ')}):'',
+     action:e.online?html`<a class="ex-act" href=${e.url} target="_blank" rel="noreferrer">${t('En savoir plus')}</a>`:!e.installed?(e.url.startsWith('https://github.com/')?html`<a class="ex-act" href=${hacsUrl(e.url)} target="_blank" rel="noreferrer">${t('Installer avec HACS')}</a>`
       :html`<a class="ex-act" href=${'https://my.home-assistant.io/redirect/config_flow_start/?domain='+e.integration} target="_blank" rel="noreferrer">${t('Ajouter')}</a>`):go,
      switches:mine.map(x=>({p:x.p,sw:extensionSwitch(x.e,x.v.view)})).filter(x=>x.sw.shown).map(({p,sw}):NkSwitch=>({label:forPlace(fr('Utiliser {name} pour « {place} »'),fr('Utiliser {name} pour ce lieu'),e.name,p),checked:sw.checked,disabled:this.busy||!sw.checked&&!sw.available,
       onChange:on=>void this.usePlace(p.entry_id,on?sw.on:sw.off)}))});})}`)}

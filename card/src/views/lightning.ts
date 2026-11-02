@@ -39,17 +39,17 @@ function radar(l: LightningView): TemplateResult {
 const level = (step: number) => html`<div class="lz-level" role="img" aria-label=${t('Niveau : {step}', { step: t(STEPS[step][0]) })}>
   ${[3, 2, 1, 0].map(i => html`<div class=${i === step ? 'on' : ''}><i class=${i <= step ? 'lit' : ''} style=${`--c:var(--nw-${STEPS[step][1]})`}></i>${label(t(STEPS[i][0]))}</div>`)}</div>`;
 
-export function lightningPanel(l: LightningView, parts?: Parts): TemplateResult {
+export function lightningPanel(l: LightningView, parts?: Parts, lead: TemplateResult | typeof nothing = nothing): TemplateResult {
   const head = panelHead('mdi:flash', STEPS[l.available ? l.step : 0][1], t('Éclairs'), l.source);
   const month = l.month === undefined ? nothing : chip({ theme: 'calm', icon: 'mdi:calendar-month', value: nf(l.month, 0), label: t('ce mois') });
   // A silent sensor, or an hour without any strike: one line says it.
-  if (!l.available || !l.hourCount) return html`<section class="nw-panel" aria-label=${t('Éclairs')}>${head}
+  if (!l.available || !l.hourCount) return html`<section class="nw-panel" aria-label=${t('Éclairs')}>${head}${lead}
     <div class="lz-calm" data-entity=${entity(l.entity)}><p><b>${l.headline}</b>${l.available && !l.hourCount ? html` ${t('À moins de {km} km.', { km: EDGE })}` : nothing}</p>${l.available ? month : nothing}</div></section>`;
   const movement = l.trend === 'approche' ? chip({ theme: 'level2', icon: 'mdi:arrow-collapse-down', label: l.movement })
     : l.trend === 'eloigne' ? chip({ theme: 'calm', icon: 'mdi:arrow-expand-up', label: l.movement }) : nothing;
   const stats: Array<[string, string]> = [[t('Dans l’heure'), strikes(l.hourCount, l.hourCount)], [t('En 10 min'), strikes(l.recentCount, l.recentCount)],
     l.month !== undefined ? [t('Ce mois'), strikes(nf(l.month, 0), l.month)] : [t('Dernier'), t('il y a {n} min', { n: Math.max(1, l.lastMinutes ?? 1) })]];
-  return html`<section class="nw-panel" aria-label=${t('Éclairs')}>${head}
+  return html`<section class="nw-panel" aria-label=${t('Éclairs')}>${head}${lead}
     ${has(parts, 'now') ? html`<div class="metric-row"><div class="metric" data-entity=${entity(l.entity)}>
         <div class="metric-main"><b>${l.nearest === undefined ? '—' : nf(Math.max(1, l.nearest), 0)}</b><span>km</span></div>
         <small><b>${l.headline}</b>${l.direction ? ` · ${l.direction}` : ''}</small></div>${movement}</div>` : nothing}

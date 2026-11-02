@@ -71,6 +71,55 @@ export function rainComing(v: WeatherView): TemplateResult {
   return html`<div class="rain-ahead">${label(t('À venir'))}${coming}</div>`;
 }
 
+/** The wind to come over the next six hours: the strongest average wind and gust, and when it turns strong. */
+export function windAhead(v: WeatherView): { wind?: number; gust?: number; strong?: string } {
+  const six = v.hours.slice(0, 6), top = (xs: Array<number | undefined>) => xs.reduce<number | undefined>((a, x) => x === undefined ? a : Math.max(a ?? x, x), undefined);
+  // The same thresholds as the integration: average wind from 30 km/h, gusts from 40 km/h.
+  const first = six.find(h => (h.wind ?? 0) >= 30 || (h.gust ?? 0) >= 40);
+  return { wind: top(six.map(h => h.wind)), gust: top(six.map(h => h.gust)), strong: first ? hourText(first.hour) : undefined };
+}
+
+/** « À venir » for the wind: the strongest wind and gust of the next six hours, and from when it blows hard. */
+export function windComing(v: WeatherView): TemplateResult {
+  const a = windAhead(v), theme = a.strong ? 'wind' : 'calm';
+  const coming = a.wind === undefined && a.gust === undefined ? html`<p class="nw-empty">${t('Prévisions indisponibles pour le moment.')}</p>`
+    : html`<div class="nw-chips">${a.wind === undefined ? nothing : chip({ theme, icon: 'mdi:weather-windy', value: `${nf(a.wind, 0)} km/h`, label: t('au plus sur 6 h') })}
+        ${a.gust === undefined ? nothing : chip({ theme, icon: 'mdi:weather-windy-variant', value: `${nf(a.gust, 0)} km/h`, label: t('en rafales') })}
+        ${a.strong ? chip({ theme: 'wind', icon: 'mdi:clock-outline', label: t('vent fort à partir de {hour}', { hour: a.strong }) }) : nothing}</div>`;
+  return html`<div class="rain-ahead">${label(t('À venir'))}${coming}</div>`;
+}
+
+/** The pressure to come, when the weather provider forecasts it (Météo-France does not): its change over the next six hours. */
+export function pressureAhead(v: WeatherView): { change: number; last: number; hour: string } | undefined {
+  const known = v.hours.slice(0, 7).filter((h): h is typeof h & { pressure: number } => h.pressure !== undefined);
+  if (known.length < 2) return undefined;
+  const first = known[0], last = known[known.length - 1];
+  return { change: last.pressure - first.pressure, last: last.pressure, hour: hourText(last.hour) };
+}
+
+/** « À venir » for the pressure: rising, falling or steady over the next six hours, and the value then.
+ *  Most providers (Météo-France among them) do not forecast it: the block then stays away, unless it is the card's only part. */
+export function pressureComing(v: WeatherView, alone = false): TemplateResult | typeof nothing {
+  const a = pressureAhead(v);
+  if (!a && !alone) return nothing;
+  const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${nf(Math.abs(n))} hPa`;
+  const coming = !a ? html`<p class="nw-empty">${t('Votre fournisseur météo ne prévoit pas la pression.')}</p>`
+    : html`<div class="nw-chips">${chip({ theme: Math.abs(a.change) >= 4 ? 'pressure' : 'calm', icon: a.change <= -1 ? 'mdi:trending-down' : a.change >= 1 ? 'mdi:trending-up' : 'mdi:trending-neutral',
+          value: Math.abs(a.change) < 1 ? undefined : signed(a.change), label: Math.abs(a.change) < 1 ? t('Pression stable sur 6 h') : t('sur 6 h') })}
+        ${chip({ theme: 'pressure', icon: 'mdi:gauge', value: `${nf(a.last, 0)} hPa`, label: t('vers {hour}', { hour: a.hour }) })}</div>`;
+  return html`<div class="rain-ahead">${label(t('À venir'))}${coming}</div>`;
+}
+
+const STORMY = ['lightning', 'lightning-rainy', 'hail'];
+/** « À venir » for the lightning: a storm forecast within six hours, from the weather provider (Blitzortung only sees the strikes of now). */
+export function stormComing(v: WeatherView): TemplateResult {
+  const storm = v.hours.slice(0, 6).find(h => STORMY.includes(h.condition));
+  const coming = !v.hours.length ? html`<p class="nw-empty">${t('Prévisions indisponibles pour le moment.')}</p>`
+    : html`<div class="nw-chips">${storm ? chip({ theme: 'level2', icon: 'mdi:weather-lightning', label: t('Orage prévu vers {hour}', { hour: hourText(storm.hour) }) })
+      : chip({ theme: 'calm', icon: 'mdi:weather-partly-cloudy', label: t('Pas d’orage prévu d’ici 6 h') })}</div>`;
+  return html`<div class="rain-ahead">${label(t('À venir'))}${coming}</div>`;
+}
+
 export const compactStyles = css`
   .nw-mini { display:flex; align-items:center; gap:10px; padding:10px 14px; min-height:56px; box-sizing:border-box; cursor:pointer; color:var(--nw-fg); }
   .nw-mini.still { cursor:default; }

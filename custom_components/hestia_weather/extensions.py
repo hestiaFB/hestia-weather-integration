@@ -116,4 +116,20 @@ def inventory(hass: HomeAssistant, options: Mapping[str, Any]) -> list[dict[str,
                                      "puis ajoutez l’intégration « Blitzortung » dans Paramètres → Appareils et services. Choisissez votre maison.")
                                    if key == "blitzortung" else t("Ajoutez l’intégration « {name} » dans Paramètres → Appareils et services.", name=name)
                                    + (" " + t("Si elle n’apparaît pas, téléchargez-la dans HACS, redémarrez Home Assistant, puis revenez l’ajouter.") if repository else ""))})
+    result.append(online_service(options))
     return result
+
+
+def online_service(options: Mapping[str, Any]) -> dict[str, Any]:
+    """Open-Meteo is no integration: Hestia Weather asks it directly, with the home's position rounded to about a hundred metres.
+    It gives the pressure to come when the weather service has none (Météo-France), and tomorrow's air when WAQI gives the air."""
+    pressure = options.get("open_meteo_pressure", True) is not False
+    air = options.get("air_source") == "waqi"
+    uses = [t("la pression à venir, quand votre service météo ne la prévoit pas") if pressure else "",
+            t("l’air de demain, avec WAQI") if air else ""]
+    return {"id": "open_meteo", "name": "Open-Meteo", "online": True,
+            "description": t("Service météo en ligne, gratuit et sans compte, que Hestia Weather interroge directement."),
+            "detail": (t("Utilisé pour {uses}.", uses=t(" et ").join(u for u in uses if u)) if pressure or air else t("Pas utilisé pour ce lieu."))
+                      + " " + t("Il reçoit la position de la maison, arrondie à environ 100 m."),
+            "installed": True, "configured": pressure, "air_configured": air, "pollen_configured": False,
+            "stage": 0, "field": "open_meteo_pressure", "url": "https://open-meteo.com", "integration": "", "install": ""}

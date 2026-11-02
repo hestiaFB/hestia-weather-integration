@@ -154,11 +154,11 @@ export class HestiaWeatherCardEditor extends LitElement {
     if (kind === 'rain') return content(parts([['ahead', t('À venir : la prochaine heure et les 6 heures')], ['now', t('Tombée aujourd’hui, et en ce moment')],
       ['chart', t('Les barres de pluie')], ['stats', t('Les cumuls')]]),
       choice('rain_span', [['24h', t('24 dernières heures (une barre par heure)')], ['7d', t('7 derniers jours')], ['30d', t('30 derniers jours (une barre par jour)')]]));
-    if (kind === 'wind') return content(parts([['now', t('Le vent du moment et sa direction')], ['chart', t('La courbe')],
+    if (kind === 'wind') return content(parts([['ahead', t('À venir : le vent le plus fort des 6 heures')], ['now', t('Le vent du moment et sa direction')], ['chart', t('La courbe')],
       ['stats', t('Rafales, direction et maximum du jour')]]), choice('wind_span', spans));
-    if (kind === 'pressure') return content(parts([['now', t('La pression et sa tendance')], ['chart', t('La courbe')],
+    if (kind === 'pressure') return content(parts([['ahead', t('À venir : la pression des 6 heures, si votre fournisseur la prévoit')], ['now', t('La pression et sa tendance')], ['chart', t('La courbe')],
       ['stats', t('Les valeurs passées, le minimum et le maximum')]]), choice('pressure_span', spans));
-    if (kind === 'lightning') return content(parts([['now', t('L’éclair le plus proche et sa direction')], ['radar', t('Le radar et le niveau')],
+    if (kind === 'lightning') return content(parts([['ahead', t('À venir : un orage prévu dans les 6 heures')], ['now', t('L’éclair le plus proche et sa direction')], ['radar', t('Le radar et le niveau')],
       ['stats', t('Les comptes (heure, 10 minutes, mois)')]]), ...toggles('hide_when_calm'));
     if (kind === 'air') return content(parts([['air_today', t('Air extérieur aujourd’hui')], ['pollen_today', t('Pollens aujourd’hui')],
       ['air_tomorrow', t('Air extérieur demain')], ['pollen_tomorrow', t('Pollens demain')]], true), ...toggles('show_atmo_details'));

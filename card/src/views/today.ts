@@ -78,10 +78,10 @@ export function rainPanel(r: RainView, parts?: Parts, lead: TemplateResult | typ
   </section>`;
 }
 
-export function windPanel(w: WindView, parts?: Parts): TemplateResult {
+export function windPanel(w: WindView, parts?: Parts, lead: TemplateResult | typeof nothing = nothing): TemplateResult {
   const color = 'var(--nw-wind)', end = chartEnd(w.mean, w.gust), period = PERIODS[w.period ?? '6h'];
   const mean = curvePaths(w.mean, w.top, end, 0, period.span), gust = curvePaths(w.gust, w.top, end, 0, period.span);
-  return html`<section class="nw-panel" aria-label=${t('Vent')}>${panelHead('mdi:weather-windy', 'wind', t('Vent'), w.source)}
+  return html`<section class="nw-panel" aria-label=${t('Vent')}>${panelHead('mdi:weather-windy', 'wind', t('Vent'), w.source)}${lead}
     ${has(parts, 'now') ? html`<div class="metric-row"><div class="metric" data-entity=${w.entity}><div class="metric-main"><b>${w.value === undefined ? '—' : nf(w.value, 0)}</b><span>km/h</span></div>
       <small>${w.label}${w.description ? ` · ${w.description}` : ''}</small></div>
       ${w.status ? chip({ theme: 'wind', icon: 'mdi:weather-windy', label: w.status }) : nothing}
@@ -100,9 +100,9 @@ export function windPanel(w: WindView, parts?: Parts): TemplateResult {
 }
 
 
-export function pressurePanel(p: PressureView, parts?: Parts): TemplateResult {
+export function pressurePanel(p: PressureView, parts?: Parts, lead: TemplateResult | typeof nothing = nothing): TemplateResult {
   const period = PERIODS[p.period ?? '6h'], end = chartEnd(p.series), series = curvePaths(p.series, p.top, end, p.low, period.span);
-  return html`<section class="nw-panel" aria-label=${t('Pression')}>${panelHead('mdi:gauge', 'pressure', t('Pression'), p.source)}
+  return html`<section class="nw-panel" aria-label=${t('Pression')}>${panelHead('mdi:gauge', 'pressure', t('Pression'), p.source)}${lead}
     ${has(parts, 'now') ? html`<div class="metric-row"><div class="metric" data-entity=${entity(p.entity)}><div class="metric-main"><b>${p.value === undefined ? '—' : nf(p.value, 0)}</b><span>hPa</span></div>
       <small>${p.description}</small></div>${p.trend ? chip(p.trend) : nothing}</div>` : nothing}
     ${has(parts, 'chart') ? html`<div class="mini"><div class="mini-top">${t(period.title)} · hPa</div>

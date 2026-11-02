@@ -67,3 +67,12 @@ test('an extension switch turns its source on or off in the draft, and Météo-F
  assert.equal(extensionSwitch(ext('meteo_france',{field:'weather_entity',configured:true}),view).shown,false);
  assert.equal(extensionSwitch(ext('vigieau',{installed:false,field:'water_restriction_entity'}),view).shown,false);
 });
+
+test('Open-Meteo, asked directly, sits with the weather sources and its switch allows the pressure to come',()=>{
+ const meteo={id:'open_meteo',name:'Open-Meteo',description:'',installed:true,online:true,configured:true,stage:0,field:'open_meteo_pressure',url:'https://open-meteo.com',integration:'',install:''};
+ assert.deepEqual(extensionGroups([meteo]).map(g=>[g.key,g.items.map(e=>e.id)]),[['weather',['open_meteo']]]);
+ const view={air:{value:'atmo',sources:[]},pollen:{value:'none',sources:[]},prevision:{fields:[]}};
+ const on=extensionSwitch(meteo,view);
+ assert.deepEqual([on.shown,on.checked,on.available,on.uses,on.off],[true,true,true,['Pression à venir'],[{op:'set',key:'open_meteo_pressure',value:false}]]);
+ assert.deepEqual(extensionSwitch({...meteo,configured:false},view).on,[{op:'set',key:'open_meteo_pressure',value:true}]);
+});

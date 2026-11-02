@@ -1,3 +1,29 @@
+## 3.1.0b3 — Bêta : le vent, la pression et l’orage à venir
+
+**En bref**
+
+- **Les nouveautés de la 2.9.8 arrivent dans les bêtas 3.1** : vent fort et pression à venir dans la frise, blocs « À venir » des cartes Vent, Pression et Éclairs, Open-Meteo pour la pression.
+- **La frise montre jusqu’à 8 évènements à venir**, au lieu de 5.
+
+### Avant de mettre à jour
+
+- Vous venez de la 2.9.x ? Le passage au nom Hestia se fait comme avec la 3.0.0b2 : voir ses notes. Vous retrouvez tout ce que la 2.9.8 a apporté.
+
+### Nouveautés
+
+- Dans la frise : « Vent fort dans environ 3 h : rafales à 65 km/h », dès 30 km/h de vent moyen ou 40 km/h en rafales prévus dans les 6 heures. Rien de plus si le vent fort souffle déjà.
+- Dans la frise : « La pression va baisser : −7 hPa en 6 h », dès 4 hPa d’écart prévus.
+- Carte Vent, bloc « À venir » : le vent et les rafales les plus forts des 6 heures, et l’heure où le vent fort commence.
+- Carte Pression, bloc « À venir » : la pression des 6 heures et son écart.
+- Open-Meteo, service météo gratuit et sans compte, donne la pression à venir quand votre service météo ne la prévoit pas. Il reçoit la position de la maison, arrondie à environ 100 m. Dans Extensions, rubrique Sources météo, un interrupteur le coupe pour chaque lieu ; le bloc Pression « À venir » reste alors caché.
+- Carte Éclairs, bloc « À venir » : un orage prévu dans les 6 heures, ou « Pas d’orage prévu d’ici 6 h ».
+- Tout cela aussi en allemand et en anglais.
+
+### Améliorations
+
+- La frise garde jusqu’à 8 évènements à venir, les plus importants d’abord.
+- Une carte dont vous aviez déjà choisi le contenu le garde : cochez « À venir » dans ses réglages pour l’ajouter.
+
 ## 3.1.0b2 — Bêta : les pollens pour Hestia Confort
 
 **En bref**

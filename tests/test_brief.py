@@ -40,7 +40,8 @@ def weather(temperature: float | None = 20, feels: float | None = 20, humidex: f
 
 def hours(*points: dict[str, Any]) -> list[Hour]:
     return [Hour(time=None if p.get("hours") is None else NOW + timedelta(hours=p["hours"]), temperature=p.get("temperature"),
-                 precipitation=p.get("precipitation"), condition=p.get("condition", "")) for p in points]
+                 precipitation=p.get("precipitation"), condition=p.get("condition", ""), wind_speed=p.get("wind"), wind_gust=p.get("gust"),
+                 pressure=p.get("pressure")) for p in points]
 
 
 def brief(w: LocalWeather | None = None, points: list[Hour] | None = None, options: dict[str, Any] | None = None,
@@ -221,3 +222,31 @@ def test_normalises_underscore_conditions() -> None:
 def test_heavy_rain_tomorrow_from_the_daily_forecast() -> None:
     b = brief(days=[Day(time=NOW + timedelta(days=1), condition="pouring", precipitation=72)])
     assert next(s for s in b.signals if s.key == "rain-tomorrow").text == "Forte pluie demain : 72 mm"
+
+
+@pytest.mark.parametrize(("wind", "gust", "exists"), [(29, 39, False), (30, None, True), (10, 40, True)])
+def test_strong_wind_forecast_boundaries(wind: float, gust: float | None, exists: bool) -> None:
+    assert ("wind-future" in keys(brief(points=hours({"hours": 3, "wind": wind, "gust": gust})))) is exists
+
+
+def test_strong_wind_forecast_is_dated_and_says_its_gusts() -> None:
+    # NOW is 12 h in Paris: the first strong hour, in 2 h, is 14 h.
+    b = brief(points=hours({"hours": 1, "wind": 10, "gust": 20}, {"hours": 2, "wind": 35, "gust": 50}, {"hours": 4, "wind": 40, "gust": 65}))
+    s = next(s for s in b.signals if s.key == "wind-future")
+    assert (s.text, s.short, s.clock, s.severity) == ("Vent très fort dans environ 2 h : rafales à 65 km/h", "Vent très fort : rafales à 65 km/h", "14 h", 2)
+
+
+def test_strong_wind_forecast_is_left_out_while_it_already_blows_or_beyond_six_hours() -> None:
+    assert "wind-future" not in keys(brief(weather(wind=45), hours({"hours": 2, "wind": 45})))
+    assert "wind-future" not in keys(brief(points=hours({"hours": 8, "wind": 45}, {"hours": -1, "wind": 45})))
+
+
+def test_pressure_forecast_only_from_a_change_of_4_hpa() -> None:
+    assert "pressure-future" not in keys(brief(points=hours({"hours": 0, "pressure": 1015}, {"hours": 6, "pressure": 1011.5})))
+    # Météo-France gives no pressure: nothing is said.
+    assert "pressure-future" not in keys(brief(points=hours({"hours": 0}, {"hours": 6})))
+    b = brief(points=hours({"hours": 0, "pressure": 1015}, {"hours": 3, "pressure": 1012}, {"hours": 6, "pressure": 1008}))
+    s = next(s for s in b.signals if s.key == "pressure-future")
+    assert (s.text, s.short, s.severity, s.clock) == ("La pression va baisser : −7 hPa en 6 h", "Pression : −7 hPa prévus", 1, "18 h")
+    rise = next(s for s in brief(points=hours({"hours": 1, "pressure": 1000}, {"hours": 5, "pressure": 1005})).signals if s.key == "pressure-future")
+    assert (rise.text, rise.severity) == ("La pression va monter : +5 hPa en 4 h", 0)

@@ -23,6 +23,8 @@ class Hour:
     wind_bearing: float | None = None
     humidity: float | None = None
     cloud_coverage: float | None = None
+    pressure: float | None = None
+    """Sea-level pressure in hPa, when the provider gives it (Météo-France does not)."""
 
 
 @dataclass(frozen=True)
@@ -84,7 +86,8 @@ def parse_hours(rows: Iterable[Mapping[str, Any]], units: Units = Units()) -> li
     return [Hour(time=parse_time(r.get("datetime")), temperature=measurement(r.get("temperature"), units.temperature, Kind.TEMPERATURE),
                  precipitation=measurement(r.get("precipitation"), units.precipitation, Kind.RAIN), condition=_condition(r.get("condition")),
                  wind_speed=measurement(r.get("wind_speed"), units.wind, Kind.WIND), wind_gust=measurement(r.get("wind_gust_speed"), units.wind, Kind.WIND),
-                 wind_bearing=finite(r.get("wind_bearing")), humidity=finite(r.get("humidity")), cloud_coverage=finite(r.get("cloud_coverage")))
+                 wind_bearing=finite(r.get("wind_bearing")), humidity=finite(r.get("humidity")), cloud_coverage=finite(r.get("cloud_coverage")),
+                 pressure=measurement(r.get("pressure"), units.pressure, Kind.PRESSURE))
             for r in rows]
 
 

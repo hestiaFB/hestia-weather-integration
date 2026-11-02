@@ -127,4 +127,5 @@ export const PANEL_DE:Record<string,string>={
  "Revenir à l’ancien nom « {old} » ?":"Zum alten Namen „{old}“ zurückkehren?",
  "Les automatisations et tableaux de bord mis à jour reviennent aussi.":"Die angepassten Automatisierungen und Dashboards kehren ebenfalls zurück.",
  "Garder « hestia_weather »":"„hestia_weather“ behalten","Revenir à l’ancien nom":"Zum alten Namen zurückkehren",
+ "Pression à venir":"Kommender Luftdruck","service en ligne utilisé":"genutzter Online-Dienst","service en ligne":"Online-Dienst","En savoir plus":"Mehr erfahren",
 };
