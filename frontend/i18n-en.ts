@@ -126,4 +126,5 @@ export const PANEL_EN:Record<string,string>={
  "Revenir à l’ancien nom « niak_weather » ?":"Go back to the old name “niak_weather”?",
  "Les automatisations et tableaux de bord mis à jour reviennent aussi.":"The automations and dashboards that were updated go back too.",
  "Garder « hestia_weather »":"Keep “hestia_weather”","Revenir à l’ancien nom":"Go back to the old name",
+ "Pression à venir":"Pressure to come","service en ligne utilisé":"online service in use","service en ligne":"online service","En savoir plus":"Learn more",
 };

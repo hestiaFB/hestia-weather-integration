@@ -28,7 +28,7 @@ AIR_SOURCES = ("atmo", "waqi", NONE)
 POLLEN_SOURCES = ("atmo", *polleninfo.PROVIDERS, NONE)
 SIMPLE = frozenset({"weather_entity", "location", "vigilance_entity", "season_entity", "sun_entity", "sun_elevation_entity",
                     "water_restriction_entity", "lightning_entity",
-                    "forecast_source", "station_history", "pollen_risk_entity", *detection.STATION_FIELDS})
+                    "forecast_source", "station_history", "open_meteo_pressure", "pollen_risk_entity", *detection.STATION_FIELDS})
 RECOMMENDED = frozenset({"temperature_entity", "humidity_entity", "rain_rate_entity", "wind_gust_entity", "wind_bearing_entity"})
 HELP = {
     "weather_entity": N_("Les prévisions heure par heure et jour par jour, par exemple Météo-France ou MétéoSuisse. Une station facultative ajoute les mesures chez vous."),
@@ -147,7 +147,7 @@ class Draft(_SourceSteps):
     def change(self, change: dict[str, Any]) -> str:
         op, value, s = change.get("op"), change.get("value"), self.sources
         if op == "set" and change.get("key") in SIMPLE:
-            s[change["key"]] = bool(value) if change["key"] == "station_history" else (value or "")
+            s[change["key"]] = bool(value) if change["key"] in ("station_history", "open_meteo_pressure") else (value or "")
         elif op == "station":
             if value == NONE:
                 s["station_model"], s["station_device_id"] = "", ""

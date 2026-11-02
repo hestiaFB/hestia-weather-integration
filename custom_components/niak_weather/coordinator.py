@@ -22,7 +22,7 @@ from homeassistant.util import dt as dt_util
 
 from zoneinfo import ZoneInfo
 from .const import AIR_INTERVAL, DEBOUNCE_SECONDS, DOMAIN, FORECAST_INTERVAL, HISTORY_INTERVAL, LOGGER, RAIN_INTERVAL, TICK, WEEK_INTERVAL
-from .engine import lightning, open_meteo, waqi
+from .engine import lightning, open_meteo, open_meteo_forecast, waqi
 from .engine.i18n import DICTIONARIES, localized
 from .engine.brief import Brief
 from .engine.catalogue import Item
@@ -118,6 +118,9 @@ class NiakWeatherCoordinator(RecorderMixin, ForecastsMixin, DataUpdateCoordinato
         self.air_forecast: open_meteo.Data | None = None
         """Tomorrow's air from Open-Meteo, only when WAQI gives the air: WAQI has no forecast."""
         self._air_tried: datetime | None = None
+        self.pressure_forecast: open_meteo_forecast.Data | None = None
+        """The forecast pressure from Open-Meteo, only when the weather service gives none (Météo-France)."""
+        self._pressure_tried: datetime | None = None
         self.strikes: list[lightning.Strike] = []
         """Blitzortung's strikes of the last hour: its sensor only keeps the last one."""
         self.lightning_month: int | None = None
@@ -141,7 +144,7 @@ class NiakWeatherCoordinator(RecorderMixin, ForecastsMixin, DataUpdateCoordinato
         await asyncio.gather(self._load_forecasts(), self._load_history(), self._load_rain(), self._load_week(), self._load_air_forecast(),
                              self._load_strikes(), self._load_lightning_month())
         for interval, load in ((FORECAST_INTERVAL, self._load_forecasts), (HISTORY_INTERVAL, self._load_history), (RAIN_INTERVAL, self._load_rain),
-                               (WEEK_INTERVAL, self._load_week), (AIR_INTERVAL, self._load_air_forecast), (RAIN_INTERVAL, self._load_lightning_month)):
+                               (WEEK_INTERVAL, self._load_week), (AIR_INTERVAL, self._load_air_forecast), (AIR_INTERVAL, self._load_pressure_forecast), (RAIN_INTERVAL, self._load_lightning_month)):
             entry.async_on_unload(async_track_time_interval(self.hass, self._in_background(load), interval))
         entry.async_on_unload(self._cancel_forecast_retry)
         entry.async_on_unload(self._stopped)
@@ -219,7 +222,7 @@ class NiakWeatherCoordinator(RecorderMixin, ForecastsMixin, DataUpdateCoordinato
         # Sensors and events keep their established French values. A card is
         # rendered separately in its dashboard user's language by view_for().
         with localized("fr"):
-            result = compute(get, settings, self.hours, self.days, self.history, self.rain_history, self.statistics, self.statistics_unit,
+            result = compute(get, settings, open_meteo_forecast.fill(self.hours, self.pressure_forecast), self.days, self.history, self.rain_history, self.statistics, self.statistics_unit,
                              now, zone, hass.config.latitude, hass.config.elevation or 0, self.platforms,
                              original_condition(er.async_get(hass), settings.weather_entity), strikes)
         self._localized_views.clear()
@@ -263,7 +266,7 @@ class NiakWeatherCoordinator(RecorderMixin, ForecastsMixin, DataUpdateCoordinato
             strikes = lightning.read(self.strikes, snapshot.computed.timestamp(), sensor is not None and sensor.state != STATE_UNAVAILABLE,
                                      self.lightning_month)
         with localized(code):
-            result = compute(get, settings, self.hours, self.days, self.history, self.rain_history, self.statistics, self.statistics_unit,
+            result = compute(get, settings, open_meteo_forecast.fill(self.hours, self.pressure_forecast), self.days, self.history, self.rain_history, self.statistics, self.statistics_unit,
                              snapshot.computed, zone, self.hass.config.latitude, self.hass.config.elevation or 0, self.platforms,
                              original_condition(er.async_get(self.hass), settings.weather_entity), strikes)
             view = to_json(result.view)

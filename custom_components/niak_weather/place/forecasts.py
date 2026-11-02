@@ -1,4 +1,4 @@
-"""A place's forecasts from its weather service, retried while it starts, and tomorrow's air from Open-Meteo."""
+"""A place's forecasts from its weather service, retried while it starts, and from Open-Meteo tomorrow's air and the pressure to come."""
 from __future__ import annotations
 
 from datetime import timedelta
@@ -13,7 +13,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.util import dt as dt_util
 
 from ..const import FORECAST_RETRY, LOGGER
-from ..engine import open_meteo
+from ..engine import open_meteo, open_meteo_forecast
 from ..engine.forecast import Units, engine_rows, parse_days, parse_hours
 from zoneinfo import ZoneInfo
 from .shared import FORECAST_KINDS, _ready
@@ -42,6 +42,8 @@ class ForecastsMixin:
     forecast_at: datetime | None
     air_forecast: open_meteo.Data | None
     _air_tried: datetime | None
+    pressure_forecast: open_meteo_forecast.Data | None
+    _pressure_tried: datetime | None
     _cancel_retry: Callable[[], None] | None
     _retries: int
     if TYPE_CHECKING:
@@ -95,6 +97,7 @@ class ForecastsMixin:
             self._schedule_forecast_retry()
         else:
             self._retries = 0
+        await self._load_pressure_forecast()
 
     async def _load_air_forecast(self) -> None:
         """Tomorrow's air from Open-Meteo, at the home's position, each hour; a failure keeps the previous forecast and is retried ten minutes later."""
@@ -111,6 +114,26 @@ class ForecastsMixin:
             self.air_forecast = open_meteo.parse(payload, now)
         except (aiohttp.ClientError, TimeoutError, ValueError) as err:
             LOGGER.warning("Open-Meteo air forecast unavailable: %s", err)
+
+    async def _load_pressure_forecast(self) -> None:
+        """The pressure to come from Open-Meteo, when the weather service gives none and the place allows it; refreshed each hour,
+        a failure keeps the previous forecast and is retried ten minutes later."""
+        now = dt_util.utcnow()
+        if not open_meteo_forecast.needed(self.settings.open_meteo_pressure, self.hours):
+            self.pressure_forecast = None
+            return
+        if not open_meteo_forecast.due(self.pressure_forecast, self._pressure_tried, now):
+            return
+        self._pressure_tried = now
+        hass = self.hass
+        try:
+            params = open_meteo_forecast.params(hass.config.latitude, hass.config.longitude)
+            async with asyncio.timeout(30), async_get_clientsession(hass).get(open_meteo_forecast.URL, params=params) as response:
+                response.raise_for_status()
+                payload = await response.json()
+            self.pressure_forecast = open_meteo_forecast.parse(payload, now)
+        except (aiohttp.ClientError, TimeoutError, ValueError) as err:
+            LOGGER.warning("Open-Meteo pressure forecast unavailable: %s", err)
 
     @callback
     def _schedule_forecast_retry(self) -> None:
