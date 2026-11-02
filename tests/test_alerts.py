@@ -104,3 +104,13 @@ def test_shows_air_and_pollens_on_the_timeline_from_3_out_of_6() -> None:
     from engine.alerts import timeline_points
     b = brief(atmo("pollen-false", 0, 3), atmo("air-false", 0, 2), atmo("pollen-true", 1, 4, 1_800_100_000, "demain"))
     assert [(p.text, p.clock) for p in timeline_points(b)] == [("pollen-false", None), ("pollen-true", "demain")]
+
+
+def test_keeps_the_eight_most_important_forecast_points_in_time_order() -> None:
+    from engine.alerts import timeline_points
+    at = lambda h: 1_800_000_000 + h * 3600
+    # Ten forecast points: the two least important (information, the latest) are left out.
+    b = brief(*(dated(f"point-{h}", "future", 1 if h < 8 else 0, f"Point {h}", at(h), f"{h} h", f"Point {h}") for h in range(10)))
+    assert [p.text for p in timeline_points(b)] == [f"Point {h}" for h in range(8)]
+    assert [p.text for p in timeline_points(brief(*(dated(f"p{h}", "future", 0 if h < 2 else 1, f"P{h}", at(h), "x", f"P{h}") for h in range(10))))] == [
+        f"P{h}" for h in range(2, 10)]

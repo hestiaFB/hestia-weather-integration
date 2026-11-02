@@ -60,7 +60,7 @@ def theme_of(s: Signal) -> str | None:
         return "wind"
     if s.key == "water":
         return "rain"
-    if s.key in ("pressure", "storm", "storm-near", "storm-far"):
+    if s.key in ("pressure", "pressure-future", "storm", "storm-near", "storm-far"):
         return "pressure"
     if s.key == "uv":
         return "level1"
@@ -169,7 +169,7 @@ def alert_points(brief: Brief | None) -> list[AlertPoint]:
 
 # The timeline's « now »: what needs attention, then one useful piece of information at most.
 NOW_INFO = ("comfort-gap", "pressure")
-NOW_MAX, FUTURE_MAX = 3, 5
+NOW_MAX, FUTURE_MAX = 3, 8
 ATMO_FROM = 3
 """Air and pollens reach the timeline from this Atmo index (out of 6)."""
 

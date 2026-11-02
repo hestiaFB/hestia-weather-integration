@@ -171,6 +171,17 @@ export const EN: Record<string, string> = {
   'sur 6 h': 'over 6 hours',
   'à partir de {hour}': 'from {hour}',
   'À venir': 'Coming up',
+  'au plus sur 6 h': 'at most over 6 hours',
+  'en rafales': 'in gusts',
+  'vent fort à partir de {hour}': 'strong wind from {hour}',
+  'Votre fournisseur météo ne prévoit pas la pression.': 'Your weather provider does not forecast the pressure.',
+  'Pression stable sur 6 h': 'Steady pressure over 6 hours',
+  'vers {hour}': 'around {hour}',
+  'Orage prévu vers {hour}': 'Storm expected around {hour}',
+  'Pas d’orage prévu d’ici 6 h': 'No storm expected in the next 6 hours',
+  'À venir : le vent le plus fort des 6 heures': 'Coming up: the strongest wind of the next 6 hours',
+  'À venir : la pression des 6 heures, si votre fournisseur la prévoit': 'Coming up: the pressure of the next 6 hours, if your provider forecasts it',
+  'À venir : un orage prévu dans les 6 heures': 'Coming up: a storm expected within 6 hours',
 
   // Forecast
   'Prévisions': 'Forecast',

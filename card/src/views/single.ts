@@ -9,7 +9,7 @@ import { chip, panelHead } from '../ui/parts';
 /** Where Blitzortung is chosen: the integration's settings. */
 const SETTINGS = '/config/integrations/integration/niak_weather';
 import { airPanel } from './air';
-import { rainComing, renderForecastCard } from './compact';
+import { pressureComing, rainComing, renderForecastCard, stormComing, windComing } from './compact';
 import { comfortPanel, pressurePanel, rainPanel, windPanel } from './today';
 import { lightningPanel } from './lightning';
 
@@ -44,9 +44,16 @@ export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardB
     // Without a rain gauge nor a bulletin amount, the rain to come still has its panel.
     body = v.rain ? rainPanel(v.rain, parts, lead)
       : html`<section class="nw-panel" aria-label=${t('Pluie')}>${panelHead('mdi:weather-rainy', 'rain', t('Pluie'), v.provider)}${lead === nothing ? empty(t('Pluie indisponible pour le moment.')) : lead}</section>`;
-  } else if (format === 'wind') body = v.wind ? windPanel(v.wind, parts) : empty(t('Vent indisponible pour le moment.'));
-  else if (format === 'pressure') body = v.pressure ? pressurePanel(v.pressure, parts) : empty(t('Pression indisponible pour le moment.'));
-  else if (format === 'lightning') body = v.lightning ? lightningPanel(v.lightning, parts)
+  } else if (format === 'wind') {
+    const lead = parts.has('ahead') ? windComing(v) : nothing;
+    // Without a wind sensor, the wind to come still has its panel, like the rain.
+    body = v.wind ? windPanel(v.wind, parts, lead) : lead === nothing ? empty(t('Vent indisponible pour le moment.'))
+      : html`<section class="nw-panel" aria-label=${t('Vent')}>${panelHead('mdi:weather-windy', 'wind', t('Vent'), v.provider)}${lead}</section>`;
+  } else if (format === 'pressure') {
+    const lead = parts.has('ahead') ? pressureComing(v, parts.size === 1) : nothing;
+    body = v.pressure ? pressurePanel(v.pressure, parts, lead) : lead === nothing ? empty(t('Pression indisponible pour le moment.'))
+      : html`<section class="nw-panel" aria-label=${t('Pression')}>${panelHead('mdi:gauge', 'pressure', t('Pression'), v.provider)}${lead}</section>`;
+  } else if (format === 'lightning') body = v.lightning ? lightningPanel(v.lightning, parts, parts.has('ahead') ? stormComing(v) : nothing)
     // Blitzortung is a third-party integration: the card says what it brings and where to choose it.
     : html`<section class="nw-panel lz-missing" aria-label=${t('Éclairs')}>${panelHead('mdi:flash', 'wind', t('Éclairs'), 'Blitzortung')}
         <p>${t('Cette carte montre les éclairs autour de chez vous grâce à Blitzortung, un réseau de détecteurs bénévoles. Installez l’extension depuis HACS, puis choisissez-la dans les réglages de Hestia Weather.')}</p>

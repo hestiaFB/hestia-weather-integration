@@ -783,4 +783,11 @@ EN: dict[str, str] = {
     "Aucune entité à renommer.": "No entity to rename.",
     "Le renommage n’a pas abouti : tout a été remis comme avant ({error}).": "The renaming did not go through: everything was put back as it was ({error}).",
     "Aucun renommage à annuler.": "No renaming to undo.",
+    "{wind} km/h": "{wind} km/h",
+    "Prévision du fournisseur météo : vent moyen dès 30 km/h ou rafales dès 40 km/h, dans les 6 prochaines heures.": "Weather provider's forecast: average wind from 30 km/h or gusts from 40 km/h, within the next 6 hours.",
+    "La pression va baisser : −{change} hPa en {hours} h": "Pressure will fall: −{change} hPa in {hours} h",
+    "La pression va monter : +{change} hPa en {hours} h": "Pressure will rise: +{change} hPa in {hours} h",
+    "Prévision du fournisseur météo sur les 6 prochaines heures. Une baisse rapide annonce souvent une dégradation.": "Weather provider's forecast for the next 6 hours. A quick fall often heralds worse weather.",
+    "Pression : −{change} hPa prévus": "Pressure: −{change} hPa expected",
+    "Pression : +{change} hPa prévus": "Pressure: +{change} hPa expected",
 }

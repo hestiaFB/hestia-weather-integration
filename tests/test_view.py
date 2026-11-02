@@ -146,6 +146,16 @@ def test_places_each_forecast_hour_on_the_timeline() -> None:
     assert [(s.hour, s.time) for s in forecast_slots(hours, NOW, PARIS)] == [(18 + i, (NOW + timedelta(hours=i + 1)).timestamp()) for i in range(3)]
 
 
+
+def test_passes_the_forecast_pressure_on_in_hpa_when_the_provider_gives_it() -> None:
+    from engine.forecast import Units, parse_hours
+    from engine.view import forecast_slots, to_json
+    rows = [{"datetime": (NOW + timedelta(hours=i)).isoformat(), "condition": "sunny", **({"pressure": 29.9} if i == 1 else {})} for i in (1, 2)]
+    slots = forecast_slots(parse_hours(rows, Units(pressure="inHg")), NOW, PARIS)
+    assert [s.pressure for s in slots] == [1012.5, None]
+    # Unknown values are left out of the card's view.
+    assert [("pressure" in to_json(s)) for s in slots] == [True, False]
+
 def test_says_the_pressure_is_stable_rather_than_zero() -> None:
     v = view({"pressure_entity": "sensor.pressure"}, {"sensor.pressure": sensor(1014, "hPa")},
              adjust=lambda w: replace(w, pressure_trend=Trend(0, 180, Direction.STEADY, "temps installé")))

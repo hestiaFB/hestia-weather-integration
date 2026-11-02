@@ -170,6 +170,8 @@ class Slot:
     bearing: float | None
     time: float | None = None
     """Seconds since 1970: where the hour sits on the banner's timeline."""
+    pressure: float | None = None
+    """Forecast sea-level pressure in hPa, when the provider gives it."""
 
 
 @dataclass(frozen=True)
@@ -355,7 +357,8 @@ def forecast_slots(hours: Sequence[Hour], now: datetime, zone: ZoneInfo, sunrise
         hour = h.time.astimezone(zone).hour
         night = hour < sunrise or hour >= sunset
         slots.append(Slot(hour, day_offset(h.time, now, zone), h.temperature, max(0.0, h.precipitation or 0.0), h.condition, condition_label(h.condition),
-                          condition_icon(h.condition, night), night, h.wind_speed, h.wind_gust, h.wind_bearing, h.time.timestamp()))
+                          condition_icon(h.condition, night), night, h.wind_speed, h.wind_gust, h.wind_bearing, h.time.timestamp(),
+                          None if h.pressure is None else round(h.pressure, 1)))
     return tuple(slots)
 
 

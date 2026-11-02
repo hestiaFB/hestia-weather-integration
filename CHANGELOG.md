@@ -1,3 +1,24 @@
+## 2.9.8 — Le vent, la pression et l’orage à venir
+
+**En bref**
+
+- **La frise des évènements annonce le vent fort à venir**, et la pression qui monte ou baisse vite quand votre fournisseur météo la prévoit.
+- **Les cartes Vent, Pression et Éclairs ont leur bloc « À venir »**, comme la carte Pluie.
+- **La frise montre jusqu’à 8 évènements à venir**, au lieu de 5.
+
+### Nouveautés
+
+- Dans la frise : « Vent fort dans environ 3 h : rafales à 65 km/h », dès 30 km/h de vent moyen ou 40 km/h en rafales prévus dans les 6 heures. Rien de plus si le vent fort souffle déjà.
+- Dans la frise : « La pression va baisser : −7 hPa en 6 h », dès 4 hPa d’écart prévus. Seulement avec un fournisseur qui prévoit la pression : Météo-France ne la donne pas.
+- Carte Vent, bloc « À venir » : le vent et les rafales les plus forts des 6 heures, et l’heure où le vent fort commence.
+- Carte Pression, bloc « À venir » : la pression des 6 heures et son écart, si votre fournisseur la prévoit ; sinon le bloc reste caché.
+- Carte Éclairs, bloc « À venir » : un orage prévu dans les 6 heures, ou « Pas d’orage prévu d’ici 6 h ».
+
+### Améliorations
+
+- La frise garde jusqu’à 8 évènements à venir, les plus importants d’abord.
+- Une carte dont vous aviez déjà choisi le contenu le garde : cochez « À venir » dans ses réglages pour l’ajouter.
+
 ## 2.9.7 — Le panneau en anglais, vos entités au nom Hestia, et le passage à la version 3 préparé
 
 **En bref**

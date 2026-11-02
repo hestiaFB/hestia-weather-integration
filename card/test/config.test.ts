@@ -25,16 +25,18 @@ describe('Legacy display migration',()=>{
 describe('The cards on their own', () => {
   const card = (extra: Partial<WeatherCardConfig>) => ({ type: 'custom:niak-weather-card', ...extra }) as WeatherCardConfig;
   it('show everything their format has until parts are chosen', () => {
-    expect(cardBlocks(card({ format: 'wind' }))).toEqual(['now', 'chart', 'stats']);
+    expect(cardBlocks(card({ format: 'wind' }))).toEqual(['ahead', 'now', 'chart', 'stats']);
+    // A card whose parts were chosen before « À venir » existed keeps its choice.
+    expect(cardBlocks(card({ format: 'pressure', card_blocks: ['now', 'chart'] }))).toEqual(['now', 'chart']);
     expect(cardBlocks(card({ format: 'air' }))).toEqual(['air_today', 'pollen_today', 'air_tomorrow', 'pollen_tomorrow']);
     expect(cardBlocks(card({ format: 'full' }))).toEqual([]);
   });
   it('keep the chosen parts in their order, and only those of their format', () => {
     expect(cardBlocks(card({ format: 'air', card_blocks: ['pollen_tomorrow', 'air_today'] }))).toEqual(['pollen_tomorrow', 'air_today']);
-    expect(cardBlocks(card({ format: 'pressure', card_blocks: ['chart', 'ahead'] }))).toEqual(['chart']);
+    expect(cardBlocks(card({ format: 'pressure', card_blocks: ['chart', 'gauge'] }))).toEqual(['chart']);
   });
   it('start over with everything when the parts belong to another format, and show nothing when all are unticked', () => {
-    expect(cardBlocks(card({ format: 'pressure', card_blocks: ['ahead', 'feel'] }))).toEqual(['now', 'chart', 'stats']);
+    expect(cardBlocks(card({ format: 'pressure', card_blocks: ['radar', 'feel'] }))).toEqual(['ahead', 'now', 'chart', 'stats']);
     expect(cardBlocks(card({ format: 'rain', card_blocks: [] }))).toEqual([]);
   });
 });

@@ -4,9 +4,9 @@ import type { BannerBlock, CardBlock, ForecastBlock, TodayBlock, WeatherCardConf
 export const CARD_BLOCKS: Partial<Record<NonNullable<WeatherCardConfig['format']>, CardBlock[]>> = {
   comfort: ['feel', 'gauge', 'factors', 'extras'],
   rain: ['ahead', 'now', 'chart', 'stats'],
-  wind: ['now', 'chart', 'stats'],
-  pressure: ['now', 'chart', 'stats'],
-  lightning: ['now', 'radar', 'stats'],
+  wind: ['ahead', 'now', 'chart', 'stats'],
+  pressure: ['ahead', 'now', 'chart', 'stats'],
+  lightning: ['ahead', 'now', 'radar', 'stats'],
   air: ['air_today', 'pollen_today', 'air_tomorrow', 'pollen_tomorrow'],
   forecast: ['hours', 'days'],
 };

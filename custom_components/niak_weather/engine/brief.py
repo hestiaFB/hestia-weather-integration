@@ -260,6 +260,32 @@ def build_brief(w: LocalWeather, settings: Settings, get: Callable[[str], Any], 
     if storm and not (lightning is not None and lightning.near):
         add(Signal("storm", "future", 2, t("Orage ou grêle {when}", when=_timing(storm.hours)), t("Annoncé par le fournisseur météo pour les 6 prochaines heures."),
                    "mdi:weather-lightning", settings.weather_entity, **when(storm.hour.time), short=t("Orage ou grêle")))
+    # Strong wind forecast: the same thresholds as the wind measured at home, which says it already when it blows now.
+    windy = [x for x in upcoming if (x.hour.wind_speed or 0) >= 30 or (x.hour.wind_gust or 0) >= 40]
+    if windy and not any(s.key == "wind" for s in signals):
+        top = max(x.hour.wind_speed or 0 for x in windy)
+        top_gust = max((x.hour.wind_gust or 0 for x in windy), default=0) or None
+        what = t("Vent très fort") if max(top, top_gust or 0) >= 60 else t("Vent fort")
+        amount = t("rafales à {gust} km/h", gust=_round_half_up(top_gust)) if top_gust is not None else t("{wind} km/h", wind=_round_half_up(top))
+        add(Signal("wind-future", "future", 2 if top >= 50 or (top_gust or 0) >= 60 else 1,
+                   t("{what} {when} : {amount}", what=what, when=_timing(windy[0].hours), amount=amount),
+                   t("Prévision du fournisseur météo : vent moyen dès 30 km/h ou rafales dès 40 km/h, dans les 6 prochaines heures."),
+                   "mdi:weather-windy", settings.weather_entity, **when(windy[0].hour.time), short=t("{what} : {amount}", what=what, amount=amount)))
+    # Pressure forecast, only from providers that give it (not Météo-France): a change of 4 hPa or more within 6 h.
+    pressures = [x for x in upcoming if x.hour.pressure is not None]
+    if len(pressures) >= 2:
+        first, last = pressures[0], pressures[-1]
+        change = (last.hour.pressure or 0) - (first.hour.pressure or 0)
+        span = max(1, _round_half_up(last.hours - first.hours))
+        if abs(change) >= 4:
+            falling = change < 0
+            text = (t("La pression va baisser : −{change} hPa en {hours} h", change=number(abs(change)), hours=span) if falling
+                    else t("La pression va monter : +{change} hPa en {hours} h", change=number(abs(change)), hours=span))
+            add(Signal("pressure-future", "future", 1 if falling and change <= -6 else 0, text,
+                       t("Prévision du fournisseur météo sur les 6 prochaines heures. Une baisse rapide annonce souvent une dégradation."),
+                       "mdi:gauge", settings.weather_entity, **when(last.hour.time),
+                       short=t("Pression : −{change} hPa prévus", change=number(abs(change))) if falling
+                       else t("Pression : +{change} hPa prévus", change=number(abs(change)))))
     cold = next((x for x in upcoming if x.hour.temperature is not None and x.hour.temperature <= 0), None)
     if cold:
         add(Signal("freeze-future", "future", 1, t("Gel {when} : {t} °C prévus", when=_timing(cold.hours), t=number(cold.hour.temperature or 0)), t("Prévision du fournisseur météo."),
@@ -401,7 +427,7 @@ def build_brief(w: LocalWeather, settings: Settings, get: Callable[[str], Any], 
                      else t("1 autre point à consulter dans les explications."))
     available = feels is not None or bool(signals) or bool(upcoming)
     official_signal = next((s for s in signals if s.key == "official"), None)
-    themes = {"wind": N_("Vent"), "wind-rain": N_("Pluie et vent"), "rain-now": N_("Pluie"), "rain-future": N_("Pluie"), "storm": N_("Orage"), "storm-near": N_("Orage"),
+    themes = {"wind": N_("Vent"), "wind-rain": N_("Pluie et vent"), "rain-now": N_("Pluie"), "rain-future": N_("Pluie"), "wind-future": N_("Vent"), "pressure-future": N_("Pression"), "storm": N_("Orage"), "storm-near": N_("Orage"),
               "water": N_("Restrictions d’eau"),
               "temperature": N_("Chaleur") if feels is not None and feels >= 34 else N_("Froid"), "freeze-future": N_("Froid"), "frost-night": N_("Gel"),
               "fog": N_("Brouillard"), "uv": N_("UV")}
