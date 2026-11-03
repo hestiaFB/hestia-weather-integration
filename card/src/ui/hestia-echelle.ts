@@ -18,8 +18,9 @@ export interface Echelle {
   marks?: EchelleMark[];
   /** The last 24 hours, as a thin line over the track. */
   span?: [number, number];
-  /** Outside: a hollow ring on the track with its label under it; off the scale, the ring sits at the edge (no arrow, 3 November). */
-  outside?: { value: number; label: string; onTap?: (e: Event) => void; title?: string };
+  /** Outside, or the real temperature next to the feel: a fine line across the track, its label under it if any; off the scale,
+   *  the line sits at the edge (no arrow, 3 November). */
+  outside?: { value: number; label?: string; onTap?: (e: Event) => void; title?: string };
   /** More markers on the track (the rooms of the home card). */
   dots?: unknown;
 }
@@ -43,7 +44,7 @@ export function echelle(e: Echelle): TemplateResult {
     .filter((v, i, all) => all.indexOf(v) === i).map(v => ({ value: v, text: e.degree(v), row: 'down', strong: v !== e.lo && v !== e.hi }));
   // Outside off the scale: its ring at the edge it passes, its label there, before the threshold of that end.
   const out = e.outside;
-  const labels = [...(out ? [{ value: out.value, text: html`<b>${out.label}</b>`, row: 'down' as const, strong: true, chars: 12 }] : []), ...thresholds, ...(e.marks ?? [])];
+  const labels = [...(out?.label ? [{ value: out.value, text: html`<b>${out.label}</b>`, row: 'down' as const, strong: true, chars: 12 }] : []), ...thresholds, ...(e.marks ?? [])];
   const taken: Array<[number, number, string]> = x === undefined ? [] : [[x - 10, x + 10, 'up']];
   const placed = labels.map(l => ({ ...l, x: pos(l.value) })).sort((a, b) => Number(b.strong ?? true) - Number(a.strong ?? true)).flatMap(l => {
     const chars = l.chars ?? (typeof l.text === 'string' ? l.text.length : 6), half = chars * 6.6 / 320 * 100 / 2 + 1.5;
@@ -59,7 +60,7 @@ export function echelle(e: Echelle): TemplateResult {
   const edge = x === undefined ? '' : x < 10 ? ' edge-l' : x > 90 ? ' edge-r' : '';
   const at = x === undefined ? '' : `left:${x.toFixed(2)}%;--tone:${tone}`;
   const ring = !out ? nothing : out.onTap
-    ? html`<button type="button" class="nw-scale-mk" style=${`left:${pos(out.value).toFixed(2)}%`} title=${out.title ?? out.label} aria-label=${out.title ?? out.label} @click=${out.onTap}></button>`
+    ? html`<button type="button" class="nw-scale-mk" style=${`left:${pos(out.value).toFixed(2)}%`} title=${out.title ?? out.label ?? ''} aria-label=${out.title ?? out.label ?? ''} @click=${out.onTap}></button>`
     : html`<span class="nw-scale-mk" style=${`left:${pos(out.value).toFixed(2)}%`}></span>`;
   return html`<div class="nw-scale" role="img" aria-label=${e.label}>
     <div class="nw-scale-lane">${lane}</div>

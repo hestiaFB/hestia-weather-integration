@@ -41,9 +41,13 @@ export function renderHero(v: WeatherView, sky: TemplateResult, uid: string, blo
   const season = v.season.news ? html`<span class="nw-chip" style=${tint('calm')} title=${v.season.tip}><ha-icon icon=${v.season.info.icon}></ha-icon>${v.season.news}</span>` : nothing;
   const official = v.alerts.filter(a => a.official);
   // The bulletin sits next to the weather now when it comes first; the other blocks follow under them, in their order.
-  const bulletin = bulletinBlock(v);
+  // On a phone, the weather's words leave the frame for the line under « Bulletin du jour »: the frame keeps the figures only,
+  // narrow enough for the sky to show (3 November, « Nuageux, sans pluie mesurée » crushed the title).
+  const below = blocks[0] === 'bulletin' && !!v.bulletin;
+  const cond = below ? html`<p class="hero-cond" data-entity=${v.now.conditionEntity ?? nothing} title=${v.now.source}><ha-icon icon=${v.now.icon}></ha-icon>${v.now.label}</p>` : nothing;
+  const bulletin = bulletinBlock(v, cond);
   const rest = blocks[0] === 'bulletin' ? blocks.slice(1) : blocks;
-  return html`<section class=${`nw-hero${v.now.darkSky ? ' dark-sky' : ''}`} aria-label=${t('Synthèse')}>
+  return html`<section class=${`nw-hero${v.now.darkSky ? ' dark-sky' : ''}${below ? ' cond-below' : ''}`} aria-label=${t('Synthèse')}>
     <div class="sky" aria-hidden="true">${sky}</div><div class="veil" aria-hidden="true"></div>
     <header class="fm-head"><h2 class="nw-title">${t('Synthèse')}</h2>${briefInfo(v, uid)}<span>${[v.location, v.dateLabel].filter(Boolean).join(' · ')}</span>${season}</header>
     <div class="hero-main">
@@ -56,8 +60,8 @@ export function renderHero(v: WeatherView, sky: TemplateResult, uid: string, blo
   </section>`;
 }
 
-/** « Bulletin du jour » and its text. */
-export const bulletinBlock = (v: WeatherView) => v.bulletin ? html`${label(t('Bulletin du jour'))}<p class="nw-bulletin">${unbroken(v.bulletin.summary)}</p>` : nothing;
+/** « Bulletin du jour » and its text; `lead` goes between them (the weather's words, on a phone). */
+export const bulletinBlock = (v: WeatherView, lead: unknown = nothing) => v.bulletin ? html`${label(t('Bulletin du jour'))}${lead}<p class="nw-bulletin">${unbroken(v.bulletin.summary)}</p>` : nothing;
 
 export const heroStyles = css`
   .nw-hero { position:relative; isolation:isolate; overflow:hidden; padding:20px 24px 24px; display:grid; grid-template-columns:minmax(0,1fr) auto;
@@ -69,6 +73,8 @@ export const heroStyles = css`
     linear-gradient(0deg, color-mix(in srgb, var(--nw-bg) 55%, transparent) 0%, transparent 30%); }
   .nw-hero > .fm-head { grid-area:head; cursor:default; flex-wrap:wrap; }
   .hero-main { grid-area:main; display:flex; flex-direction:column; align-items:flex-start; gap:10px; min-width:0; }
+  .hero-cond { display:none; margin:-4px 0 0; align-items:center; gap:6px; font-size:var(--nw-fs-text); font-weight:650; }
+  .hero-cond ha-icon { --mdc-icon-size:17px; }
   .nw-alerts { display:flex; flex-wrap:wrap; gap:8px; max-width:100%; }
   .now-trend { display:inline-flex; align-items:center; gap:5px; font-variant-numeric:tabular-nums; }
   /* « Sans cadre »: no frame behind the figures, only a fine, tight shadow around the letters and icons, almost an outline,
@@ -92,16 +98,24 @@ export const heroStyles = css`
   @media (prefers-reduced-motion:reduce) { .nw-hero .nw-bulletin { animation:none; } }
   @container (max-width:650px) {
     /* On a phone, as the folded tile (3 November): the title on the left, « En ce moment » in a small glass frame on the right,
-       the sun moved between them so the sky stays in sight; the text below sits on the card's background, readable on any sky. */
-    .nw-hero { grid-template-areas:"head now" "main main" "blocks blocks"; column-gap:12px; padding:16px 14px 18px; --nw-orb-x:44%; --nw-orb-y:56px; }
+       the sun moved between them so the sky stays in sight; a light, long veil under them keeps the text readable and the sky alive. */
+    .nw-hero { grid-template-areas:"head now" "main main" "blocks blocks"; column-gap:12px; padding:16px 14px 18px; --nw-orb-x:44%; }
     .nw-hero > .fm-head { align-self:start; row-gap:2px; }
     .nw-hero > .fm-head > span:not(.nw-chevron):not(.nw-chip):not(.nw-sum) { flex:1 0 100%; }
     .nw-hero > .nw-now > .nw-label { display:none; }
+    .nw-hero.cond-below .hero-cond { display:flex; }
+    .nw-hero.cond-below > .nw-now .cond { display:none; }
+    /* A long condition (« Nuageux, sans pluie mesurée ») wraps in the frame rather than crush the title: the frame keeps under half the card. */
+    .nw-hero > .nw-now { max-width:min(46cqi, 180px); }
+    .nw-hero > .nw-now .cond { display:block; text-align:right; text-wrap:balance; }
+    .nw-hero > .nw-now .cond ha-icon { display:inline-flex; vertical-align:-3px; margin-right:6px; }
     .nw-hero > .nw-now .nw-temp { font-size:var(--nw-fs-value); }
     .nw-hero .veil { background:linear-gradient(90deg, var(--nw-bg) 0%, color-mix(in srgb, var(--nw-bg) 85%, transparent) 22%,
       color-mix(in srgb, var(--nw-bg) 30%, transparent) 42%, transparent 60%); }
-    /* Under the frame, whatever its height (a clock above it, a long condition): the bulletin and the blocks over a fading veil. */
-    .nw-hero::after { content:''; position:absolute; grid-row:main-start / -1; grid-column:1 / -1; top:-30px; bottom:-18px; left:-14px; right:-14px;
-      z-index:-1; pointer-events:none; background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--nw-bg) 90%, transparent) 40px); }
+    /* Under the frame, whatever its height (a clock above it, a long condition): the bulletin and the blocks over a veil that fades in
+       slowly and stays light (3 November, « the animations are our strength »): no edge, the sky still in sight behind the text. */
+    .nw-hero::after { content:''; position:absolute; grid-row:main-start / -1; grid-column:1 / -1; top:-40px; bottom:-18px; left:-14px; right:-14px;
+      z-index:-1; pointer-events:none; background:linear-gradient(180deg, transparent 0, color-mix(in srgb, var(--nw-bg) 45%, transparent) 90px,
+      color-mix(in srgb, var(--nw-bg) 60%, transparent) 100%); }
   }
 `;

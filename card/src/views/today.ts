@@ -90,10 +90,12 @@ const sign = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n)}°`;
 
 /** The feel's scale as the timeline (3 November): the season's track cut into the feel's words, in relief, each word in its part
  *  (moved aside from the value's dot); the value in a bubble tinted like its part, a fine stem to a small dot; the thresholds under it. */
-function feelScale(feels: number, lo: number, hi: number, scale: string): TemplateResult {
+function feelScale(feels: number, real: number | undefined, lo: number, hi: number, scale: string): TemplateResult {
   // The scale is built by the charter (hestia-echelle), the same as Hestia Confort's temperature: only the feel's data here.
   const parts = WORDS.filter(([a, b]) => b > lo && a < hi).map(([a, b, w, c]) => ({ from: Math.max(a, lo), to: Math.min(b, hi), word: t(w), tone: c }));
-  return html`${echelle({ lo, hi, parts, value: feels, valueText: `${nf(feels)} °C`, label: t('Ressenti {t} °C', { t: nf(feels) }), degree: sign })}
+  // The real temperature, a fine line on the track without a label: the gap with the feel reads at a glance (3 November).
+  return html`${echelle({ lo, hi, parts, value: feels, valueText: `${nf(feels)} °C`, label: t('Ressenti {t} °C', { t: nf(feels) }), degree: sign,
+    outside: real === undefined ? undefined : { value: real } })}
     <div class="feel-ends"><span>${scale}</span><span>${t('seuils du ressenti')}</span></div>`;
 }
 
@@ -116,7 +118,7 @@ export function comfortPanel(c: ComfortView, uid: string, station: boolean, a: A
   return html`<section class="nw-panel" aria-label=${t('Ressenti')}>${panelHead('mdi:thermometer', 'heat', t('Ressenti'), c.source, explain, { aside: t('maintenant') })}
     ${has(parts, 'feel') ? html`<div class="feel-row" data-entity=${entity(c.entity)}><div class="nw-value"><b>${nf(c.feels)}</b><span>°C</span></div>
       ${c.word ? html`<span class="feel-word">${c.word}</span>` : nothing}<span class="feel-say">${calm && gap === t('comme la température') ? t('comme la température : pas de vent pour l’abaisser') : gap}</span></div>` : nothing}
-    ${has(parts, 'gauge') ? feelScale(c.feels, lo, hi, scale) : nothing}
+    ${has(parts, 'gauge') ? feelScale(c.feels, c.temperature, lo, hi, scale) : nothing}
     ${tiles.length ? html`<div class="feel-factors">${tiles.map(f => html`<div>
       <span class="ff-head"><span class="ff-t"><ha-icon icon=${f.icon}></ha-icon>${f.title}</span><span class="ff-eff" style=${`--c:var(--nw-${f.theme})`}>${f.effect}</span></span>
       <b>${f.value?.replace(/^-/, '−') ?? '—'}</b>${f.note ? html`<small>${f.note}</small>` : nothing}</div>`)}</div>` : nothing}

@@ -169,7 +169,11 @@ ha-card { font-family:Manrope, var(--ha-font-family-body, Roboto), system-ui, sa
 .nw-scale-span { position:absolute; top:37px; height:3px; border-radius:2px; background:color-mix(in srgb, var(--nw-fg) 45%, transparent); }
 .nw-scale-span::before, .nw-scale-span::after { content:''; position:absolute; top:-2px; width:1.5px; height:7px; border-radius:1px; background:inherit; }
 .nw-scale-span::before { left:0; } .nw-scale-span::after { right:0; }
-.nw-scale .nw-scale-mk { position:absolute; top:48px; z-index:2; width:10px; height:10px; min-height:0; margin:0 0 0 -5px; padding:0; box-sizing:border-box; border-radius:50%; background:var(--nw-bg); border:2px solid var(--nw-fg2); }
+/* La température réelle à côté du ressenti (Weather) ou dehors (Confort) : un trait fin en travers de l'échelle (3 novembre, « partout sur le trait »). */
+.nw-scale .nw-scale-mk { position:absolute; top:40px; z-index:2; width:2px; height:26px; min-height:0; margin:0 0 0 -1px; padding:0; box-sizing:border-box; border:0; border-radius:1px;
+  background:color-mix(in srgb, var(--nw-fg) 85%, transparent); box-shadow:0 0 0 1px color-mix(in srgb, var(--nw-bg) 60%, transparent); }
+/* Le doigt le trouve : la zone d'appui est plus large que le trait. */
+button.nw-scale-mk::before { content:''; position:absolute; inset:-6px -10px; }
 .nw-scale-lb { position:absolute; top:66px; translate:-50% 0; font-size:var(--nw-fs-label); line-height:16px; color:var(--nw-fg2); white-space:nowrap; font-variant-numeric:tabular-nums; }
 .nw-scale-lb.up { top:22px; } .nw-scale-lb.first { translate:0 0; } .nw-scale-lb.last { translate:-100% 0; } .nw-scale-lb b { color:var(--nw-fg); font-weight:650; }
 @media (prefers-reduced-motion:reduce) { .nw-scale-part, .nw-scale-pin, .nw-dot::after { animation:none; } }

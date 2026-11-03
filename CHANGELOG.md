@@ -1,3 +1,16 @@
+## 3.1.0b6 — Bêta : le ciel bien visible et des textes harmonisés
+
+### Avant de mettre à jour
+
+- Gardez Hestia Confort 2.1.0b8, si vous l’avez.
+
+### Améliorations
+
+- Sur téléphone, le temps du moment passe sous « Bulletin du jour » : le cadre ne garde que les chiffres et laisse voir le ciel.
+- Sur téléphone, le voile sous le bulletin est plus léger et sans bord : l’animation du ciel reste visible.
+- Ressenti : un trait fin marque la température réelle sur l’échelle, pour voir d’un coup d’œil l’écart avec le ressenti.
+- La carte et le panneau Hestia suivent l’échelle de textes commune aux briques Hestia : sept tailles, la même hiérarchie partout.
+
 ## 3.1.0b5 — Bêta : la carte sur téléphone
 
 ### Avant de mettre à jour
