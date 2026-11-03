@@ -147,8 +147,9 @@ export const tileStyles = css`
   .brief { grid-area:brief; min-width:0; min-height:38px; transition:min-height var(--nw-expand) var(--nw-ease); }
   .quiet .brief { display:none; }
   /* Unfolded, the scrolling bubble folds away: the timeline below shows the same points. */
-  .brief > div { display:grid; grid-template-rows:1fr; transition:grid-template-rows var(--nw-expand) var(--nw-ease), opacity .25s; }
-  .brief > div > div { min-height:0; overflow:clip; overflow-clip-margin:18px; }
+  .brief > div { display:grid; grid-template-rows:1fr; grid-template-columns:minmax(0, 1fr); transition:grid-template-rows var(--nw-expand) var(--nw-ease), opacity .25s; }
+  /* Its column never grows past the tile: the ticker's sentence shortens instead (3 November, a phone 375 px wide). */
+  .brief > div > div { min-height:0; min-width:0; overflow:clip; overflow-clip-margin:18px; }
   .open .brief { min-height:0; }
   .open .brief > div { grid-template-rows:0fr; opacity:0; }
   /* Anchored at the top: it does not move when the left column grows as the tile unfolds. */

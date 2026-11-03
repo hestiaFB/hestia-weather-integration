@@ -149,7 +149,7 @@ export const forecastStyles = css`
   .wk .day.today { color:color-mix(in oklab, var(--nw-wind) var(--nw-ink), var(--nw-fg)); }
   .wk summary > ha-icon { --mdc-icon-size:20px; color:var(--nw-fg2); }
   .wk .lo { color:var(--nw-fg2); text-align:right; } .wk .hi { font-weight:650; }
-  .wk .rain { display:inline-flex; align-items:center; gap:3px; white-space:nowrap; font-size:12px; color:color-mix(in oklab, var(--nw-rain) 70%, var(--nw-fg)); }
+  .wk .rain { display:inline-flex; align-items:center; gap:3px; white-space:nowrap; font-size:12px; color:color-mix(in oklab, var(--nw-rain) 45%, var(--nw-fg)); } /* the charter's rain, enough of the text in it to read on a light card */
   .wk .rain ha-icon { --mdc-icon-size:13px; }
   .wk .track { position:relative; height:6px; border-radius:9px; background:color-mix(in srgb, var(--nw-fg) 6%, transparent); }
   .wk .track > i { position:absolute; top:0; bottom:0; border-radius:9px;

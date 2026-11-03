@@ -30,7 +30,8 @@ const RAIN: Record<RainPeriodId, { title: string; axis?: [string, string, string
 export type Parts = ReadonlySet<string> | undefined;
 const has = (parts: Parts, part: string) => !parts || parts.has(part);
 
-/** A curve and, under it, a fill fading downwards (2 November, as the maquette): a flat line no longer sits on a solid block. */
+/** A curve and, under it, a fill fading downwards (2 November, as the maquette): a flat line no longer sits on a solid block.
+ * Its gradient is named after the card: two cards on a page never paint with each other's (3 November). */
 const curve = (paths: ChartPaths[], color: string, id: string) => [svg`<defs><linearGradient id=${id} x1="0" y1="0" x2="0" y2="1">
   <stop offset="0" stop-color=${color} stop-opacity=".3"/><stop offset="1" stop-color=${color} stop-opacity="0"/></linearGradient></defs>`, ...paths.map(p => svg`
   <path d=${p.area} fill=${`url(#${id})`}/>
@@ -147,7 +148,7 @@ export function rainPanel(r: RainView, parts?: Parts, lead: TemplateResult | typ
   </section>`;
 }
 
-export function windPanel(w: WindView, parts?: Parts, lead: TemplateResult | typeof nothing = nothing): TemplateResult {
+export function windPanel(w: WindView, uid: string, parts?: Parts, lead: TemplateResult | typeof nothing = nothing): TemplateResult {
   const color = 'var(--nw-wind)', end = chartEnd(w.mean, w.gust), period = PERIODS[w.period ?? '6h'];
   const mean = curvePaths(w.mean, w.top, end, 0, period.span), gust = curvePaths(w.gust, w.top, end, 0, period.span);
   return html`<section class="nw-panel" aria-label=${t('Vent')}>${panelHead('mdi:weather-windy', 'wind', t('Vent'), w.source)}${lead}
@@ -157,14 +158,14 @@ export function windPanel(w: WindView, parts?: Parts, lead: TemplateResult | typ
     ${has(parts, 'chart') ? html`<div class="mini"><div class="mini-top">${t(period.title)} · km/h</div>
       ${mean.length || gust.length ? html`<div class="mini-plot"><svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label=${t('Vent des {period}, moyennes et rafales', { period: t(period.title) })}>
           ${gust.map(p => svg`<path d=${p.line} fill="none" stroke="color-mix(in oklab,var(--nw-wind) 55%,transparent)" stroke-width="2" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>`)}
-          ${curve(mean, color, 'nw-fill-wind')}</svg>${pills(extremePills(w.mean, end, v => chartY(v, w.top), v => nf(v, 0), period.span))}</div>${axis(period)}`
+          ${curve(mean, color, `${uid}-fill-wind`)}</svg>${pills(extremePills(w.mean, end, v => chartY(v, w.top), v => nf(v, 0), period.span))}</div>${axis(period)}`
       : html`<p class="nw-empty">${w.empty}</p>`}</div>` : nothing}
     ${has(parts, 'stats') ? stats(w.stats) : nothing}
   </section>`;
 }
 
 
-export function pressurePanel(p: PressureView, parts?: Parts, lead: TemplateResult | typeof nothing = nothing): TemplateResult {
+export function pressurePanel(p: PressureView, uid: string, parts?: Parts, lead: TemplateResult | typeof nothing = nothing): TemplateResult {
   const period = PERIODS[p.period ?? '6h'], end = chartEnd(p.series), series = curvePaths(p.series, p.top, end, p.low, period.span);
   // Nothing moves (within 1 hPa): one phrase rather than a chip and three equal figures (2 November).
   const known = p.series.flatMap(([, v]) => v === null ? [] : [v]), stable = known.length > 1 && Math.max(...known) - Math.min(...known) <= 1;
@@ -172,7 +173,7 @@ export function pressurePanel(p: PressureView, parts?: Parts, lead: TemplateResu
     ${has(parts, 'now') ? html`<div class="metric-row"><div class="metric" data-entity=${entity(p.entity)}><div class="nw-value"><b>${p.value === undefined ? '—' : nf(p.value, 0)}</b><span>hPa</span></div>
       <small>${stable && p.trend ? `${p.trend.label} · ${p.description}` : p.description}</small></div>${p.trend && !stable ? html`<span class="nw-say p-trend"><i class="nw-trend" data-way=${/down|baisse/.test(p.trend.icon + p.trend.label) ? 'down' : 'up'}></i>${p.trend.value ? html`<b>${p.trend.value}</b> ` : nothing}${p.trend.label}</span>` : nothing}</div>` : nothing}
     ${has(parts, 'chart') ? html`<div class="mini"><div class="mini-top">${t(period.title)} · hPa</div>
-      ${series.length ? html`<div class="mini-plot"><svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label=${t('Pression des {period}', { period: t(period.title) })}>${curve(series, 'var(--nw-pressure)', 'nw-fill-pressure')}</svg>${pills(extremePills(p.series, end, v => chartY(v, p.top, p.low), v => nf(v, 0), period.span))}</div>${axis(period)}`
+      ${series.length ? html`<div class="mini-plot"><svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label=${t('Pression des {period}', { period: t(period.title) })}>${curve(series, 'var(--nw-pressure)', `${uid}-fill-pressure`)}</svg>${pills(extremePills(p.series, end, v => chartY(v, p.top, p.low), v => nf(v, 0), period.span))}</div>${axis(period)}`
         : html`<p class="nw-empty">${p.empty}</p>`}</div>` : nothing}
     ${has(parts, 'stats') && !stable ? stats(p.stats) : nothing}
   </section>`;
@@ -190,7 +191,7 @@ export function renderToday(v: WeatherView, uid: string, station: boolean, air: 
   // Without Blitzortung there is no lightning panel: the measures keep their row of three.
   const a = rainAhead(v), ahead = !v.hours.length ? '' : a.six >= .1 ? t('{mm} mm d’ici 6 h', { mm: nf(a.six) })
     : a.next ? t('pas de pluie avant {hour}', { hour: a.next }) : t('rien d’ici 18 h');
-  const panel = (b: TodayBlock) => b === 'rain' ? v.rain && rainPanel(v.rain, undefined, nothing, ahead) : b === 'wind' ? v.wind && windPanel(v.wind) : b === 'pressure' ? v.pressure && pressurePanel(v.pressure)
+  const panel = (b: TodayBlock) => b === 'rain' ? v.rain && rainPanel(v.rain, undefined, nothing, ahead) : b === 'wind' ? v.wind && windPanel(v.wind, uid) : b === 'pressure' ? v.pressure && pressurePanel(v.pressure, uid)
     : b === 'lightning' ? v.lightning && lightningPanel(v.lightning) : undefined;
   // Measures that follow each other share one grid; the feel and the chips stand on their own.
   const out: unknown[] = [];

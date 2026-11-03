@@ -11,6 +11,8 @@ export const traitStyles = css`
   /* « En ce moment »: a soft veil behind it, so leaves, rain and snow never cross the figures; no source pill (in its tooltip). */
   /* « En ce moment » in the charter's glass frame (3 November): readable over leaves, rain and clouds, without a shadow. */
   .nw-hero > .nw-now.nw-glass { padding:10px 12px 10px 14px; gap:4px; }
+  /* Smaller on a phone, next to the title: the sky keeps its room. */
+  @container (max-width:650px) { .nw-hero > .nw-now.nw-glass { padding:8px 10px 8px 12px; gap:2px; } }
 
   /* Large figures: thin and tight (Manrope 300, the variable font). */
   .nw-now .temp:not(.nw-temp) { font-weight:300; letter-spacing:-.05em; }

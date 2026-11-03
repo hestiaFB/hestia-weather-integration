@@ -1,3 +1,20 @@
+## 3.1.0b5 — Bêta : la carte sur téléphone
+
+### Avant de mettre à jour
+
+- Gardez Hestia Confort 2.1.0b8, si vous l’avez.
+
+### Améliorations
+
+- Sur téléphone, le bandeau ressemble à la tuile : le titre à gauche, le temps du moment dans un petit cadre à droite, le soleil bien visible entre les deux.
+- Le bulletin du jour reste lisible en thème sombre, quel que soit le ciel.
+
+### Corrections
+
+- La tuile ne dépasse plus de l’écran d’un téléphone quand le bandeau défilant a beaucoup de points.
+- La pluie des 7 prochains jours se lit mieux en thème clair.
+- Deux cartes sur une même page ne mélangent plus les dégradés de leurs graphiques et de leur ciel.
+
 ## 3.1.0b4 — Bêta : une nouvelle carte et la page « À propos »
 
 ### Avant de mettre à jour

@@ -91,6 +91,17 @@ export const heroStyles = css`
   .brief-group li ha-icon { --mdc-icon-size:15px; color:var(--nw-fg2); margin-top:1px; }
   @media (prefers-reduced-motion:reduce) { .nw-hero .nw-bulletin { animation:none; } }
   @container (max-width:650px) {
-    .nw-hero { grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "now" "main" "blocks"; padding:16px 14px 18px; }
+    /* On a phone, as the folded tile (3 November): the title on the left, « En ce moment » in a small glass frame on the right,
+       the sun moved between them so the sky stays in sight; the text below sits on the card's background, readable on any sky. */
+    .nw-hero { grid-template-areas:"head now" "main main" "blocks blocks"; column-gap:12px; padding:16px 14px 18px; --nw-orb-x:44%; --nw-orb-y:56px; }
+    .nw-hero > .fm-head { align-self:start; row-gap:2px; }
+    .nw-hero > .fm-head > span:not(.nw-chevron):not(.nw-chip):not(.nw-sum) { flex:1 0 100%; }
+    .nw-hero > .nw-now > .nw-label { display:none; }
+    .nw-hero > .nw-now .nw-temp { font-size:var(--nw-fs-value); }
+    .nw-hero .veil { background:linear-gradient(90deg, var(--nw-bg) 0%, color-mix(in srgb, var(--nw-bg) 85%, transparent) 22%,
+      color-mix(in srgb, var(--nw-bg) 30%, transparent) 42%, transparent 60%); }
+    /* Under the frame, whatever its height (a clock above it, a long condition): the bulletin and the blocks over a fading veil. */
+    .nw-hero::after { content:''; position:absolute; grid-row:main-start / -1; grid-column:1 / -1; top:-30px; bottom:-18px; left:-14px; right:-14px;
+      z-index:-1; pointer-events:none; background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--nw-bg) 90%, transparent) 40px); }
   }
 `;

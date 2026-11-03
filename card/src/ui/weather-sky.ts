@@ -19,9 +19,12 @@ const STRONG_WIND=40, STRONG_GUST=70;
 /** A steady breeze: a few slow, faint threads, no slanted rain. */
 const BREEZE_WIND=25, BREEZE_GUST=45;
 
+/** Each sky's own gradient names: two cards on a page never paint with each other's (the browser QA's « unique gradient names »). */
+let skies = 0;
 /** Original vector/CSS weather scene. All artwork is bundled; no remote assets. */
 @define('hestia-weather-sky')
 export class HestiaWeatherSky extends LitElement {
+  private readonly uid = `sky${++skies}`;
   @property() condition='unknown';
   @property() phase='unknown';
   @property() quality:'low'|'standard'='standard';
@@ -115,9 +118,9 @@ export class HestiaWeatherSky extends LitElement {
     return d;
   }
   /** Plane-tree autumn shades: golden, green turning orange, red-brown. The gradient runs from the stem to the tip. */
-  private static planeTint(k:number) {
+  private static planeTint(k:number,uid:string) {
     const stops=[['#d9a531','#e8b84a','#c76a26'],['#8f9e3e','#e29a34','#b5502a'],['#b64a2b','#c9572f','#7f2c1f']][k];
-    return svg`<linearGradient id=${`nw-plane-${k}`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color=${stops[0]}/><stop offset=".55" stop-color=${stops[1]}/><stop offset="1" stop-color=${stops[2]}/></linearGradient>`;
+    return svg`<linearGradient id=${`nw-plane-${k}-${uid}`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color=${stops[0]}/><stop offset=".55" stop-color=${stops[1]}/><stop offset="1" stop-color=${stops[2]}/></linearGradient>`;
   }
   /** Winter in the top-right corner: snowflakes of every size gather, glow and sparkle, then fade, on a 16 s cycle. */
   private frostPane() {
@@ -126,8 +129,8 @@ export class HestiaWeatherSky extends LitElement {
       [388,158,13,.45,-10,3.2],[270,108,11,.4,0,2],[176,40,12,.35,22,3.6],[140,12,9,.3,-14,4]];
     const bokeh=[[350,70,16],[262,30,10],[396,60,9],[220,78,7]], sparks=[[318,52],[244,10],[402,22],[286,74],[196,58]];
     return html`<svg class="frost-pane" viewBox="0 0 420 170" preserveAspectRatio="xMaxYMin meet" aria-hidden="true">
-      <defs><radialGradient id="nw-bokeh"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
-      ${bokeh.map(([x,y,r],k)=>svg`<circle class="frost-bokeh" fill="url(#nw-bokeh)" cx=${x} cy=${y} r=${r} style=${`--fd:${k*1.1}s`}/>`)}
+      <defs><radialGradient id=${`nw-bokeh-${this.uid}`}><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+      ${bokeh.map(([x,y,r],k)=>svg`<circle class="frost-bokeh" fill=${`url(#nw-bokeh-${this.uid})`} cx=${x} cy=${y} r=${r} style=${`--fd:${k*1.1}s`}/>`)}
       ${flakes.map(([x,y,r,o,rot,d])=>svg`<g transform=${`translate(${x} ${y}) rotate(${rot})`}><path class="frost-flake" style=${`--fo:${o};--fd:${d}s;stroke-width:${Math.max(1.2,r*.11)}`} d=${HestiaWeatherSky.flake(r)}/></g>`)}
       ${sparks.map(([x,y],k)=>svg`<path class="frost-spark" style=${`--fd:${k*.7}s`} transform=${`translate(${x} ${y})`} d="M0 -6L1.2 -1.2L6 0L1.2 1.2L0 6L-1.2 1.2L-6 0L-1.2 -1.2Z"/>`)}
     </svg>`;
@@ -137,9 +140,9 @@ export class HestiaWeatherSky extends LitElement {
     return html`<svg class=${`petal petal-${k}`} viewBox="0 0 12 12"><path d="M6 0C10 3 10 9 6 12C2 9 2 3 6 0Z"/></svg>`;
   }
   /** Plane-tree leaf in one of three autumn shades. */
-  private static plane(k:number) {
-    return html`<svg class=${`plane plane-${k}`} viewBox="0 0 44 44"><defs>${HestiaWeatherSky.planeTint(k)}</defs>
-      <path class="stem" d="M22 30.5Q23 37 21 42.5"/><path class="blade" fill=${`url(#nw-plane-${k})`} d="M22 32Q14 34 8 31L4 28.5L7.5 27Q11 25.5 10 22.5L4.5 21L6.5 19.5L1 13L4.5 12.5L3 9Q8 9 10.5 12L11.5 10Q14.5 13 16 16Q15.3 11 16.8 7.6L15.4 6.2L18.8 5.3Q20.8 3.6 22 1Q23.2 3.6 25.2 5.3L28.6 6.2L27.2 7.6Q28.7 11 28 16Q29.5 13 32.5 10L33.5 12Q36 9 41 9L39.5 12.5L43 13L37.5 19.5L39.5 21L34 22.5Q33 25.5 36.5 27L40 28.5L36 31Q30 34 22 32Z"/><path class="veins" d="M22 31V4M22 31Q14 22 3.5 10M22 31Q30 22 40.5 10M22 31Q14 29 5 28.5M22 31Q30 29 39 28.5M22 19L17 13.5M22 19L27 13.5M22 12L19 8.5M22 12L25 8.5M13.5 21.5L8.5 18.5M30.5 21.5L35.5 18.5M10 17L6.5 12.5M34 17L37.5 12.5"/></svg>`;
+  private static plane(k:number,uid:string) {
+    return html`<svg class=${`plane plane-${k}`} viewBox="0 0 44 44"><defs>${HestiaWeatherSky.planeTint(k,uid)}</defs>
+      <path class="stem" d="M22 30.5Q23 37 21 42.5"/><path class="blade" fill=${`url(#nw-plane-${k}-${uid})`} d="M22 32Q14 34 8 31L4 28.5L7.5 27Q11 25.5 10 22.5L4.5 21L6.5 19.5L1 13L4.5 12.5L3 9Q8 9 10.5 12L11.5 10Q14.5 13 16 16Q15.3 11 16.8 7.6L15.4 6.2L18.8 5.3Q20.8 3.6 22 1Q23.2 3.6 25.2 5.3L28.6 6.2L27.2 7.6Q28.7 11 28 16Q29.5 13 32.5 10L33.5 12Q36 9 41 9L39.5 12.5L43 13L37.5 19.5L39.5 21L34 22.5Q33 25.5 36.5 27L40 28.5L36 31Q30 34 22 32Z"/><path class="veins" d="M22 31V4M22 31Q14 22 3.5 10M22 31Q30 22 40.5 10M22 31Q14 29 5 28.5M22 31Q30 29 39 28.5M22 19L17 13.5M22 19L27 13.5M22 12L19 8.5M22 12L25 8.5M13.5 21.5L8.5 18.5M30.5 21.5L35.5 18.5M10 17L6.5 12.5M34 17L37.5 12.5"/></svg>`;
   }
   /** Dandelion seed: a fine stem under a tuft of white rays. */
   private static seed() {
@@ -157,7 +160,7 @@ export class HestiaWeatherSky extends LitElement {
     return Array.from({length:this.quality==='low'?2:count},(_,i)=>{
       const r=(k:number)=>{const v=Math.sin((i+1)*91.7+k*47.3)*24634.6345;return v-Math.floor(v);};
       const time=(3.2+r(1)*2.6)*slow, tinted=kind==='leaf'||kind==='dry';
-      const art=kind==='petal'?HestiaWeatherSky.petal(i%2):kind==='plane'?HestiaWeatherSky.plane(i%3):kind==='seed'?HestiaWeatherSky.seed():HestiaWeatherSky.leaf(kind==='dry');
+      const art=kind==='petal'?HestiaWeatherSky.petal(i%2):kind==='plane'?HestiaWeatherSky.plane(i%3,this.uid):kind==='seed'?HestiaWeatherSky.seed():HestiaWeatherSky.leaf(kind==='dry');
       return html`<div class="leaf-track" style=${`--leaf-top:${(18+r(2)*62).toFixed(0)}%;--leaf-delay:${(-r(3)*time).toFixed(2)}s;--leaf-time:${time.toFixed(2)}s`}><div class="leaf-bob" style=${`--bob:${((.7+r(4)*.9)*slow).toFixed(2)}s;--lamp:${((6+r(5)*14)*slow).toFixed(0)}px;--bd:${(-r(6)*1.5).toFixed(2)}s`}><div class=${`leaf k-${kind}`} style=${`--spin:${((.9+r(7)*1.4)*spin).toFixed(2)}s;--ls:${(.7+r(8)*.55).toFixed(2)};--lh:${tinted?((r(9)-.5)*50).toFixed(0):0}deg;--dir:${r(10)<.5?'normal':'reverse'}`}>${art}</div></div></div>`;
     });
   }
@@ -178,7 +181,7 @@ export class HestiaWeatherSky extends LitElement {
     const drift=(count:number,art:(i:number)=>unknown)=>Array.from({length:few?2:count},(_,i)=>html`<div class=${`drift${gusty?' drift--gusty':''}`} style=${`--dx:${46+(i*23)%50}%;--dt:${(gusty?5:11)+(i*7)%(gusty?4:7)}s;--dd:${-(i*3.1)%11}s;--rest:${12+(i*29)%70}%;--sw:${2.6+(i%3)*.5}s`}><i>${art(i)}</i></div>`);
     if(this.season==='spring'&&!precip&&!storm&&!fog) return drift(6,i=>HestiaWeatherSky.petal(i%2));
     // Autumn leaves fall in rain and storms too; only snow and hail hide them.
-    if(this.season==='autumn'&&!['snowy','snowy-rainy','hail'].includes(this.condition)) return drift(5,i=>HestiaWeatherSky.plane(i%3));
+    if(this.season==='autumn'&&!['snowy','snowy-rainy','hail'].includes(this.condition)) return drift(5,i=>HestiaWeatherSky.plane(i%3,this.uid));
     if(this.season==='summer'&&this.phase==='day'&&['sunny','partlycloudy'].includes(this.condition)) return html`<div class="heat">${Array.from({length:few?3:7},(_,i)=>html`<div class="heat-plume" style=${`--hx:${47+(i*13)%46}%;--hh:${70+(i*17)%45}px;--hd:${-(i*.9)%4.2}s;--hs:${1.6+(i%3)*.35}s`}><svg viewBox="0 0 24 120" preserveAspectRatio="none"><defs><linearGradient id=${`nw-heat-${i}`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" class="heat-stop" stop-opacity="0"/><stop offset=".35" class="heat-stop" stop-opacity=".6"/><stop offset="1" class="heat-stop" stop-opacity="0"/></linearGradient></defs><path stroke=${`url(#nw-heat-${i})`} d="M12 120C4 104 20 92 12 76S4 48 12 32S20 10 12 0"/></svg></div>`)}</div>`;
     if(this.season==='winter') return this.frostPane();
     return nothing;
@@ -246,9 +249,9 @@ export class HestiaWeatherSky extends LitElement {
         ${d==='freezing-fog'?this.ice('rime'):nothing}
         ${this.condition!=='unknown'?this.seasonal(rain,snow,storm,fog,windy):nothing}
         ${showers?html`<div class="burst">${fall}</div>`:fall}
-        ${this.condition==='snowy'&&d!=='flurries'?html`<div class="snowbank"><svg viewBox="0 0 400 20" preserveAspectRatio="none"><defs><linearGradient id="nw-snowbank" x1="0" y1="0" x2="0" y2="1">
+        ${this.condition==='snowy'&&d!=='flurries'?html`<div class="snowbank"><svg viewBox="0 0 400 20" preserveAspectRatio="none"><defs><linearGradient id=${`nw-snowbank-${this.uid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#dfe9f4"/></linearGradient></defs>
-          <path d="M0 20V11C22 6 40 13 66 9S112 4 140 9 190 14 222 8 276 4 306 10 360 13 400 8V20Z"/></svg>
+          <path fill=${`url(#nw-snowbank-${this.uid})`} d="M0 20V11C22 6 40 13 66 9S112 4 140 9 190 14 222 8 276 4 306 10 360 13 400 8V20Z"/></svg>
           ${Array.from({length:low?3:8},(_,i)=>html`<i style=${`--x:${6+(i*13*37+11)%88}%;--dl:-${(i*37+11)%26/10}s`}></i>`)}</div>`:nothing}
         ${windy?this.windLines():breeze?this.windLines(true):nothing}
         ${storm?html`${bolts?BOLTS.map((b,i)=>html`<div class=${`bolt b${i+1}`} style=${`animation-delay:${b.delay}s`}><svg viewBox="0 0 120 220"><path d=${b.d}/></svg></div>`):nothing}
@@ -319,7 +322,7 @@ export class HestiaWeatherSky extends LitElement {
     .scene.detail-heavy-snow {--sky:linear-gradient(150deg,#2e465f,#5f7a93 70%,#8ea5b8);--tint:.58;}
     .scene.detail-storm-showers {--sky:linear-gradient(150deg,#2a3d52,#557089 65%,#8aa3b8);--tint:.48;}
     .scene.detail-storm-risk {--sky:linear-gradient(150deg,#2f4256,#5a6f86 65%,#8095aa);--tint:.48;}
-    /* --nw-orb-x lets a smaller card move the sun or moon away from its text. */
+    /* --nw-orb-x (and, on a phone, --nw-orb-y) let a card move the sun or moon away from its text. */
     .orb {position:absolute;left:var(--nw-orb-x,73%);top:36px;width:76px;height:76px;border-radius:50%;}
     /* The big sun: a whole disc (never cut by the top of the card), its glow, and rays turning slowly. Centred where the 76 px orb was. */
     .sun {width:112px;height:112px;margin:-18px 0 0 -18px;background:radial-gradient(circle at 38% 36%,#fff9dc,#ffe17e 58%,#f2bb55);
@@ -368,7 +371,7 @@ export class HestiaWeatherSky extends LitElement {
       animation:snow-sway var(--sw) ease-in-out var(--delay) infinite alternate;}
     /* Snow settling on the ground: a thin white layer that thickens slowly, a few crystals sparkling. */
     .snowbank {position:absolute;left:-1%;right:-1%;bottom:-1px;height:18px;transform-origin:50% 100%;scale:1 .3;animation:settle 40s ease-out forwards;}
-    .snowbank svg {display:block;width:100%;height:100%;}.snowbank path {fill:url(#nw-snowbank);}
+    .snowbank svg {display:block;width:100%;height:100%;}
     .snowbank i {position:absolute;bottom:4px;left:var(--x);width:2px;height:2px;border-radius:50%;background:#fff;animation:twinkle 2.6s ease-in-out var(--dl) infinite;}
     /* Hail starts just above the card; its course (its own height, the card's) ends on the bottom edge, its ground. */
     .particle.hailstone {top:-12px;height:100%;animation-name:hail;--ground:calc(100% + 11px - var(--size));}
@@ -513,7 +516,7 @@ export class HestiaWeatherSky extends LitElement {
       /* The artwork fills the whole card height: leaves, rain and snow fall to the bottom on every format. */
       .weather-art {display:block;position:absolute;top:0;right:0;width:100%;height:100%;overflow:hidden;}
       .cloud.heavy-left {left:auto;right:30%;width:220px;}.cloud.heavy-right {left:auto;right:-20%;width:240px;}
-      .orb {left:var(--nw-orb-x,auto);right:12%;top:36px;}.cloud.back {left:auto;right:22%;top:20px;width:170px;}.cloud.front {left:auto;right:0;top:90px;width:150px;}.cloud.small {left:auto;right:-12%;top:6px;width:120px;}
+      .orb {left:var(--nw-orb-x,auto);right:12%;top:var(--nw-orb-y,36px);}.cloud.back {left:auto;right:22%;top:20px;width:170px;}.cloud.front {left:auto;right:0;top:90px;width:150px;}.cloud.small {left:auto;right:-12%;top:6px;width:120px;}
       .bolt.b1 {left:auto;right:18%;}.bolt.b2 {left:auto;right:2%;}.bolt.b3 {left:auto;right:42%;}
       .flash.f1 {--fx:70%;}.flash.f2 {--fx:94%;}.flash.f3 {--fx:48%;}
       .fog-sun {left:auto;right:14%;}

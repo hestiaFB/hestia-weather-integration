@@ -49,11 +49,11 @@ export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardB
   } else if (format === 'wind') {
     const lead = parts.has('ahead') ? windComing(v) : nothing;
     // Without a wind sensor, the wind to come still has its panel, like the rain.
-    body = v.wind ? windPanel(v.wind, parts, lead) : lead === nothing ? empty(t('Vent indisponible pour le moment.'))
+    body = v.wind ? windPanel(v.wind, o.uid, parts, lead) : lead === nothing ? empty(t('Vent indisponible pour le moment.'))
       : html`<section class="nw-panel" aria-label=${t('Vent')}>${panelHead('mdi:weather-windy', 'wind', t('Vent'), v.provider)}${lead}</section>`;
   } else if (format === 'pressure') {
     const lead = parts.has('ahead') ? pressureComing(v, parts.size === 1) : nothing;
-    body = v.pressure ? pressurePanel(v.pressure, parts, lead) : lead === nothing ? empty(t('Pression indisponible pour le moment.'))
+    body = v.pressure ? pressurePanel(v.pressure, o.uid, parts, lead) : lead === nothing ? empty(t('Pression indisponible pour le moment.'))
       : html`<section class="nw-panel" aria-label=${t('Pression')}>${panelHead('mdi:gauge', 'pressure', t('Pression'), v.provider)}${lead}</section>`;
   } else if (format === 'lightning') body = v.lightning ? lightningPanel(v.lightning, parts, parts.has('ahead') ? stormComing(v) : nothing)
     // Blitzortung is a third-party integration: the card says what it brings and where to choose it.
