@@ -1033,6 +1033,8 @@ button.nw-scale-mk::before { content:''; position:absolute; inset:-6px -10px; }
     .nw-hero.cond-below > .nw-now .cond { display:none; }
     /* A long condition (« Nuageux, sans pluie mesurée ») wraps in the frame rather than crush the title: the frame keeps under half the card. */
     .nw-hero > .nw-now { max-width:min(46cqi, 180px); }
+    /* The frame hangs from the top of the card (3 November): it rises without lifting the bulletin, the sky shows more between them. */
+    .nw-hero > .nw-now { translate:0 -16px; padding-top:10px; border-top:0; border-top-left-radius:0; border-top-right-radius:0; }
     .nw-hero > .nw-now .cond { display:block; text-align:right; text-wrap:balance; }
     .nw-hero > .nw-now .cond ha-icon { display:inline-flex; vertical-align:-3px; margin-right:6px; }
     .nw-hero > .nw-now .nw-temp { font-size:var(--nw-fs-value); }

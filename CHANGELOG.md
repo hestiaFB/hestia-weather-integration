@@ -1,5 +1,9 @@
 ## À venir
 
+### Améliorations
+
+- Sur téléphone, le cadre du temps du moment est collé en haut de la carte : il laisse plus de ciel visible sous lui.
+
 ### Corrections
 
 - Thème sombre : l’heure de la frise et la bulle de l’échelle sont plus lisibles, leur fond est un peu plus foncé.
