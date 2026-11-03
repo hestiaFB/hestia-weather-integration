@@ -17,6 +17,8 @@ const server = createServer((req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname, file = files[path];
   if (path === '/demo/view') return serveDemoView(req, res);
   if (path === '/icons.json') { res.setHeader('Content-Type', 'application/json'); res.end(icons); }
+  // The panel's fonts, served by the integration under /hestia_weather-assets/ in Home Assistant.
+  else if (/^\/hestia_weather-assets\/manrope-[\w-]+\.ttf$/.test(path)) { res.setHeader('Content-Type', 'font/ttf'); res.end(readFileSync(`../custom_components/hestia_weather/frontend/${path.split('/').pop()}`)); }
   else if (file) { res.setHeader('Content-Type', file[0]); res.end(readFileSync(file[1])); }
   else { res.writeHead(404); res.end(); }
 });
@@ -54,6 +56,8 @@ try {
 
   // 2. Accessibility of each format (axe: serious and critical issues).
   report.axe = {};
+  // Without motion: labels and lines fade in and slide, and their contrast must be read once they are there, not half transparent.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   for (const format of ['tile', 'full']) {
     await show({ format, width: format === 'full' ? 1180 : 680, condition: 'rainy', vigilance: 'Jaune', animated: false });
     const result = await new AxeBuilder({ page }).include('#stage').disableRules(['region']).analyze();
@@ -61,6 +65,7 @@ try {
     assert.deepEqual(serious, [], `Accessibility ${format}`);
     report.axe[format] = result.violations.length;
   }
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
 
   // 3. The tile: a tap unfolds it and is remembered; a long press opens the full card over the page; the keyboard does both.
   await page.evaluate(() => localStorage.clear());
@@ -154,16 +159,23 @@ try {
   const charter = await inCard(root => {
     const style = s => getComputedStyle(s);
     const badges = [...root.querySelectorAll('.nw-badge')].map(b => [style(b).fontSize, style(b).paddingTop, style(b).borderTopLeftRadius].join(' '));
-    const radii = [...root.querySelectorAll('.nw-panel, .nw-tile, .nw-bubble')].map(p => style(p).borderTopLeftRadius);
-    const sizes = new Set([...root.querySelectorAll('.nw-full *')].filter(e => e.childNodes.length && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())).map(e => style(e).fontSize));
+    // The panels take the common charter's radius (hestia-charte.css), the tiles and bubbles the card's own: one each.
+    const radii = [...root.querySelectorAll('.nw-panel')].map(p => style(p).borderTopLeftRadius);
+    const small = [...root.querySelectorAll('.nw-tile, .nw-bubble')].map(p => style(p).borderTopLeftRadius);
+    const texts = [...root.querySelectorAll('.nw-full *')].filter(e => e.childNodes.length && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()));
+    const sizes = new Set(texts.map(e => style(e).fontSize));
+    // Which element has a size off the scale, to find it at once.
+    const off = texts.filter(e => !['11px', '12px', '14px', '17px', '34px', '58px'].includes(style(e).fontSize)).map(e => `${e.className || e.tagName} ${style(e).fontSize}`).slice(0, 5);
     root.host.style.setProperty('--hestia-rain-color', 'rgb(255, 0, 0)');
     const themed = style(root.querySelector('.fc-bar, .bars i:not(.zero)')).backgroundColor;
     root.host.style.removeProperty('--hestia-rain-color');
-    return { badges: [...new Set(badges)], radii: [...new Set(radii)], sizes: [...sizes].sort(), themed };
+    return { badges: [...new Set(badges)], radii: [...new Set(radii)], small: [...new Set(small)], sizes: [...sizes].sort(), off, themed };
   });
-  assert.equal(charter.badges.length, 1, `One source pill style: ${charter.badges}`);
-  assert.deepEqual(charter.radii, ['14px'], 'One radius for every box');
-  assert.ok(charter.sizes.every(s => ['10px', '12px', '13px', '17px', '30px', '42px'].includes(s)), `Six text sizes only: ${charter.sizes}`);
+  // The sources moved behind the « i » of each panel (2 November): a pill left, if any, has one style.
+  assert.ok(charter.badges.length <= 1, `One source pill style: ${charter.badges}`);
+  assert.deepEqual(charter.radii, ['16px'], 'One radius for every panel');
+  assert.ok(charter.small.length <= 1, `One radius for the tiles and bubbles: ${charter.small}`);
+  assert.ok(charter.sizes.every(s => ['11px', '12px', '14px', '17px', '34px', '58px'].includes(s)), `Six text sizes only: ${charter.sizes} (${charter.off.join(', ')})`);
   assert.match(charter.themed, /255, 0, 0|oklab|color\(srgb 1 0 0/, 'A theme can recolour rain');
   report.charter = charter;
 
@@ -242,15 +254,16 @@ try {
   for (const width of [375, 1180]) {
     await page.setViewportSize({ width, height: 1100 });
     await show({ format: 'full', width, animated: false });
-    const forecast = page.locator('hestia-weather-card').locator('section[aria-label="Pollens demain"]');
-    assert.ok((await forecast.textContent()).includes('Prévision non disponible'));
-    assert.ok((await forecast.textContent()).includes('Atmo France ne fournit pas d’indice pollen exploitable pour demain'));
-    await forecast.locator('summary').click();
-    assert.ok((await forecast.innerText()).includes('0 µg/m³'), 'Zero concentration is preserved');
-    assert.ok((await forecast.innerText()).includes('peut être une valeur réelle ou remplacer une donnée manquante'));
+    // One pollen panel, today first; its « Demain » tab shows tomorrow's (2 November).
     const today = page.locator('hestia-weather-card').locator('section[aria-label="Pollens aujourd’hui"]');
     assert.ok((await today.textContent()).includes('Très faible'));
     assert.ok(!(await today.textContent()).includes('peut être une valeur réelle'), 'Valid level and genuine zero are kept');
+    await today.getByRole('button', { name: 'Demain' }).click();
+    const forecast = page.locator('hestia-weather-card').locator('section[aria-label="Pollens demain"]');
+    assert.ok((await forecast.textContent()).includes('Prévision non disponible'));
+    assert.ok((await forecast.textContent()).includes('Atmo France ne fournit pas d’indice pollen exploitable pour demain'));
+    assert.ok((await forecast.innerText()).includes('0 µg/m³'), 'Zero concentration is preserved');
+    assert.ok((await forecast.innerText()).includes('peut être une valeur réelle ou remplacer une donnée manquante'));
     const overflow = await forecast.evaluate(e => {
       const card = e.getRootNode().host.getBoundingClientRect();
       return [...e.querySelectorAll('*')].some(n => n.getBoundingClientRect().right > card.right + 1);
@@ -262,6 +275,7 @@ try {
   failedScenario.states['sensor.pollen_j_1'].state = 'unavailable';
   atmoResponse = atmoView(failedScenario);
   await show({ format: 'full', width: 1180, animated: false });
+  await page.locator('hestia-weather-card').locator('section[aria-label="Pollens aujourd’hui"]').getByRole('button', { name: 'Demain' }).click();
   assert.ok(!(await page.locator('hestia-weather-card').locator('section[aria-label="Pollens demain"]').textContent()).includes('Prévision non disponible'), 'Unavailable source is not presented as an Atmo code 0');
   await page.unroute('**/demo/view');
   report.atmoMissingForecast = 'Atmo code 0, genuine zero concentrations and unavailable entities remain distinct, mobile and desktop';
@@ -340,9 +354,10 @@ try {
     assert.equal(await panel.locator('select').inputValue(), 'home');
     const overflow = await page.evaluate(() => {
       const panel = document.querySelector('hestia-weather-setup'), host = panel.getBoundingClientRect();
+      // The tabs' bar scrolls sideways on a phone: its tabs may go past the edge.
       return [...panel.shadowRoot.querySelectorAll('*')].filter(e => {
         const r = e.getBoundingClientRect();
-        return r.width && (r.right > host.right + 1 || r.left < host.left - 1);
+        return r.width && !e.closest('.nk-tabs') && (r.right > host.right + 1 || r.left < host.left - 1);
       }).map(e => e.className || e.tagName).slice(0, 5);
     });
     assert.deepEqual(overflow, [], `Pollen source country labels overflow at ${width}`);
