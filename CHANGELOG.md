@@ -1,3 +1,31 @@
+## 3.1.0b4 — Bêta : une nouvelle carte et la page « À propos »
+
+### Avant de mettre à jour
+
+- Gardez Hestia Confort 2.1.0b8, si vous l’avez.
+- La carte change d’allure : regardez-la après la mise à jour et dites-nous ce qui vous gêne.
+
+### Nouveautés
+
+- La frise : le temps prévu dans la piste, un tronçon par temps, les évènements en bulles au-dessus. Plusieurs évènements au même moment tiennent dans une seule bulle.
+- Vigilance Météo-France : une pastille dans le bandeau et une bande de sa couleur sur la frise, jusqu’à sa fin.
+- Ressenti : la valeur et un mot, l’échelle de la saison, et 4 cases qui disent ce qui joue (vent, humidité, soleil, rosée). Il remplace le bloc Conditions.
+- Air extérieur et Pollens : un onglet Aujourd’hui et un onglet Demain.
+- Un « i » à côté du titre de chaque bloc dit d’où viennent ses données.
+- Le panneau a une page « À propos » : les versions, comment ajouter la carte, la page du projet, signaler un problème, les versions publiées.
+
+### Améliorations
+
+- La carte prend la police et les pièces communes à toutes les cartes Hestia.
+- Les animations s’arrêtent quand la carte n’est pas à l’écran.
+- Le menu n’a plus d’entrée « Réglages » : le renommage des entités est dans la Vue d’ensemble tant qu’il reste à faire, puis dans « À propos ».
+- L’onglet Station d’un lieu s’ouvre bien plus vite quand Home Assistant a beaucoup d’entités.
+- Le menu replie les autres briques ; sur téléphone, il s’ouvre et se ferme en glissant.
+
+### Corrections
+
+- Le panneau Hestia ne reste plus vide quand une brique garde un fichier d’une autre version (Hestia Confort, issue #48).
+
 ## 3.1.0b3 — Bêta : le vent, la pression et l’orage à venir
 
 ### Avant de mettre à jour
