@@ -1,4 +1,8 @@
-## À venir
+## 3.1.0b8 — Bêta : le cadre du moment collé en haut
+
+### Avant de mettre à jour
+
+- Gardez Hestia Confort 2.1.0b8, si vous l’avez.
 
 ### Améliorations
 
