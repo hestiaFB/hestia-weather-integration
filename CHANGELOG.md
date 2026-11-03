@@ -1,3 +1,9 @@
+## À venir
+
+### Corrections
+
+- Thème sombre : l’heure de la frise et la bulle de l’échelle sont plus lisibles, leur fond est un peu plus foncé.
+
 ## 3.1.0b7 — Bêta : un ciel plus grand sur la tuile
 
 ### Avant de mettre à jour

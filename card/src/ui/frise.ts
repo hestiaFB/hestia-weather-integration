@@ -221,7 +221,8 @@ export class HestiaFrise extends LitElement {
     /* The stem: hidden under the labels at rest; from the label on show it runs into the track. */
     .stem { translate:var(--sx, 0) 0; width:1.5px; height:10px; background:color-mix(in oklab, var(--tone) 70%, var(--nw-fg)); opacity:0; transition:opacity .2s, height .26s var(--nw-ease), margin .26s var(--nw-ease); }
     .pin.on .stem { opacity:1; height:14px; margin-top:-4px; }
-    .pin.on .chip { background:color-mix(in oklab, var(--tone) 55%, var(--nw-bg)); transform:translateY(-4px) scale(1.06);
+    /* 40 % of tone at most: the text keeps a 4.5 contrast on a dark theme, whatever the point's tone. */
+    .pin.on .chip { background:color-mix(in oklab, var(--tone) 40%, var(--nw-bg)); transform:translateY(-4px) scale(1.06);
       box-shadow:0 0 0 1px var(--nw-line), 0 4px 10px -4px rgb(0 0 0 / .35); }
     .count { display:grid; place-items:center; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; border-radius:8px;
       font-size:var(--nw-fs-label); font-weight:700; background:var(--nw-fg); color:var(--nw-bg); }

@@ -158,10 +158,11 @@ ha-card { font-family:Manrope, var(--ha-font-family-body, Roboto), system-ui, sa
 @container (max-width:62px) { .nw-scale-part span { display:none; } }
 .nw-scale-part.wl { place-items:center start; padding-left:10px; } .nw-scale-part.wr { place-items:center end; padding-right:10px; }
 @keyframes nw-grow { from { transform:scaleX(0); } }
-/* La bulle peut être un bouton (un appui ouvre le détail) : la règle passe devant celles des boutons d'une brique. */
+/* La bulle peut être un bouton (un appui ouvre le détail) : la règle passe devant celles des boutons d'une brique.
+   Son fond prend 40 % de la teinte au plus : le texte garde un contraste de 4,5 en thème sombre, quelle que soit la teinte. */
 .nw-scale .nw-scale-pin { --tx:-50%; position:absolute; min-height:0; margin:0; font-family:inherit; top:8px; z-index:2; display:inline-flex; align-items:center; padding:3px 9px; border:0; border-radius:var(--nw-radius-pill);
   white-space:nowrap; font-size:var(--nw-fs-small); font-weight:700; line-height:18px; font-variant-numeric:tabular-nums; color:var(--nw-fg); transform:translateX(var(--tx)) translateY(-2px) scale(1.04);
-  background:color-mix(in oklab, var(--tone) 55%, var(--nw-bg)); box-shadow:0 0 0 1px var(--nw-line), 0 4px 10px -4px rgb(0 0 0 / .35); animation:nw-pop .3s var(--nw-ease) .2s both; }
+  background:color-mix(in oklab, var(--tone) 40%, var(--nw-bg)); box-shadow:0 0 0 1px var(--nw-line), 0 4px 10px -4px rgb(0 0 0 / .35); animation:nw-pop .3s var(--nw-ease) .2s both; }
 .nw-scale .nw-scale-pin.edge-l { --tx:-14px; } .nw-scale .nw-scale-pin.edge-r { --tx:calc(-100% + 14px); }
 @keyframes nw-pop { from { opacity:0; transform:translateX(var(--tx)) translateY(6px) scale(.92); } }
 .nw-scale-stem { position:absolute; top:31px; z-index:1; width:1.5px; height:13px; margin-left:-.75px; background:color-mix(in oklab, var(--tone) 70%, var(--nw-fg)); }
