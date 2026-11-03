@@ -86,6 +86,10 @@ export const heroStyles = css`
   .nw-hero .nw-bulletin { animation:nw-rise .7s var(--nw-ease) both; }
   @keyframes nw-rise { from { opacity:0; filter:blur(3px); } }
   .nw-hero > .nw-now { grid-area:now; align-self:start; gap:4px; }
+  /* The glass frame hangs from the top of the card (3 November): it rises without lifting the bulletin, the sky shows more under it.
+     The °C keeps only its own width beside the figures, so they sit in the middle of the frame. */
+  .nw-hero > .nw-now.nw-glass { translate:0 -20px; padding:10px 12px 8px; border-top:0; border-top-left-radius:0; border-top-right-radius:0; }
+  .nw-hero > .nw-now.nw-glass .nw-reading { padding-right:20px; }
   .nw-hero > .nw-now .temp small { font-size:var(--nw-fs-title); }
   .hero-clock { font-size:var(--nw-fs-temp); font-weight:300; letter-spacing:-1px; }
   .now-clock { font-size:var(--nw-fs-title); font-weight:650; color:var(--nw-fg2); margin-bottom:4px; }
@@ -107,8 +111,7 @@ export const heroStyles = css`
     .nw-hero.cond-below > .nw-now .cond { display:none; }
     /* A long condition (« Nuageux, sans pluie mesurée ») wraps in the frame rather than crush the title: the frame keeps under half the card. */
     .nw-hero > .nw-now { max-width:min(46cqi, 180px); }
-    /* The frame hangs from the top of the card (3 November): it rises without lifting the bulletin, the sky shows more between them. */
-    .nw-hero > .nw-now { translate:0 -16px; padding-top:10px; border-top:0; border-top-left-radius:0; border-top-right-radius:0; }
+    .nw-hero > .nw-now.nw-glass { translate:0 -16px; }
     .nw-hero > .nw-now .cond { display:block; text-align:right; text-wrap:balance; }
     .nw-hero > .nw-now .cond ha-icon { display:inline-flex; vertical-align:-3px; margin-right:6px; }
     .nw-hero > .nw-now .nw-temp { font-size:var(--nw-fs-value); }

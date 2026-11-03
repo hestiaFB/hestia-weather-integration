@@ -2,7 +2,8 @@
 
 ### Améliorations
 
-- Sur téléphone, le cadre du temps du moment est collé en haut de la carte : il laisse plus de ciel visible sous lui.
+- Le cadre du temps du moment est collé en haut de la carte, sur téléphone comme sur tablette et ordinateur : il laisse plus de ciel visible sous lui.
+- Les chiffres sont bien au centre de ce cadre.
 
 ### Corrections
 
