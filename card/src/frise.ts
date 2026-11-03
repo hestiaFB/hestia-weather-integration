@@ -24,7 +24,9 @@ export interface FriseItem {
 export interface FriseGroup { items: number[]; x: number; clock: string; theme?: string; alert?: 1 | 2 | 3 }
 export interface FriseSegment { kind: string; icon: string; flex: number }
 export interface FriseMark { x: number; text: string; edge?: 'first' | 'last' }
-export interface Frise { items: FriseItem[]; groups: FriseGroup[]; segments: FriseSegment[]; marks: FriseMark[] }
+/** The official vigilance over the track, from now to `to` (the end of the day it covers, or of the track). */
+export interface FriseBand { to: number; level: 1 | 2 | 3 }
+export interface Frise { items: FriseItem[]; groups: FriseGroup[]; segments: FriseSegment[]; marks: FriseMark[]; band?: FriseBand }
 
 /** The colour family of a forecast hour on the track. */
 const KINDS: Record<string, string> = {
@@ -72,9 +74,25 @@ export function buildFrise(points: TickerPoint[], alerts: AlertPoint[], hours: S
     else segments.push({ kind: k, icon: h.icon, flex: to - from });
   }
 
-  const marks: FriseMark[] = [{ x: 0, text: t('Maintenant'), edge: 'first' }];
-  for (const h of dated) if (h.hour % 6 === 0 && x(h.time) > .04 && x(h.time) < .9) marks.push({ x: x(h.time), text: hourLabel(h.hour) });
-  if (last) marks.push({ x: 1, text: hourLabel((last.hour + Math.round((now + span - last.time) / HOUR)) % 24), edge: 'last' });
+  // A sliver of sky (under 3 % of the track, often the last minutes of the span) joins its neighbour: no stub at the end.
+  const total = segments.reduce((t, s) => t + s.flex, 0);
+  for (let i = segments.length - 1; i >= 0 && segments.length > 1; i--) {
+    if (segments[i].flex >= total * .03) continue;
+    segments[i ? i - 1 : 1].flex += segments[i].flex; segments.splice(i, 1);
+  }
 
-  return { items, groups, segments, marks };
+  // The hours under the track every three hours from now (2 November, as the maquette): « Maintenant, 1 h, 4 h, 7 h… ».
+  const marks: FriseMark[] = [{ x: 0, text: t('Maintenant'), edge: 'first' }];
+  for (let k = 1; k * 3 * HOUR <= span + 1; k++) {
+    const target = now + k * 3 * HOUR, h = dated.find(s => Math.abs(s.time - target) <= HOUR / 2);
+    if (h) marks.push({ x: x(h.time), text: hourLabel(h.hour), edge: x(h.time) > .97 ? 'last' : undefined });
+  }
+
+  // Météo-France's vigilance holds for the day: its band runs to midnight, or to the end of the track.
+  const official = alerts.filter(a => a.official);
+  // Midnight read on the forecast hours, in the home's time zone (not the browser's).
+  const midnight = dated.find(h => h.hour === 0 && h.time > now)?.time;
+  const band = official.length ? { to: midnight === undefined ? 1 : x(midnight), level: level(Math.max(...official.map(a => a.level))) } : undefined;
+
+  return { items, groups, segments, marks, band };
 }

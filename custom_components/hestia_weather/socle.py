@@ -8,19 +8,24 @@ understand each other; no brick ever reads another brick's settings.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import inspect
 import logging
+from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 import voluptuous as vol
 from homeassistant.components import frontend, websocket_api
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.panel_custom import async_register_panel
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.storage import Store
 
 from .engine import legacy
 
-SOCLE_VERSION = (1, 18)
+SOCLE_VERSION = (1, 22)
+# Which copy of a same version is the newest: written by copier.sh when the socle changes (EMPREINTE), equal in ui.ts.
+SOCLE_BUILD = "20261103.1428"
 # 1.1: an optional `tab`, the tab's own name when it is not the brick's (« Météo » for Hestia Weather).
 # 1.2: async_register_card, the brick's card on every dashboard, also as a dashboard resource.
 # 1.3: the home page says « À découvrir » and « Voir » for the bricks not installed (same contract as 1.2).
@@ -44,8 +49,21 @@ SOCLE_VERSION = (1, 18)
 #       the user closes it (`hestia/close_migration`, kept with the panel settings).
 # 1.17: the hub speaks German (i18n-de.ts); a word a brick's dictionary lacks is read in English, not French.
 # 1.18: ui.ts detectedFrame and askUrl: the integrations found but not read yet, « Demander » opens the brick's extension.yml form.
+# 1.19: ui.ts noteBox and noteTag, the purple dotted « Encart d'information » (--nk-note, --nk-note-bg): something to read, hub only.
+# 1.20: a brick may give its own `menu` ([[path, label, icon], …], CAHIER-HUB.md § 5): the hub shows it as is; ui.ts listSection,
+#       listRow and saveBar, the lists and the save bar every page shares.
+# 1.21: the structure answers at the touch: ☰ opens Home Assistant's menu, the bar's title opens the Hestia drawer
+#       (slides, pushed back with a finger), other bricks' groups fold; rows wait busy, the save bar says « Enregistré »,
+#       tabs fade at the edge; common motion tokens (ETAT-DES-LIEUX-HUB.md § 7). No change to the bricks' contract.
+# 1.22: the newest copy on the page gives every brick its pages (ETAT-DES-LIEUX-HUB.md § 9): a brick's tab imports ui.ts through
+#       hub.ts, which takes the newest ui.ts loaded; ui.ts only ever adds. Of two copies of one version, the later SOCLE_BUILD
+#       shows the panel. A brick still under its former name (socle 1.14, `niak_socle`) is listed in the hub, never shows its own.
+#       The hub's script and the brick's tab are served at an address of their content (/hestia-socle/<domain>/<version>.<build>-<sum>/):
+#       a cache that kept an older script under the brick's address (browser, or a proxy ignoring ?v=) can no longer leave
+#       the page blank (another element name) nor an old tab in a new hub. A copy whose script on disk does not define its
+#       own element (a file left from another version) never shows the panel: another brick's copy shows it.
 # The shell's custom element carries its version: two copies never fight over one name.
-ELEMENT = "hestia-socle-1-18"
+ELEMENT = "hestia-socle-1-22"
 KEY = "hestia_socle"
 STORE_VERSION = 1
 PANEL = "hestia"
@@ -71,19 +89,91 @@ async def async_register_brick(hass, brick, shell_url):
     """Register a brick: {domain, name, slug, version, icon, module_url, element, status, legacy_path} and, since 1.1, `tab`."""
     data = hass.data.setdefault(KEY, {"bricks": {}, "panel": None})
     await _load_settings(hass, data)
+    shell_url, brick = await _served(hass, shell_url, brick)
     data["bricks"][brick["domain"]] = {**brick, "socle": SOCLE_VERSION}
     if brick.get("legacy_path"):
         await _legacy_panel(hass, brick, shell_url)
     current = data.get("panel")
-    if current is not None and tuple(current["socle"]) >= SOCLE_VERSION:
+    if current is not None and _rank(current) >= (SOCLE_VERSION, SOCLE_BUILD):
         return
-    data["panel"] = {"socle": SOCLE_VERSION, "shell_url": shell_url, "domain": brick["domain"]}
+    if not await hass.async_add_executor_job(_defines_element, shell_url):
+        _LOGGER.error("Le script du panneau Hestia de %s ne définit pas %s : fichier d'une autre version ? "
+                      "Réinstallez la brique. Le panneau reste à une autre brique.", brick["domain"], ELEMENT)
+        return
+    data["panel"] = {"socle": SOCLE_VERSION, "build": SOCLE_BUILD, "shell_url": shell_url, "domain": brick["domain"]}
+    _hold_former(hass, shell_url, brick["domain"])
     # Re-registering replaces an older copy's handler: the newest socle answers.
     websocket_api.async_register_command(hass, _ws_overview)
     websocket_api.async_register_command(hass, _ws_set_sidebar)
     websocket_api.async_register_command(hass, _ws_set_theme)
     websocket_api.async_register_command(hass, _ws_close_migration)
     await _show_panel(hass, shell_url, data["settings"]["sidebar"])
+
+
+async def _served(hass, shell_url, brick):
+    """The hub's script and the brick's tab at an address of their content, served from this brick's frontend folder.
+
+    The panel asks for an element named after the socle's version: an older script found in a cache under the same
+    address would define another name, and Home Assistant shows an empty page without an error. The address changes
+    with any script of the folder (hub, tab, card the tab may load next to it).
+    """
+    if not getattr(hass, "http", None) or not hasattr(hass.http, "async_register_static_paths"):
+        return shell_url, brick  # Isolated tests and headless setups have no frontend.
+    folder = Path(__file__).parent / "frontend"
+    content = await hass.async_add_executor_job(_content, folder)
+    base = f"/hestia-socle/{folder.parent.name}/{SOCLE_VERSION[0]}.{SOCLE_VERSION[1]}.{SOCLE_BUILD}-{content}"
+    served = hass.data.setdefault(f"{KEY}_served", set())
+    if base not in served:
+        await hass.http.async_register_static_paths([StaticPathConfig(base, str(folder), True)])
+        served.add(base)
+
+    def here(url):
+        name = urlsplit(url or "").path.rsplit("/", 1)[-1]
+        return f"{base}/{name}" if url and url.startswith("/") and (folder / name).is_file() else url
+    return here(shell_url), {**brick, "module_url": here(brick.get("module_url"))}
+
+
+def _defines_element(shell_url):
+    """The hub's script in this brick's folder defines this copy's element; True when it cannot be read here (tests).
+
+    Home Assistant creates the panel's element by name: a script of another version defines another name and the page
+    stays empty, without an error (issue #48 of Hestia Confort).
+    """
+    script = Path(__file__).parent / "frontend" / urlsplit(shell_url).path.rsplit("/", 1)[-1]
+    try:
+        return ELEMENT.encode() in script.read_bytes()
+    except OSError:
+        return True
+
+
+def _content(folder):
+    """A short sum of the folder's scripts: the same files, the same address."""
+    digest = hashlib.sha256()
+    for script in sorted(folder.glob("*.js")):
+        digest.update(script.name.encode() + b"\0" + script.read_bytes())
+    return digest.hexdigest()[:10]
+
+
+def _rank(panel):
+    """The version, then the build: a copy before 1.22 has no build and loses to any 1.22 of its version."""
+    return tuple(panel["socle"]), str(panel.get("build") or "")
+
+
+def _former(hass):
+    """The bricks still under their former name, kept by their own older copy of the socle (1.14 and before)."""
+    key = getattr(legacy, "SOCLE_KEY", None)
+    return hass.data.get(key, {}).get("bricks", {}) if key else {}
+
+
+def _hold_former(hass, shell_url, domain):
+    """An older copy under the former name finds the panel taken by a newer socle and leaves it alone.
+
+    Before 1.15 the bricks registered under another key: without this, each copy showed /hestia in turn,
+    the last one started winning, and the hub of the other one listed only its own brick.
+    """
+    key = getattr(legacy, "SOCLE_KEY", None)
+    if key:
+        hass.data.setdefault(key, {"bricks": {}, "panel": None})["panel"] = {"socle": SOCLE_VERSION, "shell_url": shell_url, "domain": domain}
 
 
 async def _load_settings(hass, data):
@@ -265,17 +355,26 @@ async def _status(hass, brick, language=None):
         return {"level": "unknown", "summary": "État indisponible pour le moment.", "details": [], "links": []}
 
 
+def _order(brick):
+    """The catalogue's order; a brick under its former name takes its new name's place."""
+    found = [i for i, c in enumerate(CATALOGUE) if brick["domain"] == c["domain"] or brick.get("name") == c["name"]]
+    return (found[0] if found else len(CATALOGUE), brick["name"])
+
+
 async def async_overview(hass, language=None):
     bricks = hass.data.get(KEY, {}).get("bricks", {})
-    order = [c["domain"] for c in CATALOGUE]
-    listed = sorted(bricks.values(), key=lambda b: (order.index(b["domain"]) if b["domain"] in order else len(order), b["name"]))
+    # A brick still under its former name is shown too, unless it is already there under its new one (during its move).
+    slugs = {b["slug"] for b in bricks.values()}
+    former = [b for b in _former(hass).values() if b.get("slug") not in slugs]
+    listed = sorted([*bricks.values(), *former], key=_order)
     # Read together: a slow brick (5 s at most) does not add its wait to the others'.
     statuses = await asyncio.gather(*(_status(hass, brick, language) for brick in listed))
-    result = [{**{k: brick.get(k) for k in ("domain", "name", "slug", "version", "icon", "module_url", "element", "tab", "navigation")},
+    result = [{**{k: brick.get(k) for k in ("domain", "name", "slug", "version", "icon", "module_url", "element", "tab", "navigation", "menu")},
                "status": status} for brick, status in zip(listed, statuses)]
+    shown = {b["domain"] for b in listed} | {b["name"] for b in listed}
     others = [{**c, "installed": c["domain"] in hass.config.components,
                "settings_path": f"/config/integrations/integration/{c['domain']}"}
-              for c in CATALOGUE if c["domain"] not in bricks]
+              for c in CATALOGUE if c["domain"] not in shown and c["name"] not in shown]
     settings = hass.data.get(KEY, {}).get("settings", {})
     migration = [m for m in await asyncio.gather(*(_migration(hass, brick) for brick in listed)) if m]
     return {"version": 1, "socle": list(SOCLE_VERSION), "bricks": result, "others": others, "sidebar": settings.get("sidebar", True),

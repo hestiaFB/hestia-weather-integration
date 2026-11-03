@@ -3,7 +3,8 @@ Never a guess between two candidates: an ambiguous field stays empty for the use
 from __future__ import annotations
 
 import re
-from typing import Any, Callable, Mapping, Sequence
+from contextlib import contextmanager
+from typing import Any, Callable, Iterator, Mapping, Sequence
 
 from . import atmo, polleninfo
 from . import legacy
@@ -62,13 +63,53 @@ _RAIN_PERIODS = re.compile(r"^(daily_rain|rain_24h|weekly_rain|monthly_rain|year
 _NOT_OUTDOOR = r"dew|rosee|humidex|heat_?index|wind_?chill|apparent|ressenti|indoor|interieur|trend|tendance"
 
 
+# One command of the panel reads the same states again for each station field, ~60 times: inside `batch()`, each sensor's
+# text and each field's candidates are worked out once (6 s → a fraction on a home of 2 600 entities). The memo holds the
+# objects it was computed for and lives for one command only; outside `batch()`, nothing is kept.
+_memo: dict[str, dict[int, tuple[Any, ...]]] | None = None
+
+
+def _per_state(kind: str, state: Any, entry: Any, compute: Callable[[], Any]) -> Any:
+    """`compute()` once per sensor (and registry entry) inside `batch()`; every time outside it."""
+    if _memo is None:
+        return compute()
+    memo = _memo.setdefault(kind, {})
+    hit = memo.get(id(state))
+    if hit is not None and hit[0] is state and hit[1] is entry:
+        return hit[2]
+    value = compute()
+    memo[id(state)] = (state, entry, value)
+    return value
+
+
+@contextmanager
+def batch() -> Iterator[None]:
+    global _memo
+    outer = _memo
+    if outer is None:
+        _memo = {"text": {}, "found": {}}
+    try:
+        yield
+    finally:
+        if outer is None:
+            _memo = None
+
+
 def sensor_text(state: StateLike, entry: Mapping[str, Any] | None = None) -> str:
+    return _per_state("text", state, entry, lambda: _sensor_text(state, entry))
+
+
+def _sensor_text(state: StateLike, entry: Mapping[str, Any] | None = None) -> str:
     e = entry or {}
     return normal(f"{state.entity_id} {state.attributes.get('friendly_name') or ''} {e.get('unique_id') or ''} {e.get('translation_key') or ''} "
                   f"{e.get('original_name') or ''}")
 
 
 def _unit(state: StateLike) -> str:
+    return _per_state("unit", state, None, lambda: _raw_unit(state))
+
+
+def _raw_unit(state: StateLike) -> str:
     return re.sub(r"\s", "", str(state.attributes.get("unit_of_measurement") or "").lower())
 
 
@@ -226,13 +267,32 @@ DERIVED = ("thermal_comfort", "hestia_weather", legacy.DOMAIN)
 
 
 def _is_thermal(state: StateLike, entry: Mapping[str, Any] | None) -> bool:
+    return _per_state("thermal", state, entry, lambda: _raw_thermal(state, entry))
+
+
+def _raw_thermal(state: StateLike, entry: Mapping[str, Any] | None) -> bool:
     return ((entry or {}).get("platform") in DERIVED or state.entity_id.startswith(tuple(f"{d}.{root}_" for d in ("sensor", "binary_sensor") for root in ("hestia_weather", legacy.ENTITY_ROOT)))
             or bool(re.search(r"thermal.*comfort", sensor_text(state, entry))))
 
 
 def candidates(states: Sequence[StateLike], field: str, registry: Registry, options: Mapping[str, Any] | None = None,
                devices: Devices | None = None) -> list[str]:
-    """Sensors whose name and measure fit a station field."""
+    """Sensors whose name and measure fit a station field (once per field and station inside `batch()`)."""
+    memo = _memo["found"] if _memo is not None else None
+    if memo is None:
+        return _candidates(states, field, registry, options, devices)
+    key = hash((id(states), id(registry), id(devices), field, (options or {}).get("station_device_id")))
+    hit = memo.get(key)
+    if hit is not None and hit[0] is states and hit[1] is registry and hit[2] is devices and hit[3] == field \
+            and hit[4] == (options or {}).get("station_device_id"):
+        return list(hit[5])
+    found = _candidates(states, field, registry, options, devices)
+    memo[key] = (states, registry, devices, field, (options or {}).get("station_device_id"), found)
+    return list(found)
+
+
+def _candidates(states: Sequence[StateLike], field: str, registry: Registry, options: Mapping[str, Any] | None = None,
+                devices: Devices | None = None) -> list[str]:
     rule, device = STATION_RULES.get(field), (options or {}).get("station_device_id")
     if rule is None:
         return []
@@ -247,10 +307,7 @@ def candidates(states: Sequence[StateLike], field: str, registry: Registry, opti
         return sorted(i for i, e in registry.items() if i in live and not e.get("disabled_by") and e.get("device_id") in covered
                       and _netatmo_gives(e, field, devices))
     found = []
-    for state in states:
-        entry = registry.get(state.entity_id)
-        if not state.entity_id.startswith("sensor.") or (entry or {}).get("disabled_by") or _is_thermal(state, entry):
-            continue
+    for state, entry in _station_sensors(states, registry):
         if covered and (entry or {}).get("device_id") not in covered and field != "temperature_trend_entity":
             continue
         t = sensor_text(state, entry)
@@ -265,9 +322,34 @@ def candidates(states: Sequence[StateLike], field: str, registry: Registry, opti
     return sorted(found)
 
 
+def _station_sensors(states: Sequence[StateLike], registry: Registry) -> list[tuple[StateLike, Mapping[str, Any] | None]]:
+    """The enabled sensors not computed by others, with their registry entry: once per command inside `batch()`."""
+    def compute() -> list[tuple[StateLike, Mapping[str, Any] | None]]:
+        found = []
+        for state in states:
+            entry = registry.get(state.entity_id)
+            if state.entity_id.startswith("sensor.") and not (entry or {}).get("disabled_by") and not _is_thermal(state, entry):
+                found.append((state, entry))
+        return found
+    return _per_state("sensors", states, registry, compute)
+
+
+def _manual_sensors(states: Sequence[StateLike], registry: Registry) -> list[tuple[StateLike, Mapping[str, Any]]]:
+    """The enabled sensors a form may offer, with their registry entry ({} without one): once per command inside `batch()`."""
+    def compute() -> list[tuple[StateLike, Mapping[str, Any]]]:
+        found = []
+        for state in states:
+            entry = registry.get(state.entity_id) or {}
+            if state.entity_id.startswith("sensor.") and not entry.get("disabled_by") and entry.get("platform") not in DERIVED:
+                found.append((state, entry))
+        return found
+    return _per_state("manual", states, registry, compute)
+
+
 def measurement_matches(state: StateLike, field: str) -> bool:
     """The sensor measures the right thing, by its type or unit: an explicit unit wins over a misleading name."""
-    cls, unit = normal(state.attributes.get("device_class")), re.sub(r"\s", "", normal(state.attributes.get("unit_of_measurement")))
+    cls, unit = _per_state("measure", state, None, lambda: (normal(state.attributes.get("device_class")),
+                                                              re.sub(r"\s", "", normal(state.attributes.get("unit_of_measurement")))))
     if _RAIN_PERIODS.match(field):
         return cls == "precipitation" if cls else bool(re.search(r"^(mm|in|inch)$", unit))
     if field == "uv_index_entity" and not cls and not unit:
@@ -285,16 +367,14 @@ def manual_candidates(states: Sequence[StateLike], field: str, registry: Registr
     semantic = set(candidates(states, field, registry, options, devices))
     covered = _station_devices(devices, options.get("station_device_id"))
     found = []
-    for state in states:
-        entry = registry.get(state.entity_id) or {}
-        if not state.entity_id.startswith("sensor.") or entry.get("disabled_by") or entry.get("platform") in DERIVED:
-            continue
-        if not function_matches(state, field, entry):
-            continue
+    for state, entry in _manual_sensors(states, registry):
         if covered and entry.get("device_id") and entry.get("device_id") not in covered and field not in ANY_DEVICE:
             continue
+        # The cheap test first (its type or unit): only the few sensors that pass it have their name read.
         typed = state.attributes.get("device_class") or state.attributes.get("unit_of_measurement")
-        if measurement_matches(state, field) or (not typed and state.entity_id in semantic) or _netatmo_rain(entry, field):
+        if not (measurement_matches(state, field) or (not typed and state.entity_id in semantic) or _netatmo_rain(entry, field)):
+            continue
+        if function_matches(state, field, entry):
             found.append(state.entity_id)
     return sorted(found)
 

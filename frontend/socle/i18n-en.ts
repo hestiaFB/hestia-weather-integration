@@ -2,9 +2,9 @@
 export const SOCLE_EN:Record<string,string>={
  // The menu
  'Accueil Hestia':'Hestia home','Vue d’ensemble':'Overview','Réglages':'Settings','Accueil':'Home','Bilan du logement':'Home review',
- 'Réglages généraux':'General settings','Extensions':'Extensions','Sources météo':'Weather sources','Station météo · capteurs locaux':'Weather station · local sensors',
+ 'Réglages généraux':'General settings','Pièces':'Rooms','Apprentissage':'Learning','Bilan':'Report','Extensions':'Extensions','Sources météo':'Weather sources','Station météo · capteurs locaux':'Weather station · local sensors',
  'Qualité de l’air':'Air quality','Pollens':'Pollen','Entités':'Entities','Météo':'Weather','Confort':'Comfort','Hestia Confort':'Hestia Comfort','Hestia Weather':'Hestia Weather',
- 'Navigation Hestia':'Hestia navigation','Ouvrir la navigation Hestia':'Open the Hestia navigation','Fermer la navigation Hestia':'Close the Hestia navigation',
+ 'Lieux':'Places','Navigation Hestia':'Hestia navigation','Ouvrir la navigation Hestia':'Open the Hestia navigation',
  'Ouvrir le menu Home Assistant':'Open the Home Assistant menu',
  // The home page
  'Votre logement, connecté':'Your home, connected','Vos briques Hestia et les points à compléter, au même endroit.':'Your Hestia bricks and what is left to complete, in one place.',
@@ -44,11 +44,15 @@ export const SOCLE_EN:Record<string,string>={
  'Retour à l’accueil':'Back to home',
  // ui.ts: help, defaults and the common pages
  'Aide':'Help','Aide : {label}':'Help: {label}','Fermer l’aide':'Close help','Valeur par défaut':'Default value','Choisissez un capteur':'Choose a sensor',
- 'Valeur appliquée':'Value applied','Rétablir la valeur par défaut':'Restore the default value','Comprendre la valeur par défaut':'About the default value','Pourquoi cette valeur ?':'Why this value?',
+ 'par défaut':'default','Rétablir':'Restore','Rétablir la valeur par défaut':'Restore the default value','Comprendre la valeur par défaut':'About the default value','Pourquoi cette valeur ?':'Why this value?',
  'À régler':'To set','À améliorer':'To improve','Quitter sans enregistrer ?':'Leave without saving?','Vos changements de cette page seront perdus.':'Your changes on this page will be lost.',
  'Continuer à modifier':'Keep editing','Quitter sans enregistrer':'Leave without saving','Versions et liens':'Versions and links','Liens utiles':'Useful links',
  'Intégration Home Assistant':'Home Assistant integration','Journaux Home Assistant':'Home Assistant logs','Documentation':'Documentation','Versions publiées':'Releases',
  'Signaler un problème':'Report an issue','Soutenez mon travail':'Support my work',
  // « Détectées, pas encore lues » (1.18)
  'Lire l’extension {name}':'Read the {name} extension','Détectées, pas encore lues par {brick}':'Detected, not read by {brick} yet','À proposer':'To suggest','Trouvées dans votre Home Assistant. {brick} ne s’en sert pas encore ; dites-nous si elles vous seraient utiles.':'Found in your Home Assistant. {brick} does not use them yet; tell us if they would help you.','pas encore lue':'not read yet','Demander':'Ask','« Demander » ouvre une demande toute prête sur GitHub : dites-y comment vous utilisez l’extension. Si elle a déjà été demandée, un 👍 sur la demande existante suffit. Rien n’est envoyé sans vous.':'“Ask” opens a ready-made request on GitHub: say there how you use the extension. If it was already asked for, a 👍 on that request is enough. Nothing is sent without you.',
+ // Socle 1.20: the save bar.
+ 'Modifications':'Changes','1 modification':'1 change','{n} modifications':'{n} changes','Annuler':'Cancel','Enregistrer':'Save',
+ // Socle 1.22: « À propos » in every brick's menu.
+ 'À propos':'About','Versions':'Versions','Ajouter une carte':'Add a card','Liens':'Links','Page du projet':'Project page','Présentation, documentation et nouveautés.':'Overview, documentation and news.',
 };

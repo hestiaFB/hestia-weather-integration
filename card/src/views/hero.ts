@@ -34,9 +34,10 @@ import type { BannerBlock } from '../types';
 /** The banner: the place, the vigilance and the weather now, then its blocks drawn by `draw`, in their order.
  *  `clock` puts the time under the title (left) or above the weather now (right). */
 export function renderHero(v: WeatherView, sky: TemplateResult, uid: string, blocks: BannerBlock[], draw: (b: BannerBlock) => unknown,
-  clock: 'none' | 'left' | 'right' = 'none'): TemplateResult {
-  const trend = v.now.trend === undefined ? nothing : html`<span class="nw-chip" style=${tint(v.now.trend > 0 ? 'heat' : 'cold')}
-    title=${v.now.trend > 0 ? t('La température monte') : t('La température baisse')}><ha-icon icon=${v.now.trend > 0 ? 'mdi:arrow-top-right' : 'mdi:arrow-bottom-right'}></ha-icon>${v.now.trend > 0 ? '+' : '−'}${nf(Math.abs(v.now.trend))} °C/h</span>`;
+  clock: 'none' | 'left' | 'right' = 'none', frame: 'opaque' | 'clear' | 'none' = 'opaque'): TemplateResult {
+  // The charter's arrow and the change in plain grey (3 November): only when the temperature really moves, half a degree an hour or more.
+  const trend = v.now.trend === undefined || Math.abs(v.now.trend) < .5 ? nothing : html`<span class="now-trend nw-say"
+    title=${v.now.trend > 0 ? t('La température monte') : t('La température baisse')}><i class="nw-trend" data-way=${v.now.trend > 0 ? 'up' : 'down'}></i>${v.now.trend > 0 ? '+' : '−'}${nf(Math.abs(v.now.trend))} °C/h</span>`;
   const season = v.season.news ? html`<span class="nw-chip" style=${tint('calm')} title=${v.season.tip}><ha-icon icon=${v.season.info.icon}></ha-icon>${v.season.news}</span>` : nothing;
   const official = v.alerts.filter(a => a.official);
   // The bulletin sits next to the weather now when it comes first; the other blocks follow under them, in their order.
@@ -44,13 +45,13 @@ export function renderHero(v: WeatherView, sky: TemplateResult, uid: string, blo
   const rest = blocks[0] === 'bulletin' ? blocks.slice(1) : blocks;
   return html`<section class=${`nw-hero${v.now.darkSky ? ' dark-sky' : ''}`} aria-label=${t('Synthèse')}>
     <div class="sky" aria-hidden="true">${sky}</div><div class="veil" aria-hidden="true"></div>
-    <header class="fm-head"><h2>${t('Synthèse')}</h2>${briefInfo(v, uid)}<span>${[v.location, v.dateLabel].filter(Boolean).join(' · ')}</span>${season}</header>
+    <header class="fm-head"><h2 class="nw-title">${t('Synthèse')}</h2>${briefInfo(v, uid)}<span>${[v.location, v.dateLabel].filter(Boolean).join(' · ')}</span>${season}</header>
     <div class="hero-main">
       ${clock === 'left' ? html`<hestia-clock class="hero-clock"></hestia-clock>` : nothing}
       ${official.length ? html`<div class="nw-alerts">${official.map(a => alertPill(a))}</div>` : nothing}
       ${blocks[0] === 'bulletin' ? bulletin : nothing}
     </div>
-    ${nowBlock(v, true, trend, clock === 'right' ? html`<hestia-clock class="now-clock"></hestia-clock>` : nothing)}
+    ${nowBlock(v, true, trend, clock === 'right' ? html`<hestia-clock class="now-clock"></hestia-clock>` : nothing, frame)}
     ${rest.length ? html`<div class="hero-blocks">${rest.map(draw)}</div>` : nothing}
   </section>`;
 }
@@ -69,10 +70,16 @@ export const heroStyles = css`
   .nw-hero > .fm-head { grid-area:head; cursor:default; flex-wrap:wrap; }
   .hero-main { grid-area:main; display:flex; flex-direction:column; align-items:flex-start; gap:10px; min-width:0; }
   .nw-alerts { display:flex; flex-wrap:wrap; gap:8px; max-width:100%; }
+  .now-trend { display:inline-flex; align-items:center; gap:5px; font-variant-numeric:tabular-nums; }
+  /* « Sans cadre »: no frame behind the figures, only a fine, tight shadow around the letters and icons, almost an outline,
+     in the theme's background (dark behind light text, light behind dark text; dark on a storm sky's white text). */
+  .nw-hero > .nw-now:not(.nw-glass) { --halo:color-mix(in srgb, var(--nw-bg) 85%, transparent);
+    text-shadow:0 0 1px var(--halo), 0 0 2px var(--halo), 0 1px 3px var(--halo); }
+  .nw-hero.dark-sky > .nw-now:not(.nw-glass) { --halo:rgb(11 26 43 / .7); }
+  .nw-hero > .nw-now:not(.nw-glass) :is(ha-icon, .nw-trend) { filter:drop-shadow(0 0 1px var(--halo)) drop-shadow(0 1px 2px var(--halo)); }
   .nw-hero .nw-bulletin { animation:nw-rise .7s var(--nw-ease) both; }
   @keyframes nw-rise { from { opacity:0; filter:blur(3px); } }
   .nw-hero > .nw-now { grid-area:now; align-self:start; gap:4px; }
-  .nw-hero > .nw-now .temp { font-size:var(--nw-fs-temp); }
   .nw-hero > .nw-now .temp small { font-size:var(--nw-fs-title); }
   .hero-clock { font-size:var(--nw-fs-temp); font-weight:300; letter-spacing:-1px; }
   .now-clock { font-size:var(--nw-fs-title); font-weight:650; color:var(--nw-fg2); margin-bottom:4px; }

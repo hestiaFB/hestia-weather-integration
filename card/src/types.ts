@@ -60,6 +60,8 @@ export interface WeatherCardConfig {
   rain_span?: '24h' | '7d' | '30d';
   /** The time in the banner: under the title (left) or above « En ce moment » (right). Unset: no clock. */
   clock?: 'none' | 'left' | 'right';
+  /** The glass frame behind « En ce moment » in the banner: opaque (default), clear, or none. */
+  now_frame?: 'opaque' | 'clear' | 'none';
   /** « Prévisions »: hours (the 18-hour curve), days (the 7-day table), air (tomorrow's air and pollens). */
   forecast_blocks?: ForecastBlock[];
   /** What a long press on the tile (a tap on mini and alert) does: popup, the full weather over the page; page, opens weather_path;

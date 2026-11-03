@@ -1,4 +1,10 @@
-import { css } from 'lit';
+import { css, unsafeCSS } from 'lit';
+import charte from './hestia-charte';
+
+/** The pieces of the charter shared by every Hestia card (hestia-ecosysteme/charte, copied by copier.sh): the « i », the glass frame,
+ *  the value's dot, the scale drawn as the timeline. Without the charter's tokens: Weather keeps its own (same values), and a part
+ *  drawn over the hero keeps the dark sky's colours. Loaded before Weather's own pieces. */
+export const shared = unsafeCSS(charte.replace(/:host \{[\s\S]*?\n\}\n/, ''));
 
 /**
  * THE CHARTER: the only place where the card's look is decided.
@@ -66,8 +72,6 @@ export const pieces = css`
   [data-entity]:focus-visible, button:focus-visible { outline:2px solid var(--nw-accent); outline-offset:2px; }
   .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 
-  /* Label: small capitals, one size everywhere. */
-  .nw-label { font-size:var(--nw-fs-label); line-height:13px; font-weight:700; letter-spacing:var(--nw-label-spacing); text-transform:uppercase; color:var(--nw-fg2); white-space:nowrap; }
 
   /* Coloured text, always readable: the meaning colour mixed into the text colour. */
   .nw-ink { font-size:var(--nw-fs-small); font-weight:600; color:color-mix(in oklab, var(--c) var(--nw-ink), var(--nw-fg)); }
@@ -86,33 +90,24 @@ export const pieces = css`
   .nw-chips { display:flex; flex-wrap:wrap; gap:8px; }
 
   /* « En ce moment »: condition, temperature, source, with a halo that keeps them readable on any sky. */
-  .nw-now { display:flex; flex-direction:column; align-items:flex-end; text-align:right; gap:2px;
-    text-shadow:0 0 14px var(--nw-bg), 0 0 5px var(--nw-bg), 0 0 2px var(--nw-bg); }
+  .nw-now { display:flex; flex-direction:column; align-items:flex-end; text-align:right; gap:2px; }
+  /* The tile's figures over the sky keep a soft halo; the banner's sit in the charter's glass frame, without it. */
+  .nw-now:not(.nw-glass) { text-shadow:0 0 14px var(--nw-bg), 0 0 5px var(--nw-bg), 0 0 2px var(--nw-bg); }
   .nw-now .nw-label { color:color-mix(in srgb, var(--nw-fg) 75%, transparent); }
   .nw-now :is(.nw-chip, .nw-badge) { text-shadow:none; color:var(--nw-fg); background:color-mix(in srgb, var(--nw-bg) 86%, transparent); border-color:var(--nw-line); backdrop-filter:var(--nw-blur); }
   .nw-now .nw-chip ha-icon { color:color-mix(in oklab, var(--c) 70%, var(--nw-fg)); }
   .nw-now .cond { display:flex; align-items:center; gap:6px; font-weight:650; font-size:var(--nw-fs-text); }
   .nw-now .cond ha-icon { --mdc-icon-size:17px; }
-  .nw-now .temp { font-size:var(--nw-fs-value); font-weight:700; letter-spacing:-1px; line-height:1.05; white-space:nowrap; }
+  /* The tile's temperature; the full card's is the charter's .nw-temp. */
+  .nw-now .temp:not(.nw-temp) { font-size:var(--nw-fs-value); font-weight:700; letter-spacing:-1px; line-height:1.05; white-space:nowrap; }
   .nw-now .temp small { font-size:var(--nw-fs-text); font-weight:400; vertical-align:super; margin-left:2px; letter-spacing:0; }
   /* Today's low and high: a quiet line under the temperature. */
   .nw-now .range { display:flex; gap:10px; font-size:var(--nw-fs-small); font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;
     color:color-mix(in srgb, currentColor 82%, transparent); }
   /* Storm and downpour clouds stay dark whatever the theme: the text on them turns white, the pills keep the theme. */
-  .dark-sky .nw-now { color:#fff; text-shadow:0 1px 5px #0b1a2b99; }
-  .dark-sky .nw-now .nw-label { color:rgba(255,255,255,.88); }
+  .dark-sky .nw-now:not(.nw-glass) { color:#fff; text-shadow:0 1px 5px #0b1a2b99; }
+  .dark-sky .nw-now:not(.nw-glass) .nw-label { color:rgba(255,255,255,.88); }
 
-  /* Panel: every frame of the full card. */
-  .nw-panel { background:var(--nw-bg); border:1px solid var(--nw-line); border-radius:var(--nw-radius); padding:var(--nw-pad-panel);
-    display:flex; flex-direction:column; gap:14px; min-width:0; box-sizing:border-box; }
-  /* When the title and its source do not fit on one line, the source moves under the title rather than cutting it. */
-  .nw-panel-head { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; min-width:0; }
-  .nw-panel-head h3 { display:flex; align-items:center; gap:8px; margin:0; font-size:var(--nw-fs-title); font-weight:700; letter-spacing:-.2px; flex:1 0 auto; max-width:calc(100% - 42px); white-space:nowrap; }
-  .nw-panel-head h3 > span { overflow:hidden; text-overflow:ellipsis; }
-  .nw-panel-head .nw-badge { margin-left:auto; }
-  .nw-panel-icon { display:grid; place-items:center; width:32px; height:32px; border-radius:10px; flex:none;
-    background:color-mix(in oklab, var(--c) 28%, transparent); color:color-mix(in oklab, var(--c) 60%, var(--nw-fg)); }
-  .nw-panel-icon ha-icon { --mdc-icon-size:18px; }
   .nw-sub { margin:-8px 0 0; font-size:var(--nw-fs-small); color:var(--nw-fg2); }
   .nw-empty { margin:0; padding:14px 0; text-align:center; font-size:var(--nw-fs-small); color:var(--nw-fg2); }
 
@@ -122,21 +117,14 @@ export const pieces = css`
   .nw-legend i { width:14px; height:4px; border-radius:2px; background:var(--c); }
   .nw-legend i.sq { width:10px; height:10px; border-radius:3px; }
   .nw-legend i.dash { background:repeating-linear-gradient(90deg, color-mix(in oklab, var(--c) 60%, transparent) 0 3px, transparent 3px 5px); }
-  .nw-legend svg { width:10px; height:10px; fill:color-mix(in oklab, var(--nw-wind) 70%, var(--nw-fg)); }
 
-  /* Main value of a panel: big figure, unit, caption. */
+  /* A panel's look is the charter's (.nw-panel); its parts one under the other, 14 px apart. */
+  .nw-panel { display:flex; flex-direction:column; gap:14px; }
+  /* Main value of a panel: the figure is the charter's .nw-value; here its row and caption. Panels, heads, labels, stats: the shared charter. */
   .metric-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px 14px; }
   .metric { display:flex; flex-direction:column; gap:4px; min-width:0; border:0; background:none; padding:0; text-align:left; }
-  .metric-main { display:flex; align-items:baseline; gap:5px; }
-  .metric-main b { font-size:var(--nw-fs-value); font-weight:700; letter-spacing:-1px; line-height:1; font-variant-numeric:tabular-nums; }
-  .metric-main span { font-size:var(--nw-fs-text); color:var(--nw-fg2); font-weight:600; }
   .metric small { font-size:var(--nw-fs-small); color:var(--nw-fg2); }
   .metric small b { color:var(--nw-fg); }
-  /* Three small values under a line. */
-  .stats { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; padding-top:12px; border-top:1px solid var(--nw-line-soft); margin-top:auto; }
-  .stats > * { display:flex; flex-direction:column; gap:2px; min-width:0; }
-  .stats .nw-label { overflow:hidden; text-overflow:ellipsis; }
-  .stats b { font-size:var(--nw-fs-text); font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
 
   /* Small history chart: the same frame for rain, wind and pressure. */
   .mini { display:flex; flex-direction:column; gap:4px; }
@@ -160,11 +148,7 @@ export const pieces = css`
   .nw-details li b { text-align:right; }
   .nw-details p { margin:8px 0 0; }
 
-  /* « i » button and its explanation bubble: one sentence, then an example. */
-  .nw-info { display:inline-grid; place-items:center; width:22px; height:22px; padding:0; flex:none; border-radius:50%; border:1px solid var(--nw-line);
-    background:var(--nw-bg); color:var(--nw-fg2); cursor:pointer; }
-  .nw-info:hover { color:var(--nw-fg); border-color:color-mix(in srgb, var(--nw-fg) 30%, transparent); }
-  .nw-info ha-icon { --mdc-icon-size:15px; }
+  /* The « i » button comes from the shared charter (hestia-charte); its explanation bubble: one sentence, then an example. */
   .nw-pop { position:fixed; inset:auto; margin:0; width:min(320px, calc(100vw - 24px)); max-height:min(70vh, 480px); overflow:auto; box-sizing:border-box;
     padding:12px 14px; border-radius:var(--nw-radius); border:1px solid var(--nw-line); background:var(--nw-bg); color:var(--nw-fg);
     box-shadow:0 12px 32px #0b1a2b26; font-size:var(--nw-fs-text); line-height:1.45; font-weight:400;

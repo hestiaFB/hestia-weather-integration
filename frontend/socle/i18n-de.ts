@@ -3,9 +3,9 @@
 export const SOCLE_DE:Record<string,string>={
  // The menu
  'Accueil Hestia':'Hestia-Start','Vue d’ensemble':'Übersicht','Réglages':'Einstellungen','Accueil':'Start','Bilan du logement':'Bilanz der Wohnung',
- 'Réglages généraux':'Allgemeine Einstellungen','Extensions':'Erweiterungen','Sources météo':'Wetterquellen','Station météo · capteurs locaux':'Wetterstation · lokale Sensoren',
+ 'Réglages généraux':'Allgemeine Einstellungen','Pièces':'Räume','Apprentissage':'Lernen','Bilan':'Bilanz','Extensions':'Erweiterungen','Sources météo':'Wetterquellen','Station météo · capteurs locaux':'Wetterstation · lokale Sensoren',
  'Qualité de l’air':'Luftqualität','Pollens':'Pollen','Entités':'Entitäten','Météo':'Wetter','Confort':'Komfort','Hestia Confort':'Hestia Comfort','Hestia Weather':'Hestia Weather',
- 'Navigation Hestia':'Hestia-Navigation','Ouvrir la navigation Hestia':'Hestia-Navigation öffnen','Fermer la navigation Hestia':'Hestia-Navigation schließen',
+ 'Lieux':'Orte','Navigation Hestia':'Hestia-Navigation','Ouvrir la navigation Hestia':'Hestia-Navigation öffnen',
  'Ouvrir le menu Home Assistant':'Menü von Home Assistant öffnen',
  // The home page
  'Votre logement, connecté':'Ihr Zuhause, vernetzt','Vos briques Hestia et les points à compléter, au même endroit.':'Ihre Hestia-Bausteine und was noch zu ergänzen ist, an einem Ort.',
@@ -45,11 +45,15 @@ export const SOCLE_DE:Record<string,string>={
  'Retour à l’accueil':'Zurück zum Start',
  // ui.ts: help, defaults and the common pages
  'Aide':'Hilfe','Aide : {label}':'Hilfe: {label}','Fermer l’aide':'Hilfe schließen','Valeur par défaut':'Standardwert','Choisissez un capteur':'Sensor wählen',
- 'Valeur appliquée':'Angewendeter Wert','Rétablir la valeur par défaut':'Standardwert wiederherstellen','Comprendre la valeur par défaut':'Zum Standardwert','Pourquoi cette valeur ?':'Warum dieser Wert?',
+ 'par défaut':'Standard','Rétablir':'Zurücksetzen','Rétablir la valeur par défaut':'Standardwert wiederherstellen','Comprendre la valeur par défaut':'Zum Standardwert','Pourquoi cette valeur ?':'Warum dieser Wert?',
  'À régler':'Einzustellen','À améliorer':'Zu verbessern','Quitter sans enregistrer ?':'Ohne Speichern verlassen?','Vos changements de cette page seront perdus.':'Ihre Änderungen auf dieser Seite gehen verloren.',
  'Continuer à modifier':'Weiter bearbeiten','Quitter sans enregistrer':'Ohne Speichern verlassen','Versions et liens':'Versionen und Links','Liens utiles':'Nützliche Links',
  'Intégration Home Assistant':'Integration für Home Assistant','Journaux Home Assistant':'Protokolle von Home Assistant','Documentation':'Dokumentation','Versions publiées':'Veröffentlichte Versionen',
  'Signaler un problème':'Problem melden','Soutenez mon travail':'Meine Arbeit unterstützen',
  // « Détectées, pas encore lues » (1.18)
  'Lire l’extension {name}':'Erweiterung {name} lesen','Détectées, pas encore lues par {brick}':'Erkannt, von {brick} noch nicht gelesen','À proposer':'Vorschlagen','Trouvées dans votre Home Assistant. {brick} ne s’en sert pas encore ; dites-nous si elles vous seraient utiles.':'In Ihrem Home Assistant gefunden. {brick} nutzt sie noch nicht; sagen Sie uns, ob sie Ihnen helfen würden.','pas encore lue':'noch nicht gelesen','Demander':'Anfragen','« Demander » ouvre une demande toute prête sur GitHub : dites-y comment vous utilisez l’extension. Si elle a déjà été demandée, un 👍 sur la demande existante suffit. Rien n’est envoyé sans vous.':'„Anfragen“ öffnet eine fertige Anfrage auf GitHub: Schreiben Sie dort, wie Sie die Erweiterung nutzen. Wurde sie schon angefragt, genügt ein 👍 auf der bestehenden Anfrage. Nichts wird ohne Sie gesendet.',
+ // Socle 1.20: the save bar.
+ 'Modifications':'Änderungen','1 modification':'1 Änderung','{n} modifications':'{n} Änderungen','Annuler':'Abbrechen','Enregistrer':'Speichern',
+ // Socle 1.22: « À propos » in every brick's menu.
+ 'À propos':'Über','Versions':'Versionen','Ajouter une carte':'Karte hinzufügen','Liens':'Links','Page du projet':'Projektseite','Présentation, documentation et nouveautés.':'Überblick, Dokumentation und Neuigkeiten.',
 };

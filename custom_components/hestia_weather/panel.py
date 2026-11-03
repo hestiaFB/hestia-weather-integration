@@ -53,7 +53,11 @@ async def async_setup_panel(hass: HomeAssistant, version: str) -> None:
         hass.data[f"{DOMAIN}_panel"] = True
     await async_register_brick(hass, {
         "domain": DOMAIN, "name": "Hestia Weather", "slug": "meteo", "tab": "Météo", "version": version, "icon": "mdi:weather-partly-cloudy",
-        "navigation": 3, "module_url": f"{ASSETS}/panel.js?v={version}", "element": "hestia-weather-setup", "status": weather_status, "legacy_path": "",
+        "navigation": 3,
+        # The same menu as every brick (socle 1.20, ETAT-DES-LIEUX-HUB.md § 2): overview, its places, settings, extensions.
+        "menu": [["", "Vue d’ensemble", "home"], ["lieux", "Lieux", "weather"], ["extensions", "Extensions", "extensions"],
+                 ["a-propos", "À propos", "info"]],
+        "module_url": f"{ASSETS}/panel.js?v={version}", "element": "hestia-weather-setup", "status": weather_status, "legacy_path": "",
         "migration": migration_status,
     }, f"{ASSETS}/hestia-socle.js?v={version}")
 

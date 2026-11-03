@@ -4,6 +4,7 @@ import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { colon, t } from '../i18n';
 import { property, state } from 'lit/decorators.js';
 import { define } from './define';
+import { shared } from './charter';
 import { buildFrise, type Frise, type FriseGroup, type FriseItem } from '../frise';
 import type { AlertPoint, Slot, TickerPoint } from '../view';
 
@@ -12,7 +13,8 @@ const STEP = 4500, HOLD = 9000;
 /** Rebuilt every 5 minutes even when the view does not change: « now » moves along the track. */
 const STALE = 300;
 /** Gap between two labels, and how far a label may pass the edge of the track. */
-const GAP = 6, EDGE = 10;
+/** A label may pass the track's ends by the half-width of the dot of now (7 px), no more: it keeps clear of the frame (3 November). */
+const GAP = 6, EDGE = 7;
 
 const tone = (i: FriseItem) => `--tone:var(--nw-${i.theme ?? (i.alert ? `level${i.alert}` : 'calm')})`;
 const stop = (e: Event) => e.stopPropagation();
@@ -109,7 +111,12 @@ export class HestiaFrise extends LitElement {
     const w = pins.map(p => p.offsetWidth), x = pins.map(p => Number(p.dataset.x) * width);
     x.forEach((v, i) => { x[i] = Math.max(v, w[i] / 2 - EDGE, i ? x[i - 1] + (w[i - 1] + w[i]) / 2 + GAP : -Infinity); });
     for (let i = x.length - 1; i >= 0; i--) x[i] = Math.min(x[i], i === x.length - 1 ? width - w[i] / 2 + EDGE : x[i + 1] - (w[i + 1] + w[i]) / 2 - GAP);
-    pins.forEach((p, i) => { p.style.left = `${Math.round(x[i])}px`; });
+    // The stem stays above the label's true time (« Maintenant » over the dot of now), off-centre if the label had to move, never past its rounded ends.
+    pins.forEach((p, i) => {
+      p.style.left = `${Math.round(x[i])}px`;
+      const shift = Number(p.dataset.x) * width - x[i], room = w[i] / 2 - 6;
+      p.style.setProperty('--sx', `${Math.round(Math.max(-room, Math.min(room, shift)))}px`);
+    });
     track.querySelectorAll<HTMLElement>('.seg').forEach(s => s.classList.toggle('tight', s.clientWidth < 28));
     const marks = [...this.renderRoot.querySelectorAll<HTMLElement>('.hours span')];
     marks.forEach(m => m.classList.remove('hide'));
@@ -123,10 +130,10 @@ export class HestiaFrise extends LitElement {
   }
 
   protected render() {
-    const { items, groups, segments, marks } = this.frise;
+    const { items, groups, segments, marks, band } = this.frise;
     if (!items.length && !segments.length) return nothing;
     const when = (i: FriseItem) => i.now || !i.clock ? i.label : `${i.label} · ${i.clock}`;
-    return html`<div class=${`panel${this.paused ? ' paused' : ''}`} @pointerenter=${this.pause} @pointerleave=${this.resume} @focusin=${this.pause} @focusout=${this.resume}>
+    return html`<div class=${`panel nw-glass${this.paused ? ' paused' : ''}`} @pointerenter=${this.pause} @pointerleave=${this.resume} @focusin=${this.pause} @focusout=${this.resume}>
       ${items.length ? html`<div class="head" aria-hidden="true">
         <div class="say">${items.map((i, n) => html`<div class=${`item${n === this.index ? ' on' : n === this.leaving ? ' off' : ''}${i.alert ? ' al' : ''}`}
           style=${`${tone(i)}${i.alert ? `;--al:var(--nw-level${i.alert})` : ''}`}>
@@ -134,105 +141,125 @@ export class HestiaFrise extends LitElement {
         ${items.length > 1 ? html`<div class="progress" style=${`--step:${this.step}ms`}>${items.map((_, n) => html`<i class=${n === this.index ? 'on' : n < this.index ? 'done' : ''}></i>`)}</div>` : nothing}
       </div>` : nothing}
       <div class=${`track${groups.length ? '' : ' bare'}`}>
-        <div class="chips">${groups.map(g => {
+        <div class="chips">${groups.map((g, k) => {
           // The whole label takes the colour of the point on show: its background, the rings of its icons, the icon in front.
+          // One icon per point, always in the same order: only the emphasis moves to the one on show (3 November); the count says how many share the time.
           const active = g.items.includes(this.index), lead = items[active ? this.index : g.items[0]];
+          const shown = g.items;
           return html`<button type="button" class=${`pin${active ? ' on' : ''}${g.alert ? ' al' : ''}`} data-x=${g.x}
-            style=${`left:${(g.x * 100).toFixed(2)}%;${tone(lead)}${g.alert ? `;--al:var(--nw-level${g.alert})` : ''}`}
+            style=${`left:${(g.x * 100).toFixed(2)}%;--k:${k};${tone(lead)}${g.alert ? `;--al:var(--nw-level${g.alert})` : ''}`}
             aria-label=${g.items.map(n => colon(when(items[n]), items[n].text)).join(t(' ; '))} @click=${() => this.pick(g)} @pointerdown=${stop}>
-            <span class="chip"><span class="stack">${g.items.map((n, j) => html`<span class=${`mini${n === this.index || (!active && !j) ? ' cur' : ''}`} style=${tone(items[n])}>
-              <ha-icon icon=${items[n].icon}></ha-icon></span>`)}</span><span class="clock">${g.clock}</span>${g.items.length > 1 ? html`<span class="count">${g.items.length}</span>` : nothing}</span>
+            <span class="chip">${shown.map(n => html`<ha-icon class=${active && g.items.length > 1 ? (n === this.index ? 'cur' : 'dim') : ''} icon=${items[n].icon}></ha-icon>`)}${g.clock === t('Maintenant') ? nothing : html`<span class="clock">${g.clock}</span>`}${g.items.length > 1 ? html`<span class="count">${g.items.length}</span>` : nothing}</span>
             <span class="stem"></span></button>`;
         })}</div>
-        <div class="lane">${segments.length ? segments.map(s => html`<span class=${`seg s-${s.kind}`} style=${`flex:${s.flex}`}><ha-icon icon=${s.icon}></ha-icon></span>`)
+        ${band ? html`<i class="vigil" style=${`width:${(band.to * 100).toFixed(2)}%;--al:var(--nw-level${band.level})`}></i>` : nothing}
+        <div class="lane">${segments.length ? segments.map((s, n) => html`<span class=${`seg s-${s.kind}`} style=${`flex:${s.flex};--n:${n}`}><ha-icon icon=${s.icon}></ha-icon></span>`)
           : html`<span class="seg s-cloud" style="flex:1"></span>`}</div>
         <span class="needle"></span>
+        ${(() => { const on = groups.find(g => g.items.includes(this.index));
+          // The label on show, away from now: a small dot where its stem meets the track, as the scales' value (3 November).
+          return on && on.x > 0 ? html`<i class="nw-dot mark" style=${`left:${(on.x * 100).toFixed(2)}%`}></i>` : nothing; })()}
       </div>
       ${segments.length ? html`<div class="hours" aria-hidden="true">${marks.map(m => html`<span class=${m.edge ?? ''} style=${`left:${(m.x * 100).toFixed(2)}%`}>${m.text}</span>`)}</div>` : nothing}
       <ul class="sr">${items.map(i => html`<li>${colon(when(i), i.text)}</li>`)}</ul>
     </div>`;
   }
 
-  static styles = css`
+  static styles = [shared, css`
     :host { display:block; min-width:0; color:var(--nw-fg); }
     ha-icon { display:flex; line-height:0; }
     button { font:inherit; color:inherit; }
     .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; margin:0; padding:0; }
-    /* Frosted glass: clear enough to see the animated sky through it, blurred enough to keep the text readable. Crisp 1 px outline. */
-    .panel { position:relative; padding:12px 16px; border-radius:var(--nw-radius); border:1px solid var(--nw-line);
-      background:var(--nw-glass-clear); backdrop-filter:var(--nw-frost); -webkit-backdrop-filter:var(--nw-frost); box-shadow:0 8px 24px rgb(15 25 45 / .08); }
+    /* Frosted glass: clear enough to see the animated sky through it, blurred enough to keep the text readable.
+       A crisp outline and no shadow around it: its edge never looks blurred (2 November). */
+    /* Measured on the maquette (3 November): the sentence 63 px high, labels 22 px under it and 10 px above the track,
+       the track 18 px high and 16 px inside the frame, the hours 6 px under it. */
+    /* The frame is the charter's glass (.nw-glass); only its padding here. */
+    .panel { position:relative; padding:0 0 11px; }
 
     /* The sentence: one point at a time, sliding up. */
-    .head { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+    .head { display:flex; align-items:center; gap:12px; padding:12px 14px 11px; }
     /* Clipped for the slide, so it starts 3 px further left: the outline of the badge stays whole. */
-    .say { position:relative; flex:1; min-width:0; height:38px; overflow:hidden; margin-left:-3px; }
-    .item { position:absolute; inset:0 0 0 3px; display:flex; gap:10px; align-items:center; opacity:0; translate:0 100%; transition:opacity .45s var(--nw-ease), translate .45s var(--nw-ease); }
+    .say { position:relative; flex:1; min-width:0; height:40px; overflow:hidden; margin-left:-3px; }
+    .item { position:absolute; inset:0 0 0 3px; display:flex; gap:12px; align-items:center; opacity:0; translate:0 100%; transition:opacity .45s var(--nw-ease), translate .45s var(--nw-ease); }
     .item.on { opacity:1; translate:0 0; } .item.off { opacity:0; translate:0 -100%; }
     .item > div { min-width:0; }
-    .when { font-size:var(--nw-fs-label); line-height:13px; letter-spacing:var(--nw-label-spacing); text-transform:uppercase; font-weight:700; white-space:nowrap;
-      color:color-mix(in oklab, var(--tone) var(--nw-ink), var(--nw-fg)); }
-    .x { font-size:var(--nw-fs-text); line-height:18px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .badge { display:grid; place-items:center; width:32px; height:32px; flex:none; border-radius:10px; background:color-mix(in srgb, var(--tone) 32%, var(--nw-bg)); }
+    /* The point on show (2 November): a large tinted icon, the time in small grey capitals, the sentence in bold. */
+    .when { font-size:11px; line-height:14px; letter-spacing:.08em; text-transform:uppercase; font-weight:650; white-space:nowrap; color:var(--nw-fg2); }
+    .x { font-size:15px; line-height:20px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .badge { display:grid; place-items:center; width:36px; height:36px; flex:none; border-radius:11px; background:color-mix(in oklab, var(--tone) 34%, transparent); }
     .badge ha-icon { --mdc-icon-size:18px; color:color-mix(in oklab, var(--tone) 40%, var(--nw-fg)); }
-    .item.al .badge { background:color-mix(in srgb, var(--al) 50%, var(--nw-bg)); box-shadow:0 0 0 1px color-mix(in oklab, var(--al) 70%, transparent); }
+    .item.al .badge { background:color-mix(in oklab, var(--al) 40%, transparent); }
     .item.al .badge ha-icon { color:color-mix(in oklab, var(--al) 30%, var(--nw-fg)); }
-    .item.al .when { color:color-mix(in oklab, var(--al) var(--nw-ink), var(--nw-fg)); }
     /* One bar per point: the one on show fills while it stays. */
     .progress { display:flex; gap:4px; flex:none; }
-    .progress i { position:relative; width:18px; height:3px; border-radius:2px; background:var(--nw-line); overflow:hidden; }
+    .progress i { position:relative; width:16px; height:3px; border-radius:2px; background:var(--nw-line); overflow:hidden; }
     .progress i.done { background:color-mix(in srgb, var(--nw-fg2) 60%, transparent); }
     .progress i.on::after { content:''; position:absolute; inset:0; background:var(--nw-fg2); transform-origin:left; animation:fill var(--step) linear forwards; }
     .paused .progress i.on::after { animation-play-state:paused; }
     @keyframes fill { from { transform:scaleX(0); } }
 
-    /* The track: labels above, the forecast sky as capsules, the needle of now on the left. */
-    .track { position:relative; height:62px; margin:0 4px; }
-    .track.bare { height:26px; }
-    .chips { position:absolute; inset:0 0 auto; height:40px; }
-    .pin { position:absolute; top:0; display:flex; flex-direction:column; align-items:center; translate:-50% 0; border:0; background:none; padding:0; cursor:pointer; }
+    /* The track (« météo incrustée », 2 November): labels raised above it on a long stem, the forecast sky inlaid as segments
+       with their pictogram, the dot of now on the left, the official vigilance as a hatched band over it until it ends. */
+    .track { position:relative; height:74px; margin:0 16px; }
+    .track.bare { height:26px; margin-top:8px; }
+    .chips { position:absolute; inset:0 0 auto; height:56px; z-index:1; }
+    .pin { position:absolute; top:22px; display:flex; flex-direction:column; align-items:center; translate:-50% 0; border:0; background:none; padding:0; cursor:pointer;
+      animation:pop .3s var(--nw-ease) both; animation-delay:calc(120ms + var(--k, 0) * 60ms); }
+    @keyframes pop { from { opacity:0; transform:translateY(6px) scale(.92); } }
     .pin:focus-visible { outline:none; } .pin:focus-visible .chip { outline:2px solid var(--nw-accent); outline-offset:2px; }
-    .chip { --chip:var(--nw-glass-strong); position:relative; display:flex; gap:5px; align-items:center; padding:3px 6px 3px 4px; border-radius:var(--nw-radius-pill);
-      white-space:nowrap; font-size:var(--nw-fs-small); line-height:16px; font-weight:600; font-variant-numeric:tabular-nums;
-      background:var(--chip); border:1px solid transparent; transition:background .35s, transform .35s var(--nw-ease), box-shadow .35s; }
-    /* The outline is drawn above the icons: the ring of the icon in front never eats into it. */
-    .chip::before { content:''; position:absolute; inset:-1px; z-index:2; border-radius:inherit; border:1px solid var(--edge, var(--nw-line)); pointer-events:none; }
-    .stem { width:1px; height:12px; background:var(--nw-line); }
-    .pin.on .chip { --chip:color-mix(in srgb, var(--tone) 40%, var(--nw-bg)); transform:translateY(-2px); --edge:transparent; box-shadow:0 6px 14px rgb(0 0 0 / .12); }
-    /* Stacked icons, all in the label's colour: each ringed with it to stand apart; the point on show is darker and comes forward. */
-    .stack { display:flex; }
-    .mini { position:relative; display:grid; place-items:center; width:20px; height:20px; border-radius:50%;
-      background:color-mix(in srgb, var(--nw-fg) 6%, var(--chip)); box-shadow:0 0 0 2px var(--chip); transition:transform .3s var(--nw-ease), background .3s; }
-    .mini + .mini { margin-left:-4px; }
-    .mini ha-icon { --mdc-icon-size:13px; color:color-mix(in oklab, var(--tone) 40%, var(--nw-fg)); }
-    .mini.cur { z-index:1; background:color-mix(in srgb, var(--tone) 70%, var(--nw-bg)); }
-    .pin.on .mini.cur { transform:scale(1.12); }
+    /* A label: one pill tinted with its point, its icons (two at most) plain, its time, how many share it. */
+    .chip { position:relative; display:flex; gap:4px; align-items:center; padding:3px 8px 3px 6px; border-radius:var(--nw-radius-pill);
+      white-space:nowrap; font-size:12px; line-height:16px; font-weight:650; font-variant-numeric:tabular-nums;
+      background:color-mix(in oklab, var(--tone) 30%, var(--nw-bg)); box-shadow:0 0 0 1px var(--nw-line);
+      transition:background .26s var(--nw-ease), transform .26s var(--nw-ease), box-shadow .26s var(--nw-ease); }
+    .chip ha-icon { --mdc-icon-size:14px; transition:opacity .26s, transform .26s var(--nw-ease); }
+    /* Several points in one label: the one on show, above in the sentence, is larger and lit; the others step back. */
+    .chip ha-icon.cur { --mdc-icon-size:17px; color:color-mix(in oklab, var(--tone) 35%, var(--nw-fg)); }
+    .chip ha-icon.dim { opacity:.45; }
+    /* The stem reaches the track from the label on show only; it grows with the label lifting, so they never part. */
+    /* The stem: hidden under the labels at rest; from the label on show it runs into the track. */
+    .stem { translate:var(--sx, 0) 0; width:1.5px; height:10px; background:color-mix(in oklab, var(--tone) 70%, var(--nw-fg)); opacity:0; transition:opacity .2s, height .26s var(--nw-ease), margin .26s var(--nw-ease); }
+    .pin.on .stem { opacity:1; height:14px; margin-top:-4px; }
+    .pin.on .chip { background:color-mix(in oklab, var(--tone) 55%, var(--nw-bg)); transform:translateY(-4px) scale(1.06);
+      box-shadow:0 0 0 1px var(--nw-line), 0 4px 10px -4px rgb(0 0 0 / .35); }
     .count { display:grid; place-items:center; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; border-radius:8px;
-      font-size:var(--nw-fs-label); font-weight:700; background:var(--nw-fg); color:var(--nw-bg); }
-    /* A label holding an alert: the charter's alert outline and halo (a fixed shadow whose opacity breathes). */
-    .pin.al .chip { --edge:color-mix(in oklab, var(--al) 70%, transparent); box-shadow:0 0 6px 0 color-mix(in oklab, var(--al) 32%, transparent); }
-    .pin.al .chip::after { content:''; position:absolute; inset:-1px; border-radius:inherit; pointer-events:none; opacity:0;
-      box-shadow:0 0 14px 2px color-mix(in oklab, var(--al) 55%, transparent); animation:nw-glow 5.2s ease-in-out infinite; animation-play-state:var(--nw-motion, running); }
-    .lane { position:absolute; left:0; right:0; top:40px; height:16px; display:flex; gap:2px; }
-    .track.bare .lane { top:5px; }
-    .seg { display:grid; place-items:center; min-width:0; height:100%; overflow:hidden; border-radius:5px; background:color-mix(in srgb, var(--tone) 80%, transparent); }
-    .seg:first-child { border-radius:8px 5px 5px 8px; } .seg:last-child { border-radius:5px 8px 8px 5px; } .seg:only-child { border-radius:8px; }
-    .seg ha-icon { --mdc-icon-size:11px; color:color-mix(in oklab, var(--tone) 30%, #1f2430); }
+      font-size:10px; font-weight:700; background:var(--nw-fg); color:var(--nw-bg); }
+    /* A label holding an alert: the alert's outline, no coloured halo (neutral shadows only, 2 November). */
+    /* A label holding an alert keeps the same neutral outline: its icon says it (as the maquette). */
+    .lane { position:absolute; left:0; right:0; top:56px; height:18px; display:flex; gap:3px; }
+    .track.bare .lane { top:4px; }
+    /* Each segment inlaid: a slight relief (light above, shade below), grown from now on arrival. */
+    .seg { display:grid; place-items:center; min-width:0; height:100%; overflow:hidden; border-radius:6px; transform-origin:left;
+      background:linear-gradient(180deg, color-mix(in oklab, var(--tone) 85%, #fff), color-mix(in oklab, var(--tone) 78%, transparent));
+      box-shadow:inset 0 1px 0 rgb(255 255 255 / .35), inset 0 -1px 0 rgb(0 0 0 / .08);
+      animation:grow .52s var(--nw-ease) both; animation-delay:calc(var(--n, 0) * 90ms); }
+    @keyframes grow { from { transform:scaleX(0); } }
+    .seg:first-child { border-radius:9px 6px 6px 9px; } .seg:last-child { border-radius:6px 9px 9px 6px; } .seg:only-child { border-radius:9px; }
+    .seg ha-icon { --mdc-icon-size:15px; color:rgb(20 26 45 / .72); }
+    .vigil { position:absolute; left:0; top:49px; height:4px; border-radius:3px; pointer-events:none;
+      background:repeating-linear-gradient(135deg, var(--al) 0 6px, color-mix(in oklab, var(--al) 55%, transparent) 6px 10px); }
     .seg.tight ha-icon { display:none; }
     .s-sun { --tone:var(--nw-heat); } .s-night { --tone:color-mix(in oklab, var(--nw-pressure) 70%, var(--nw-cold)); }
     .s-partly { --tone:color-mix(in oklab, var(--nw-cold) 60%, var(--nw-heat)); } .s-cloud { --tone:color-mix(in srgb, var(--nw-fg2) 35%, var(--nw-bg)); }
     .s-rain { --tone:var(--nw-rain); } .s-storm { --tone:var(--nw-pressure); } .s-snow { --tone:var(--nw-cold); } .s-wind { --tone:var(--nw-wind); }
     .s-hail { --tone:color-mix(in oklab, var(--nw-cold) 55%, var(--nw-pressure)); } .s-fog { --tone:color-mix(in srgb, var(--nw-fg2) 22%, var(--nw-bg)); }
     .compact .clock { display:none; }
-    .needle { position:absolute; left:0; top:34px; width:3px; height:28px; margin-left:-1.5px; border-radius:2px; background:var(--nw-fg); box-shadow:0 0 0 2px var(--nw-bg); }
-    .track.bare .needle { top:0; height:26px; }
-    .hours { position:relative; height:14px; margin:0 4px; font-size:var(--nw-fs-label); line-height:14px; color:var(--nw-fg2); letter-spacing:.04em; font-variant-numeric:tabular-nums; }
+    /* Now: a dot at the start of the track, with a ring that widens slowly. */
+    .needle { position:absolute; left:0; top:58px; z-index:2; width:14px; height:14px; margin-left:-7px; border-radius:50%; background:var(--nw-fg); box-shadow:0 0 0 3px var(--nw-bg); }
+    .needle::after { content:''; position:absolute; inset:-3px; border-radius:50%; border:2px solid var(--nw-fg);
+      animation:ripple 2.4s var(--nw-ease) infinite; animation-play-state:var(--nw-motion, running); }
+    /* The value's dot is the charter's (.nw-dot): only where it sits on this track. */
+    .mark { top:61px; }
+    @keyframes ripple { from { transform:scale(.6); opacity:.9; } to { transform:scale(2.2); opacity:0; } }
+    .track.bare .needle { top:6px; }
+    .hours { position:relative; height:16px; margin:6px 16px 0; font-size:11px; line-height:16px; color:var(--nw-fg2); font-variant-numeric:tabular-nums; }
     .hours span { position:absolute; translate:-50% 0; white-space:nowrap; }
     .hours span.first { translate:0 0; } .hours span.last { translate:-100% 0; } .hours span.hide { visibility:hidden; }
-    @keyframes nw-glow { 50% { opacity:1; } }
     @media (prefers-reduced-motion:reduce) {
-      .item, .chip, .mini { transition:none; } .progress i.on::after { animation:none; } .pin.al .chip::after { animation:none; }
+      .item, .chip, .stem { transition:none; } .progress i.on::after, .pin, .seg, .needle::after { animation:none; }
     }
-  `;
+  `];
 }
 
 declare global { interface HTMLElementTagNameMap { 'hestia-frise': HestiaFrise } }

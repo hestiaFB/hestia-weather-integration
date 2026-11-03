@@ -2,15 +2,21 @@ import { css, html, LitElement, nothing } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { define } from './define';
 import type { AlertPoint, TickerPoint } from '../view';
-import { bubbles } from './charter';
-import { alertBubble, bubble } from './parts';
+import { keyed } from 'lit/directives/keyed.js';
 import { colon } from '../i18n';
+import { shared } from './charter';
 
 /** A point of the scrolling bubble: a brief point, or an alert that had no room of its own. */
 export type TickerItem = TickerPoint | (AlertPoint & { alert: true });
 
+/** Every point stays 5 s. */
+const STEP = 5000;
+/** The point's colour: an alert takes its level's, a brief point its theme's. */
+const tone = (p: TickerItem) => `--tone:var(--nw-${'official' in p || ('alert' in p && p.alert) ? `level${Math.min(3, Math.max(1, p.level))}` : p.theme ?? (p.level >= 2 ? `level${Math.min(3, p.level)}` : 'calm')})`;
+
 /**
- * Shows the points one at a time, every 5 s. Hovering or focusing the card pauses it.
+ * Shows the points one at a time, every 5 s, as the timeline's sentence (3 November, as the maquette's folded tile):
+ * a large tinted icon, the label in small grey capitals, the sentence in bold, one bar per point; no halo. Hovering or focusing the card pauses it.
  * When the list changes (the tile unfolds), the bubble on screen stays if it is still in the list: nothing moves.
  */
 @define('hestia-ticker')
@@ -25,7 +31,7 @@ export class HestiaTicker extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     // Home Assistant may move the card mid-fade: a cancelled swap must not leave the bubble transparent.
-    this.leaving = false; this.timer = setInterval(() => this.next(), 5000);
+    this.leaving = false; this.timer = setInterval(() => this.next(), STEP);
   }
   disconnectedCallback() { super.disconnectedCallback(); clearInterval(this.timer); clearTimeout(this.swap); }
 
@@ -50,13 +56,33 @@ export class HestiaTicker extends LitElement {
     const point = this.points[this.index % Math.max(1, this.points.length)];
     this.shown = point?.text;
     if (!point) return nothing;
-    const out = this.leaving ? 'out' : '';
-    return html`<div aria-hidden="true">${'official' in point ? alertBubble(point, out) : bubble(point, out)}</div>
+    const n = this.index % this.points.length;
+    return html`<div class="say nw-glass" aria-hidden="true" style=${tone(point)}>
+      ${keyed(n, html`<div class=${`item${this.leaving ? ' out' : ''}`}><span class="badge"><ha-icon icon=${point.icon}></ha-icon></span>
+        <div class="txt">${point.label ? html`<div class="when">${point.label}</div>` : nothing}<div class="x" title=${point.text}>${point.text}</div></div></div>`)}
+      ${this.points.length > 1 ? html`<span class="progress" style=${`--step:${STEP}ms`}>${this.points.map((_, i) => i === n
+        ? keyed(`on-${n}`, html`<i class="on"></i>`) : html`<i class=${i < n ? 'done' : ''}></i>`)}</span>` : nothing}</div>
       <ul class="sr">${this.points.map(p => html`<li>${p.label ? colon(p.label, p.text) : p.text}</li>`)}</ul>`;
   }
-  static styles = [bubbles, css`
-    :host { display:block; min-width:0; }
+  static styles = [shared, css`
+    :host { display:block; min-width:0; color:var(--nw-fg); }
     ha-icon { display:flex; line-height:0; }
+    /* The timeline's frame is the charter's glass (.nw-glass): no shadow nor halo. */
+    .say { display:flex; align-items:center; gap:12px; padding:12px 14px; box-sizing:border-box; }
+    .item { flex:1; min-width:0; display:flex; align-items:center; gap:12px; animation:swap .28s var(--nw-ease) both; transition:opacity .3s, transform .3s; }
+    .item.out { opacity:0; transform:translateY(-6px); }
+    @keyframes swap { from { opacity:0; transform:translateY(8px); } }
+    .badge { display:grid; place-items:center; width:36px; height:36px; flex:none; border-radius:11px; background:color-mix(in oklab, var(--tone) 34%, transparent); }
+    .badge ha-icon { --mdc-icon-size:18px; color:color-mix(in oklab, var(--tone) 40%, var(--nw-fg)); }
+    .txt { min-width:0; }
+    .when { font-size:11px; line-height:14px; letter-spacing:.08em; text-transform:uppercase; font-weight:650; white-space:nowrap; color:var(--nw-fg2); }
+    .x { font-size:15px; line-height:20px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .progress { display:flex; gap:4px; flex:none; align-self:flex-start; margin-top:6px; }
+    .progress i { position:relative; width:16px; height:3px; border-radius:2px; background:var(--nw-line); overflow:hidden; }
+    .progress i.done { background:color-mix(in srgb, var(--nw-fg2) 60%, transparent); }
+    .progress i.on::after { content:''; position:absolute; inset:0; background:var(--nw-fg2); transform-origin:left; animation:fill var(--step) linear forwards; animation-play-state:var(--nw-motion, running); }
+    @keyframes fill { from { transform:scaleX(0); } }
+    @media (prefers-reduced-motion:reduce) { .item { animation:none; transition:none; } .progress i.on::after { animation:none; } }
     .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; margin:0; padding:0; }
   `];
 }

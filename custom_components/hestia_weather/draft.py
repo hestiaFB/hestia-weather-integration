@@ -284,6 +284,11 @@ class Draft(_SourceSteps):
                 "better": self._entity(better) if better else None}
 
     def view(self) -> dict[str, Any]:
+        # Each station field reads the same sensors: worked out once for the whole tab (detection.batch).
+        with detection.batch():
+            return self._view()
+
+    def _view(self) -> dict[str, Any]:
         return {"title": self._title(), "extensions": inventory(self.hass, self.entry.options if self.entry else {}),
                 # The same, as this draft would save them: the « Extensions » step's switches follow it.
                 "in_draft": inventory(self.hass, self.sources),

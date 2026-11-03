@@ -65,8 +65,11 @@ class PanelTests(unittest.IsolatedAsyncioTestCase):
         f = facts(self.hass, entry)
         self.assertEqual((f.forecast_hours, f.forecast_days, f.history_sources), (3, 2, 2))
         overview, _ = place(self.hass, entry)
-        self.assertEqual(len(overview["extensions"]), 9)
-        self.assertFalse(any(e["configured"] for e in overview["extensions"]))  # saved choices only
+        # One line per extension of the catalogue, then Open-Meteo, the online service (3.1.0b3): counted, never by hand.
+        from custom_components.hestia_weather.extensions import CATALOGUE
+        self.assertEqual([e["id"] for e in overview["extensions"]], [c[0] for c in CATALOGUE] + ["open_meteo"])
+        # Saved choices only; Open-Meteo is asked for the pressure unless turned off, so it is on by default.
+        self.assertFalse(any(e["configured"] for e in overview["extensions"] if not e.get("online")))
         self.assertEqual(overview["health"]["technical"]["forecast"]["received"], "il y a 4 min")
         coordinator.forecast_at = None
         pending = facts(self.hass, entry)

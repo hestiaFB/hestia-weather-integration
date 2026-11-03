@@ -4,7 +4,7 @@ import { t } from '../i18n';
 import type { WeatherView } from '../view';
 import type { BannerBlock } from '../types';
 import type { Sections } from '../config';
-import { renderAir } from './air';
+import { renderAir, renderAirDays, type AirDays } from './air';
 import { renderForecasts } from './forecasts';
 import { bulletinBlock, renderHero } from './hero';
 import { forecastStrip, frise, moments } from './tile';
@@ -23,15 +23,19 @@ export interface FullOptions {
   tab: 'hours' | 'days'; onTab: (tab: 'hours' | 'days') => void;
   /** Where the banner shows the time, if it does. */
   clock?: 'none' | 'left' | 'right';
+  /** The glass frame behind « En ce moment ». */
+  nowFrame?: 'opaque' | 'clear' | 'none';
+  /** The day of the air and pollens panels in « Aujourd'hui ». */
+  air: AirDays;
 }
 
 function section(id: SectionId, title: string, subtitle: string, o: FullOptions, body: () => TemplateResult): TemplateResult {
   const folded = o.folded[id];
   const toggle = (e: Event) => { if (e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); o.onFold(id); };
   return html`<section class=${`fm-section${folded ? ' folded' : ''}`} aria-labelledby=${`${o.uid}-${id}`}>
-    <header class="fm-head" role="button" tabindex="0" aria-expanded=${!folded} @click=${toggle} @keydown=${toggle}>
-      <h2 id=${`${o.uid}-${id}`}>${title}</h2><span>${subtitle}</span>
-      <span class="fm-fold" aria-hidden="true"><ha-icon icon="mdi:chevron-down"></ha-icon></span></header>
+    <header class="fm-head nw-section-head nw-fold-head" role="button" tabindex="0" aria-expanded=${!folded} @click=${toggle} @keydown=${toggle}>
+      <h2 id=${`${o.uid}-${id}`}>${title}</h2><span class="nw-sum">${subtitle}</span>
+      <span class="nw-chevron" aria-hidden="true"><i class="nw-chev"></i></span></header>
     ${folded ? nothing : html`<div class="fm-body">${body()}</div>`}
   </section>`;
 }
@@ -42,11 +46,12 @@ export function renderFull(v: WeatherView, o: FullOptions): TemplateResult {
   const draw = (b: BannerBlock) => b === 'bulletin' ? html`<div class="hero-bulletin">${bulletinBlock(v)}</div>` : b === 'events' ? frise(v)
     : b === 'moments' ? moments(v) : forecastStrip(v, o.tab, o.onTab);
   return html`<div class="nw-full">
-    ${hero ? renderHero(v, o.sky, o.uid, banner, draw, o.clock) : nothing}
+    ${hero ? renderHero(v, o.sky, o.uid, banner, draw, o.clock, o.nowFrame) : nothing}
     ${today.length ? section('today', t('Aujourd’hui'), v.comfort ? t('Mesures et ressenti') : t('Conditions actuelles'), o,
-      () => renderToday(v, o.uid, o.station, renderAir(v.air.today), today)) : nothing}
+      () => renderToday(v, o.uid, o.station, renderAirDays(v.air, o.air), today)) : nothing}
     ${forecasts.length ? section('predictions', t('Prévisions'), v.forecastSource, o,
-      () => renderForecasts(v, o.entity, o.uid, renderAir(v.air.tomorrow), forecasts)) : nothing}
+      // Tomorrow's air is a tab of « Aujourd'hui » when it shows there; « Prévisions » keeps it otherwise.
+      () => renderForecasts(v, o.entity, o.uid, today.includes('air') ? nothing : renderAir(v.air.tomorrow), forecasts)) : nothing}
   </div>`;
 }
 
@@ -57,11 +62,7 @@ export const fullStyles = css`
   .fm-head { display:flex; align-items:center; gap:10px; min-width:0; }
   .fm-section > .fm-head { cursor:pointer; user-select:none; -webkit-user-select:none; border-radius:var(--nw-radius); }
   .fm-head:focus-visible { outline:2px solid var(--nw-accent); outline-offset:4px; }
-  .fm-head h2 { margin:0; font-size:var(--nw-fs-title); font-weight:750; letter-spacing:-.2px; }
-  .fm-head > span:not(.fm-fold):not(.nw-chip) { font-size:var(--nw-fs-small); color:var(--nw-fg2); flex:1; min-width:0; }
-  .fm-fold { display:grid; place-items:center; width:30px; height:30px; flex:none; border-radius:var(--nw-radius-pill); border:1px solid var(--nw-line); background:var(--nw-bg); color:var(--nw-fg2); }
-  .fm-fold ha-icon { --mdc-icon-size:20px; transition:transform .3s; }
-  .folded .fm-fold ha-icon { transform:rotate(-90deg); }
+  .fm-head > span:not(.nw-chevron):not(.nw-chip):not(.nw-sum) { font-size:var(--nw-fs-small); color:var(--nw-fg2); flex:1; min-width:0; }
   .fm-body { display:grid; gap:16px; margin-top:16px; }
   @container (max-width:560px) { .fm-section { padding:16px 14px 18px; } }
 `;

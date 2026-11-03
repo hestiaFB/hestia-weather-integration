@@ -54,12 +54,12 @@ export function windTip(speed: string | number, bearing?: number, gust?: string 
 }
 
 /** An arrow pointing where the wind goes (the bearing is where it comes from). */
-export const windArrow = (bearing: number) => svg`<svg viewBox="0 0 10 10" aria-hidden="true" style=${`transform:rotate(${Math.round(bearing + 180)}deg)`}><path d="M5 0 9 10 5 7.5 1 10Z"/></svg>`;
+export const windArrow = (bearing: number) => html`<i class="nw-trend wind" aria-hidden="true" style=${`--r:${Math.round(bearing + 180)}deg`}></i>`;
 
 export interface Explanation { title: string; text: unknown; example?: unknown }
 /** The « i » button and its explanation bubble. `id` must be unique in the card. */
 export function info(id: string, e: Explanation): TemplateResult {
-  return html`<button class="nw-info" type="button" popovertarget=${id} aria-label=${t('Qu’est-ce que : {title} ?', { title: e.title })} @click=${stop}><ha-icon icon="mdi:information-variant"></ha-icon></button>
+  return html`<button class="nw-info" type="button" popovertarget=${id} aria-label=${t('Qu’est-ce que : {title} ?', { title: e.title })} @click=${stop}></button>
     <div class="nw-pop" id=${id} popover style=${`--nw-example-word:"${t('Exemple')}"`} @toggle=${place} @click=${stop}><b>${e.title}</b>${e.text}${e.example ? html`<div class="ex">${e.example}</div>` : nothing}</div>`;
 }
 const stop = (event: Event) => event.stopPropagation();
@@ -74,10 +74,15 @@ function place(event: Event) {
   pop.style.left = `${Math.max(8, Math.min(r.left - 12, innerWidth - pop.offsetWidth - 8))}px`;
 }
 
-/** Panel header: tinted icon, title (with its « i » if any), source pill. */
-export function panelHead(icon: string, theme: string, title: string, source: string, explain?: TemplateResult): TemplateResult {
+/** The source of a panel, behind a small « i » next to its title (2 November: no more source pill, no sources line at the foot). */
+export const sourceInfo = (key: string, title: string, source: string) =>
+  info(`src-${key.normalize('NFD').replace(/[^\w]+/g, '-').toLowerCase()}`, { title, text: t('Source : {source}', { source }) });
+
+/** Panel header: tinted icon, title and its « i » (the panel's own explanation, which then gives the source, or the source alone),
+ *  then `end` on the right (the today/tomorrow tabs). `key` tells apart two panels of the same title. */
+export function panelHead(icon: string, theme: string, title: string, source: string, explain?: TemplateResult, o: { key?: string; end?: unknown; aside?: string } = {}): TemplateResult {
   return html`<header class="nw-panel-head"><span class="nw-panel-icon" style=${tint(theme)}><ha-icon icon=${icon}></ha-icon></span>
-    <h3><span>${title}</span>${explain ?? nothing}</h3>${badge(source)}</header>`;
+    <h3><span>${title}</span>${explain ?? (source ? sourceInfo(o.key ?? title, title, source) : nothing)}</h3>${o.aside ? html`<span class="aside">${o.aside}</span>` : nothing}${o.end ?? nothing}</header>`;
 }
 
 /** Legend entry: a line, a square or a dashed line in a colour. */

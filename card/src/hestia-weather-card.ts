@@ -3,7 +3,7 @@ import { property, state } from 'lit/decorators.js';
 import { define } from './ui/define';
 import { cardBlocks, cleanConfig, sections } from './config';
 import { displayed } from './display';
-import { bubbles, pieces, tokens } from './ui/charter';
+import { bubbles, pieces, tokens, shared } from './ui/charter';
 import { DEFAULT_BLOCKS, renderTile, tileStyles, type PressTarget } from './views/tile';
 import { alertItems, compactStyles, renderAlert, renderMini } from './views/compact';
 import { renderSingle, singleStyles, type SingleFormat } from './views/single';
@@ -13,6 +13,8 @@ import { todayStyles } from './views/today';
 import { forecastStyles } from './views/forecasts';
 import { airStyles } from './views/air';
 import { lightningStyles } from './views/lightning';
+import { traitStyles } from './ui/trait';
+import { watchOffscreen } from './ui/offscreen';
 import './ui/weather-sky';
 import './editor/hestia-weather-card-editor';
 import { VIEW_VERSION, type ViewMessage, type WeatherView } from './view';
@@ -23,6 +25,18 @@ const HOLD_MS = 500;
 /** Phones and tablets: unless set otherwise, the tile's sky is lightened (fewer drops, clouds and leaves); its drawing is scaled down there anyway. */
 const LIGHT_SKY = matchMedia('(pointer: coarse)');
 let instances = 0;
+// Manrope, the cards' font (the « Trait » style), declared once in the page from the integration's files, as the hub does;
+// its light weights, for the large thin figures, from the variable font.
+if (!document.getElementById('hestia-hub-fonts')) {
+  const style = document.createElement('style'); style.id = 'hestia-hub-fonts';
+  style.textContent = [400, 500, 600, 700].map((w) => `@font-face{font-family:Manrope;src:url('/hestia_weather-assets/manrope-${w}.ttf');font-weight:${w};font-display:swap}`).join('');
+  document.head.append(style);
+}
+if (!document.getElementById('hestia-light-fonts')) {
+  const style = document.createElement('style'); style.id = 'hestia-light-fonts';
+  style.textContent = "@font-face{font-family:Manrope;src:url('/hestia_weather-assets/manrope-variable.ttf') format('truetype');font-weight:200 300;font-display:swap}";
+  document.head.append(style);
+}
 
 /** Why there is no weather to show, and what to do about it. Written in French, shown through t(). */
 type Problem = 'missing' | 'not_configured' | 'choose_entry' | 'not_found' | 'version' | 'error';
@@ -61,6 +75,8 @@ export class HestiaWeatherCard extends LitElement {
   /** The full card is shown over the page, after a long press on the tile. */
   @state() private dialogOpen = false;
   @state() private folded: Record<SectionId, boolean> = { today: false, predictions: false };
+  /** The air and pollens panels show tomorrow (a tap on their tab). */
+  @state() private airTomorrow: Record<'air' | 'pollen', boolean> = { air: false, pollen: false };
   private readonly uid = `nw${++instances}`;
   private subscription?: Promise<() => Promise<void>>;
   private subscribedTo?: string;
@@ -120,7 +136,9 @@ export class HestiaWeatherCard extends LitElement {
     return config.format === 'intermediate';
   }
 
-  public connectedCallback(): void { super.connectedCallback(); this.picker = this.inPicker(); this.subscribe(); }
+  public connectedCallback(): void { super.connectedCallback(); this.picker = this.inPicker(); this.subscribe(); this.unwatch = watchOffscreen(this); }
+  /** Stops watching whether the card is in view (its animations pause out of view). */
+  private unwatch?: () => void;
   /** In the « Add card » window Home Assistant flags nothing: the card finds the window among its ancestors. */
   private picker = false;
   private inPicker(): boolean {
@@ -130,7 +148,7 @@ export class HestiaWeatherCard extends LitElement {
   }
   /** Being edited or chosen: the alert card shows what it would hide. */
   private get editing(): boolean { return this.editMode || this.preview || this.picker; }
-  public disconnectedCallback(): void { super.disconnectedCallback(); this.cancelPress(); this.unsubscribe(); }
+  public disconnectedCallback(): void { super.disconnectedCallback(); this.unwatch?.(); this.cancelPress(); this.unsubscribe(); }
   /** The language this card was last drawn in: Home Assistant's changes, the card redraws in it. */
   private language?: string;
   protected shouldUpdate(changed: PropertyValues): boolean {
@@ -202,8 +220,9 @@ export class HestiaWeatherCard extends LitElement {
     const sky = html`<hestia-weather-sky .condition=${view.now.condition} .phase=${view.now.phase} .animated=${config.weather_animations !== false}
       .quality=${config.weather_animation_quality ?? (this.tile && LIGHT_SKY.matches ? 'low' : 'standard')} .wind=${view.now.wind ?? 0} .gust=${gust} .detail=${view.now.detail ?? ''} .season=${view.season.info.season}></hestia-weather-sky>`;
     const full = () => renderFull(view, { sky, uid: this.uid, entity: view.weatherEntity, station: view.station,
-      sections: sections(config), tab: this.tab, onTab: this.setTab, clock: config.clock,
-      folded: this.folded, onFold: id => { this.folded = { ...this.folded, [id]: !this.folded[id] }; } });
+      sections: sections(config), tab: this.tab, onTab: this.setTab, clock: config.clock, nowFrame: config.now_frame,
+      folded: this.folded, onFold: id => { this.folded = { ...this.folded, [id]: !this.folded[id] }; },
+      air: { tomorrow: this.airTomorrow, onDay: (kind, tomorrow) => { this.airTomorrow = { ...this.airTomorrow, [kind]: tomorrow }; } } });
     const title = `${t('Météo')}${view.location ? ` · ${view.location}` : ''}`;
     const dialog = () => this.dialogOpen ? html`<dialog class="nw-dialog" aria-label=${title} @close=${() => { this.dialogOpen = false; }} @click=${this.openEntity} @keydown=${this.entityKey}>
         <header><b>${title}</b><button type="button" @click=${this.closeDialog}>${t('Fermer')}</button></header>${full()}</dialog>` : nothing;
@@ -321,7 +340,7 @@ export class HestiaWeatherCard extends LitElement {
     e.preventDefault(); this.openEntity(e);
   };
 
-  static styles = [tokens, pieces, bubbles, tileStyles, compactStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, singleStyles, lightningStyles, css`
+  static styles = [tokens, shared, pieces, bubbles, tileStyles, compactStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, singleStyles, lightningStyles, traitStyles, css`
     :host { display:block; }
     :host([hidden]) { display:none; }
     /* Animations switched off: the alert halo stays still too, in the tile, the window and the scrolling bubble. */

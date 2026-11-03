@@ -1,6 +1,7 @@
 // The tile: on the dashboard it is one band; by default a tap unfolds it in place (the blocks chosen: bulletin, events, moments, forecasts)
 // and a long press opens the full card. Each press can be set to do something else.
 import { css, html, nothing, type TemplateResult } from 'lit';
+import { lecture } from '../ui/hestia-lecture';
 import { hourMark, t } from '../i18n';
 import type { BulletinPeriod, WeatherView } from '../view';
 import type { TileBlock } from '../types';
@@ -72,17 +73,23 @@ export function todayRange(v: WeatherView): TemplateResult | typeof nothing {
   const d = v.days.find(day => day.today);
   if (!d || (d.low === undefined && d.high === undefined)) return nothing;
   const tip = t('Prévu aujourd’hui : {range}', { range: [d.low === undefined ? '' : t('mini {t} °C', { t: d.low }), d.high === undefined ? '' : t('maxi {t} °C', { t: d.high })].filter(Boolean).join(', ') });
-  return html`<span class="range" title=${tip} aria-label=${tip}>${d.low === undefined ? nothing : html`<span>↓ ${d.low}°</span>`}${d.high === undefined ? nothing : html`<span>↑ ${d.high}°</span>`}</span>`;
+  return html`<span class="range" title=${tip} aria-label=${tip}>${d.low === undefined || d.high === undefined ? html`<span>${d.low ?? d.high}°</span>` : html`<span>${d.low} – ${d.high}°</span>`}</span>`;
 }
 
 /** « En ce moment »: condition, temperature and today's low and high, then the source. Shared by the tile and the banner. */
-export function nowBlock(v: WeatherView, kicker: boolean, extra: unknown = nothing, head: unknown = nothing): TemplateResult {
+export function nowBlock(v: WeatherView, kicker: boolean, extra: unknown = nothing, head: unknown = nothing, frame: 'opaque' | 'clear' | 'none' = 'opaque'): TemplateResult {
   const n = v.now;
-  return html`<div class="nw-now">${head}${kicker ? label(t('En ce moment')) : nothing}
+  // The banner's « En ce moment » sits in the charter's glass frame over the sky (no shadow), its temperature the charter's reading
+  // (hestia-lecture, the same as Hestia Confort's): the low and high centred under the figures. The tile keeps its own small line.
+  const d = v.days.find(day => day.today);
+  const range = (x?: number) => x === undefined ? undefined : `${x}`;
+  return html`<div class=${`nw-now${kicker && frame !== 'none' ? ` nw-glass${frame === 'clear' ? '' : ' nw-glass-solid'}` : ''}`}>${head}${kicker ? label(t('En ce moment')) : nothing}
     <span class="cond" data-entity=${n.conditionEntity ?? nothing} title=${n.source}><ha-icon icon=${n.icon}></ha-icon>${n.label}</span>
     ${n.temperature === undefined ? html`<span class="cond">${t('Température indisponible')}</span>`
-      : html`<span class="temp" data-entity=${n.temperatureEntity ?? nothing} aria-label=${t('{source} : {t} degrés Celsius', { source: n.temperatureSource, t: nf(n.temperature) })}>${nf(n.temperature)}<small>°C</small></span>`}
-    ${todayRange(v)}${extra}<span class="nw-badge">${n.temperatureSource}</span></div>`;
+      : kicker ? html`<div data-entity=${n.temperatureEntity ?? nothing} title=${n.temperatureSource}>${lecture({ value: nf(n.temperature), unit: '°C', low: range(d?.low), high: range(d?.high),
+          label: t('{source} : {t} degrés Celsius', { source: n.temperatureSource, t: nf(n.temperature) }), more: extra === nothing ? undefined : extra })}</div>`
+      : html`<span class="temp" data-entity=${n.temperatureEntity ?? nothing} title=${n.temperatureSource} aria-label=${t('{source} : {t} degrés Celsius', { source: n.temperatureSource, t: nf(n.temperature) })}>${nf(n.temperature)}<small>°C</small></span>`}
+    ${kicker ? nothing : todayRange(v)}${kicker && n.temperature !== undefined ? nothing : extra}</div>`;
 }
 
 /** « Événements »: the timeline of the coming hours, with the points of now and of the next hours over the forecast sky. Shared with the banner. */

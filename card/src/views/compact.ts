@@ -43,7 +43,7 @@ export function renderForecastCard(v: WeatherView, tab: 'hours' | 'days', onTab:
   const hasHours = blocks.includes('hours') && v.hours.some(h => h.temperature !== undefined), hasDays = blocks.includes('days') && v.days.length > 0;
   const shown = !hasHours ? 'days' : !hasDays ? 'hours' : tab;
   const select = (t: 'hours' | 'days') => (e: Event) => { e.stopPropagation(); onTab(t); };
-  const body = !hasHours && !hasDays ? nothing : shown === 'hours' ? hoursChart(v.hours, v.provider, entity, uid) : week(v.days, v.provider, entity);
+  const body = !hasHours && !hasDays ? nothing : shown === 'hours' ? hoursChart(v.hours, v.provider, entity, uid) : week(v.days, v.provider, entity, v.hours, v.now.temperature);
   return html`<div class="nw-forecastcard">
     <div class="fcard-head"><span class="fcard-title"><b>${t('Prévisions')}</b>${v.location ? html`<span>${v.location}</span>` : nothing}</span>
       ${hasHours && hasDays ? html`<span class="seg" role="group" aria-label=${t('Prévisions affichées')}>
@@ -104,7 +104,7 @@ export function pressureComing(v: WeatherView, alone = false): TemplateResult | 
   if (!a && !alone) return nothing;
   const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${nf(Math.abs(n))} hPa`;
   const coming = !a ? html`<p class="nw-empty">${t('Votre fournisseur météo ne prévoit pas la pression.')}</p>`
-    : html`<div class="nw-chips">${chip({ theme: Math.abs(a.change) >= 4 ? 'pressure' : 'calm', icon: a.change <= -1 ? 'mdi:trending-down' : a.change >= 1 ? 'mdi:trending-up' : 'mdi:trending-neutral',
+    : html`<div class="nw-chips">${chip({ theme: Math.abs(a.change) >= 4 ? 'pressure' : 'calm', icon: 'mdi:gauge',
           value: Math.abs(a.change) < 1 ? undefined : signed(a.change), label: Math.abs(a.change) < 1 ? t('Pression stable sur 6 h') : t('sur 6 h') })}
         ${chip({ theme: 'pressure', icon: 'mdi:gauge', value: `${nf(a.last, 0)} hPa`, label: t('vers {hour}', { hour: a.hour }) })}</div>`;
   return html`<div class="rain-ahead">${label(t('À venir'))}${coming}</div>`;

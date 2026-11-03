@@ -41,11 +41,15 @@ describe('The banner’s timeline', () => {
     showers[3].icon = 'mdi:weather-night-partly-cloudy';
     expect(buildFrise([], [], showers, NOW).segments.map(s => [s.kind, s.flex / 3600])).toEqual([['rain', 2], ['partly', 1], ['partly', 1]]);
   });
-  it('starts the track now, and writes noon, midnight and the six-hour marks under it', () => {
+  it('starts the track now, and writes the hours every three hours from now under it (2 November)', () => {
     const late = [...Array(12)].map((_, i) => slot(i, 'cloudy'));
-    expect(buildFrise([], [], hours, NOW).marks.map(m => m.text)).toEqual(['Maintenant', '18 h', '23 h']);
-    expect(buildFrise([], [], late, NOW).marks.map(m => m.text)).toEqual(['Maintenant', '18 h', 'minuit', '5 h']);
+    expect(buildFrise([], [], hours, NOW).marks.map(m => m.text)).toEqual(['Maintenant', '20 h']);
+    expect(buildFrise([], [], late, NOW).marks.map(m => m.text)).toEqual(['Maintenant', '20 h', '23 h', '2 h']);
     const started = buildFrise([], [], hours, NOW + 1800).segments;
+    // The official vigilance holds for the day: its band runs to midnight, or to the end of the track.
+    const vigilance = { level: 1 as const, text: 'Vent violent', icon: 'mdi:weather-windy', source: 'Météo-France', official: true };
+    expect(buildFrise([], [vigilance], late, NOW).band).toEqual({ to: expect.closeTo(7 / 12, 1), level: 1 });
+    expect(buildFrise([], [], late, NOW).band).toBeUndefined();
     expect(started[0].flex).toBe(1800 + 3600);
   });
   it('takes an undated point, from an older integration, as a point of now', () => {

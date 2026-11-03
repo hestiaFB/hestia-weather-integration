@@ -10,7 +10,7 @@ import { chip, panelHead } from '../ui/parts';
 const SETTINGS = '/config/integrations/integration/hestia_weather';
 import { airPanel } from './air';
 import { pressureComing, rainComing, renderForecastCard, stormComing, windComing } from './compact';
-import { comfortPanel, pressurePanel, rainPanel, windPanel } from './today';
+import { around, comfortPanel, leftExtras, pressurePanel, rainPanel, windPanel } from './today';
 import { lightningPanel } from './lightning';
 
 export type SingleFormat = 'comfort' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast';
@@ -37,8 +37,10 @@ export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardB
   let body: TemplateResult;
   if (!blocks.length) body = empty(t('Rien à afficher : cochez au moins un élément dans les réglages de la carte.'));
   else if (format === 'comfort') {
-    const extras = parts.has('extras') && v.extras.length ? html`<div class="nw-chips extras">${v.extras.map(chip)}</div>` : nothing;
-    body = v.comfort ? comfortPanel(v.comfort, o.uid, o.station, parts, extras) : empty(t('Ressenti indisponible pour le moment.'));
+    // The tiles take in humidity, sun and dew point when they show; only the rest stays in chips.
+    const left = parts.has('factors') ? leftExtras(v.extras) : v.extras;
+    const extras = parts.has('extras') && left.length ? html`<div class="nw-chips extras">${left.map(chip)}</div>` : nothing;
+    body = v.comfort ? comfortPanel(v.comfort, o.uid, o.station, around(v), parts, extras) : empty(t('Ressenti indisponible pour le moment.'));
   } else if (format === 'rain') {
     const lead = parts.has('ahead') ? rainComing(v) : nothing;
     // Without a rain gauge nor a bulletin amount, the rain to come still has its panel.
@@ -61,7 +63,7 @@ export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardB
           <a class="second" href=${SETTINGS}>${t('Réglages de Hestia Weather')}</a></div></section>`;
   else {
     const panels = airPanels(v, blocks);
-    body = panels.length ? html`<div class="panels-two">${panels.map(airPanel)}</div>` : empty(t('Air et pollens indisponibles pour le moment.'));
+    body = panels.length ? html`<div class="panels-two">${panels.map(p => airPanel(p))}</div>` : empty(t('Air et pollens indisponibles pour le moment.'));
   }
   return html`<div class=${`nw-single ${format}`}>${body}</div>`;
 }

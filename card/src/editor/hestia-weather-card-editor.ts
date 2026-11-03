@@ -8,7 +8,7 @@ import { fr, setLanguage, t } from '../i18n';
 /** The card's editor: which place, then how to show it. The sources are set in the integration. */
 const defaults: Partial<WeatherCardConfig> = { format: 'full', show_synthesis: true, show_bulletin: true, show_today: true, show_predictions: true,
   collapse_today: false, collapse_predictions: false, smart_brief: true, weather_animations: true, weather_animation_quality: 'standard',
-  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours', pressure_span: '6h', wind_span: '6h', rain_span: '7d', clock: 'none' };
+  show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours', pressure_span: '6h', wind_span: '6h', rain_span: '7d', clock: 'none', now_frame: 'opaque' };
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   entry_id: fr('Lieu'), format: fr('Format'),
   weather_animations: fr('Ciel animé et halos'), weather_animation_quality: fr('Qualité des animations'), glass_effect: fr('Effet verre dépoli'),
@@ -18,7 +18,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   show_atmo_details: fr('Détail des polluants et des pollens'), show_atmo_tomorrow: fr('Air et pollens de demain'),
   weather_path: fr('Page à ouvrir'),
   tile_blocks: fr('Contenu de la tuile dépliée'), card_blocks: fr('Contenu de la carte'), hide_when_calm: fr('Seulement en cas d’orage'), forecast_tab: fr('Prévisions affichées au départ'), banner_blocks: fr('Contenu du bandeau'), today_blocks: fr('Contenu d’Aujourd’hui'), forecast_blocks: fr('Contenu des Prévisions'),
-  hold_action: fr('Appui long'), tap_action: fr('Appui'), pressure_span: fr('Courbe de pression'), wind_span: fr('Courbe du vent'), rain_span: fr('Barres de pluie'), clock: fr('Heure dans le bandeau'),
+  hold_action: fr('Appui long'), tap_action: fr('Appui'), pressure_span: fr('Courbe de pression'), wind_span: fr('Courbe du vent'), rain_span: fr('Barres de pluie'), clock: fr('Heure dans le bandeau'), now_frame: fr('Cadre de « En ce moment »'),
 };
 /** One line under the settings that need it. */
 const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
@@ -37,6 +37,7 @@ const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
   pressure_span: fr('Sur plusieurs jours, on voit mieux arriver une dépression ou un anticyclone.'),
   rain_span: fr('24 heures et 30 jours demandent un pluviomètre dont Home Assistant garde les statistiques ; sinon, la carte montre 7 jours.'),
   clock: fr('L’heure de l’appareil, mise à jour chaque minute.'),
+  now_frame: fr('Un cadre de verre derrière la température, pour la lire sur le ciel animé.'),
 };
 const SETTINGS = '/config/integrations/integration/hestia_weather';
 
@@ -173,7 +174,8 @@ export class HestiaWeatherCardEditor extends LitElement {
     return [...place, ...format, look,
       group(t('Bandeau intelligent'), 'mdi:view-day-outline', [list('banner_blocks', [['bulletin', t('Bulletin du jour')], ['events', t('Événements (la frise)')],
         ['moments', t('Les prochains moments (soir, nuit, matin…)')], ['forecast', t('Prévisions en tuiles (heures ou jours)')]]),
-        choice('clock', [['none', t('Masquée')], ['left', t('Sous le titre, en grand')], ['right', t('Au-dessus de « En ce moment »')]])], true),
+        choice('clock', [['none', t('Masquée')], ['left', t('Sous le titre, en grand')], ['right', t('Au-dessus de « En ce moment »')]]),
+        choice('now_frame', [['opaque', t('Opaque')], ['clear', t('Transparent')], ['none', t('Sans cadre')]])], true),
       group(t('Aujourd’hui'), 'mdi:calendar-today', [list('today_blocks', [['rain', t('Pluie')], ['wind', t('Vent')], ['pressure', t('Pression')], ['lightning', t('Éclairs (avec Blitzortung)')], ['comfort', t('Ressenti')],
         ['extras', t('Pastilles (humidité, rosée, soleil…)')], ['air', t('Air et pollens du jour')]]),
         choice('rain_span', [['24h', t('24 dernières heures (une barre par heure)')], ['7d', t('7 derniers jours')], ['30d', t('30 derniers jours (une barre par jour)')]]),

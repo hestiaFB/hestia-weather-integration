@@ -88,3 +88,6 @@ ul{padding-left:22px}
 @media(max-width:600px){.ex-head{grid-template-columns:24px minmax(0,1fr)}.ex-head>.ex-act,.ex-head>.ac-edit{grid-column:2;justify-self:start}}
 /* Seven steps: rows of four then three, each tab as wide as its row allows. */
 .room-menu .room-menu-row{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+/* Socle 1.21: a source to choose is a row with a radio on the right, like Confort's lists. */
+.nk-radio{width:22px;height:22px;min-height:0;margin:0;padding:0;accent-color:var(--primary-color);flex:none}
+.nk-row-lab label{cursor:pointer}.nk-row-lab .warn{color:var(--nk-todo)}.nk-more-note{margin:12px 16px 4px}

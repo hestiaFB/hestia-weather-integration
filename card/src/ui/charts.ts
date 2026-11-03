@@ -46,5 +46,7 @@ export function extremePills(series: Point[], end: number, y: (v: number) => num
   const hi = valid.reduce((a, b) => b[1] > a[1] ? b : a), lo = valid.reduce((a, b) => b[1] < a[1] ? b : a);
   const x = (t: number) => Math.min(92, Math.max(8, (t - (end - span)) / span * 100));
   const pill = ([t, v]: [number, number]) => ({ x: x(t), y: y(v) / CHART_HEIGHT * 100, text: text(v) });
+  // A line that hardly moves (less than 1) says nothing more with a pill on it (2 November).
+  if (hi[1] - lo[1] < 1) return [];
   return text(hi[1]) === text(lo[1]) ? [pill(hi)] : [pill(hi), pill(lo)];
 }

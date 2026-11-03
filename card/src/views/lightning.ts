@@ -45,17 +45,18 @@ export function lightningPanel(l: LightningView, parts?: Parts, lead: TemplateRe
   // A silent sensor, or an hour without any strike: one line says it.
   if (!l.available || !l.hourCount) return html`<section class="nw-panel" aria-label=${t('Éclairs')}>${head}${lead}
     <div class="lz-calm" data-entity=${entity(l.entity)}><p><b>${l.headline}</b>${l.available && !l.hourCount ? html` ${t('À moins de {km} km.', { km: EDGE })}` : nothing}</p>${l.available ? month : nothing}</div></section>`;
-  const movement = l.trend === 'approche' ? chip({ theme: 'level2', icon: 'mdi:arrow-collapse-down', label: l.movement })
-    : l.trend === 'eloigne' ? chip({ theme: 'calm', icon: 'mdi:arrow-expand-up', label: l.movement }) : nothing;
+  // The charter's arrow (3 November): orange towards you, green away; in words beside it.
+  const movement = l.trend === 'approche' ? html`<span class="nw-say lz-move"><i class="nw-trend" data-way="down" data-tone="worse"></i>${l.movement}</span>`
+    : l.trend === 'eloigne' ? html`<span class="nw-say lz-move"><i class="nw-trend" data-way="up" data-tone="better"></i>${l.movement}</span>` : nothing;
   const stats: Array<[string, string]> = [[t('Dans l’heure'), strikes(l.hourCount, l.hourCount)], [t('En 10 min'), strikes(l.recentCount, l.recentCount)],
     l.month !== undefined ? [t('Ce mois'), strikes(nf(l.month, 0), l.month)] : [t('Dernier'), t('il y a {n} min', { n: Math.max(1, l.lastMinutes ?? 1) })]];
   return html`<section class="nw-panel" aria-label=${t('Éclairs')}>${head}${lead}
     ${has(parts, 'now') ? html`<div class="metric-row"><div class="metric" data-entity=${entity(l.entity)}>
-        <div class="metric-main"><b>${l.nearest === undefined ? '—' : nf(Math.max(1, l.nearest), 0)}</b><span>km</span></div>
+        <div class="nw-value"><b>${l.nearest === undefined ? '—' : nf(Math.max(1, l.nearest), 0)}</b><span>km</span></div>
         <small><b>${l.headline}</b>${l.direction ? ` · ${l.direction}` : ''}</small></div>${movement}</div>` : nothing}
     ${has(parts, 'radar') ? html`<div class="mini lz"><div class="mini-top">${t('Dernière heure · en rouge, les 10 dernières minutes')}</div>
         <div class="lz-body">${radar(l)}${level(l.step)}</div></div>` : nothing}
-    ${has(parts, 'stats') ? html`<div class="stats">${stats.map(([name, value]) => html`<div>${label(name)}<b>${value}</b></div>`)}</div>` : nothing}
+    ${has(parts, 'stats') ? html`<div class="nw-stats">${stats.map(([name, value]) => html`<div>${label(name)}<b>${value}</b></div>`)}</div>` : nothing}
   </section>`;
 }
 

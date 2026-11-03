@@ -1,7 +1,19 @@
 // Shared Hestia interface, embedded independently in each brick.
+// Since socle 1.22 a brick's pages take these pieces from the newest copy loaded on the page (hub.ts): a piece or an option
+// is only ever added, never renamed or removed while a published brick still uses it.
 import {LitElement,html,css,nothing,type TemplateResult,type PropertyValues} from 'lit';
+import {ref} from 'lit/directives/ref.js';
 import {t} from './i18n';
+// This very module, to publish it whole (end of file).
+import * as self from './ui';
 export {t,fr,setLanguage,addDictionary,currentLanguage,currentLocale} from './i18n';
+
+// This copy's socle: the same version as socle.py, and the build copier.sh writes when the socle changes.
+export const SOCLE:readonly [number,number]=[1,22];
+export const SOCLE_BUILD='20261103.1428';
+// Newer or equal: the version first, then the build. Another major version is never mixed in.
+export const sameOrNewer=(a:{SOCLE:readonly number[];SOCLE_BUILD:string},b:{SOCLE:readonly number[];SOCLE_BUILD:string})=>
+ a.SOCLE[0]===b.SOCLE[0]&&(a.SOCLE[1]!==b.SOCLE[1]?a.SOCLE[1]>b.SOCLE[1]:a.SOCLE_BUILD>=b.SOCLE_BUILD);
 
 // Popovers live in the browser top layer, so help escapes scrolling panels.
 class HestiaHelp extends LitElement {
@@ -33,7 +45,7 @@ class HestiaHelp extends LitElement {
   @pointerenter=${(e:PointerEvent)=>{if(e.pointerType==='mouse')void this.show();}} @pointerleave=${()=>this.leave()}
   @click=${()=>{if(this.pinned)this.close();else{this.pinned=true;void this.show();}}}
   @keydown=${(e:KeyboardEvent)=>{if(e.key==='Escape')this.close();}}>
-  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></svg><span>${this.trigger}</span></button>
+  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></svg>${this.trigger?html`<span>${this.trigger}</span>`:nothing}</button>
   <div id="help-content" popover="auto" role="tooltip" @toggle=${(e:Event)=>{const on=(e as ToggleEvent).newState==='open';if(this.opened!==on)this.opened=on;if(!on)this.pinned=false;}}
    @pointerenter=${()=>clearTimeout(this.timer)} @pointerleave=${()=>this.leave()} @keydown=${(e:KeyboardEvent)=>{if(e.key==='Escape')this.close();}}>
    <div class="help-head"><strong>${this.label}</strong><button type="button" aria-label=${t('Fermer l’aide')} @click=${()=>this.close()}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
@@ -42,7 +54,7 @@ class HestiaHelp extends LitElement {
   :host{display:inline-flex;vertical-align:middle;flex-shrink:0;color:var(--secondary-text-color,#bdc5d1);font:inherit;font-size:13px;line-height:1.6}
   *{box-sizing:border-box}button{display:inline-flex;justify-content:center;align-items:center;min-width:44px;min-height:44px;padding:8px 10px;gap:6px;font:inherit;cursor:pointer;border:0;border-radius:8px;background:transparent;color:inherit}
   .help-button{color:var(--nk-help-accent,#a1c9e8);text-align:left}.help-button svg{width:16px;height:16px;flex-shrink:0}button span{text-decoration:none}
-  button:hover{background:color-mix(in srgb,currentColor 10%,transparent)}button[aria-expanded=true]{color:var(--nk-help-accent,#a1c9e8);background:color-mix(in srgb,currentColor 10%,transparent)}
+  @media(hover:hover) and (pointer:fine){button:hover{background:color-mix(in srgb,currentColor 10%,transparent)}}button[aria-expanded=true]{color:var(--nk-help-accent,#a1c9e8);background:color-mix(in srgb,currentColor 10%,transparent)}
   :focus-visible{outline:2px solid var(--nk-help-accent,#a1c9e8);outline-offset:2px}
   [popover]{position:fixed;inset:auto;margin:0;width:min(360px,calc(100vw - 24px));max-height:min(440px,calc(100dvh - 24px));overflow:auto;padding:16px 18px;color:var(--primary-text-color,#edf1f7);background:var(--ha-card-background,var(--card-background-color,#222932));border:1px solid var(--nk-border,var(--divider-color,#657386));border-radius:22px;box-shadow:0 8px 28px #0003}
   .help-head{display:flex;align-items:center;gap:8px;font-size:15px}.help-head strong{flex:1}.help-head button{margin:-8px -10px -8px 0;flex-shrink:0}
@@ -53,9 +65,12 @@ class HestiaHelp extends LitElement {
 if(!customElements.get('hestia-hub-help-v1'))customElements.define('hestia-hub-help-v1',HestiaHelp);
 export function helpTip(label:string,content:unknown,trigger=t('Aide')){return html`<hestia-hub-help-v1 .label=${label} .content=${content} .trigger=${trigger}></hestia-hub-help-v1>`;}
 export function defaultValue(value:string,onReset:()=>void,explanation:unknown,options:{applied:boolean;disabled?:boolean;note?:string}):TemplateResult {
+ // Nothing useless on screen (ECOSYSTEME.md § 8): no « Valeur appliquée » when it is, no « Pourquoi » without a source to give.
+ const reset=options.disabled?html`<button type="button" class="nk-reset" disabled>${t('Choisissez un capteur')}</button>`
+  :options.applied?nothing:html`<button type="button" class="nk-reset" @click=${onReset}>${t('Rétablir la valeur par défaut')}</button>`;
+ const why=explanation===undefined||explanation===null||explanation===nothing||explanation===''?nothing:helpTip(t('Comprendre la valeur par défaut'),explanation,t('Pourquoi cette valeur ?'));
  return html`<div class="nk-default"><div class="nk-default-value"><span>${t('Valeur par défaut')}</span><strong>${value}</strong>${options.note?html`<p>${options.note}</p>`:nothing}</div>
-  <div class="nk-default-actions"><button type="button" class="nk-reset" ?disabled=${options.disabled||options.applied} @click=${onReset}>${options.disabled?t('Choisissez un capteur'):options.applied?t('Valeur appliquée'):t('Rétablir la valeur par défaut')}</button>
-  ${helpTip(t('Comprendre la valeur par défaut'),explanation,t('Pourquoi cette valeur ?'))}</div></div>`;
+  ${reset===nothing&&why===nothing?nothing:html`<div class="nk-default-actions">${reset}${why}</div>`}</div>`;
 }
 export function frame(title:string,body:unknown,options:{count?:string|number;open?:boolean;className?:string;collapsible?:boolean;help?:unknown}={}):TemplateResult {
  const count=options.count===undefined?nothing:html`<span class="nk-count">${options.count}</span>`;
@@ -66,6 +81,9 @@ export function frame(title:string,body:unknown,options:{count?:string|number;op
 export const hubStyles=css`
  :host{--nk-help-accent:#a1c9e8;--nk-space-tight:8px;--nk-space-section:24px}
  :host([data-theme=light]){--nk-help-accent:#285f87}
+ /* Purple means "something to read" only, so it keeps these values with the HA appearance too. */
+ :host{--nk-note:#c7a6ef;--nk-note-bg:rgba(199,166,239,.10)}
+ :host([data-theme=light]){--nk-note:#7a4bb5;--nk-note-bg:rgba(122,75,181,.08)}
 
  :host{--nk-accent:var(--primary-color,#a1c9e8);--nk-border:var(--divider-color,#657386);--nk-muted:var(--secondary-text-color,#bdc5d1);--nk-surface:var(--ha-card-background,var(--card-background-color,#222932));--nk-radius:16px;--nk-gap:16px}
  main{max-width:1120px;width:100%;padding:32px 28px 64px}
@@ -140,11 +158,11 @@ export const hubStyles=css`
 export const modernStyles=css`
  :host{color-scheme:dark;--primary-background-color:#1b1c1e;--card-background-color:#1b1c1e;--ha-card-background:#1b1c1e;--primary-text-color:#eeece8;--secondary-text-color:#b2aea7;--divider-color:#3b3c3f;--nk-selected:#303133;--nk-raised:#232426;--nk-button:#ebe8e1;--nk-on-button:#202122;--nk-help-accent:#a6c8d7;--nk-accent:#a6c8d7;--nk-todo:#e2b777;--error-color:#f1a59b;--warning-color:#e2b777;--nk-action-bg:#ebe8e1;--nk-ok:#a6c8d7;--nk-radius:25px;--nk-border:var(--divider-color);--nk-muted:var(--secondary-text-color);--nk-surface:var(--card-background-color);--nc-accent:var(--nk-accent);--nc-todo:var(--nk-todo);--nc-border:var(--nk-border);--nc-muted:var(--nk-muted);--nc-surface:var(--nk-surface);--nc-frame:var(--nk-surface);--nc-action-bg:var(--nk-button);--nw-accent:var(--nk-accent);--nw-todo:var(--nk-todo);--nw-border:var(--nk-border);--nw-muted:var(--nk-muted);--nw-surface:var(--nk-surface);--nw-frame:var(--nk-surface);--nw-action-bg:var(--nk-button);color:var(--primary-text-color);background:var(--primary-background-color);font:400 15px/1.65 Manrope,system-ui,sans-serif;scrollbar-width:thin}
  :host([data-theme=light]){color-scheme:light;--primary-background-color:#faf9f7;--card-background-color:#faf9f7;--ha-card-background:#faf9f7;--primary-text-color:#242321;--secondary-text-color:#75716b;--divider-color:#e2dfd9;--nk-selected:#eeece8;--nk-raised:#fff;--nk-button:#272623;--nk-on-button:#fff;--nk-help-accent:#36677d;--nk-accent:#36677d;--nk-todo:#966528;--nk-ok:#36677d;--error-color:#ae3e32;--warning-color:#966528;--nc-accent:#36677d;--nc-todo:#966528;--nw-accent:#36677d;--nw-todo:#966528}
- *{box-sizing:border-box}main{max-width:940px;width:100%;margin:0 auto;padding:54px 48px 64px}h1,main>h1,.hl-head h1,.head h1{font-size:29px;font-weight:650;letter-spacing:-.035em;line-height:1.3;margin:0 0 10px}h2{font-size:19px;letter-spacing:-.02em}h3{font-size:16px}p{max-width:none}.hint,.muted,.provenance{font-size:13px}button,input,select,.button{font:inherit;min-height:44px;border:1px solid var(--nk-border);border-radius:24px;padding:10px 17px;color:inherit;background:transparent}button,.button{cursor:pointer;line-height:1.5;touch-action:manipulation}input,select{width:100%;border-radius:15px;background:var(--nk-surface);margin-top:8px;padding:11px 14px}input[type=checkbox],input[type=radio]{width:19px;height:19px;min-height:19px;border-radius:4px;padding:0;accent-color:var(--nk-accent)}input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline-offset:4px}button:hover,.button:hover{background:var(--nk-selected)}button.primary,.button.primary{background:var(--nk-button);color:var(--nk-on-button);border-color:var(--nk-button);font-weight:500}.primary:hover{filter:brightness(.9)}button.link{border:0;color:var(--nk-muted);background:transparent}button.link:hover{color:var(--primary-text-color);text-decoration:underline}button:disabled{cursor:default;opacity:.5}a{color:var(--nk-accent)}:focus-visible{outline:2px solid var(--nk-accent);outline-offset:3px}
+ *{box-sizing:border-box}main{max-width:940px;width:100%;margin:0 auto;padding:54px 48px 64px}h1,main>h1,.hl-head h1,.head h1{font-size:29px;font-weight:650;letter-spacing:-.035em;line-height:1.3;margin:0 0 10px}h2{font-size:19px;letter-spacing:-.02em}h3{font-size:16px}p{max-width:none}.hint,.muted,.provenance{font-size:13px}button,input,select,.button{font:inherit;min-height:44px;border:1px solid var(--nk-border);border-radius:24px;padding:10px 17px;color:inherit;background:transparent}button,.button{cursor:pointer;line-height:1.5;touch-action:manipulation}input,select{width:100%;border-radius:15px;background:var(--nk-surface);margin-top:8px;padding:11px 14px}input[type=checkbox],input[type=radio]{width:19px;height:19px;min-height:19px;border-radius:4px;padding:0;accent-color:var(--nk-accent)}input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline-offset:4px}@media(hover:hover) and (pointer:fine){button:hover,.button:hover{background:var(--nk-selected)}}button.primary,.button.primary{background:var(--nk-button);color:var(--nk-on-button);border-color:var(--nk-button);font-weight:500}@media(hover:hover) and (pointer:fine){.primary:hover{filter:brightness(.9)}}button.link{border:0;color:var(--nk-muted);background:transparent}@media(hover:hover) and (pointer:fine){button.link:hover{color:var(--primary-text-color);text-decoration:underline}}button:disabled{cursor:default;opacity:.5}a{color:var(--nk-accent)}:focus-visible{outline:2px solid var(--nk-accent);outline-offset:3px}
  .nk-section{border-radius:25px;background:transparent;margin:24px 0}.nk-section-head{padding:24px 25px 0;gap:12px}.nk-section-head .nk-title{font-size:18px}.nk-body{padding:20px 25px 25px}.nk-section>summary{padding:18px 24px;font-size:15px}.nk-count{border:0;background:var(--nk-selected);border-radius:18px;font-size:11px;padding:3px 10px}.nk-bricks{gap:20px}.nk-home-head{margin-bottom:32px}.nk-home-head h1{font-size:29px}.nk-home-head p{font-size:14px}.nk-bricks .nk-title{font-size:20px}.nk-bricks .summary{font-size:14px}
  section.nk-section.nk-field-section.nk-plain{border:1px solid var(--nk-border);border-radius:25px;background:var(--nk-surface);padding:24px;margin:20px 0}section.nk-section.nk-field-section.nk-plain>.nk-section-head{padding:0;flex-wrap:wrap}section.nk-section.nk-field-section.nk-plain>.nk-body{padding:14px 0 0}section.nk-section.nk-field-section.nk-plain .nk-title{font-size:17px}.nk-field-section .sensor-settings{border-top:1px solid var(--nk-border);margin-top:20px;padding-top:18px}.sensor-settings{gap:16px}.sensor-settings>p.hint{grid-column:1/-1}.sensor-settings label{font-size:13px;font-weight:500}.sensor-settings h4{font-size:14px}.nk-default{border:0;border-top:1px solid var(--nk-border);border-radius:0;padding:16px 0 0;background:transparent;gap:6px 14px}.nk-default-value>span,.nk-default-value>strong{font-size:12px}.nk-default-actions .nk-reset{border-radius:20px;min-height:44px;font-size:12px}.nk-default-actions{gap:4px}
  .chosen .choice,.choice.on,.source.on{border-color:color-mix(in srgb,var(--nk-accent) 45%,var(--nk-border));background:color-mix(in srgb,var(--nk-accent) 5%,var(--nk-surface))}.choice,.source{border-radius:18px;padding:15px 17px}.choice strong,.source strong{font-size:14px}.candidate{padding:14px 0}.candidate button{font-size:13px}.candidates{border:0}.field:not(.nk-body .field){padding:22px 0;border-bottom:1px solid var(--nk-border)}.field-top h3{font-size:15px}.field-top{align-items:center}.nk-step-help{margin:4px 0 18px}.nk-step-help hestia-hub-help-v1{margin-left:-10px}.step-count{font-size:13px;margin-bottom:24px}.group{border-radius:20px}.group>summary{font-size:15px}.notice{border-radius:18px;font-size:14px}.room,.start{border-radius:24px;padding:22px 24px;margin:16px 0}.room{display:flex;align-items:center;justify-content:space-between;gap:18px}.room h3{margin:0}.room p{margin:4px 0}.room button{font-size:13px}.room-list{margin:24px 0 32px}.bottom{border-top:1px solid var(--nk-border);margin-top:30px;padding-top:22px}.bottom .primary{min-width:120px}.health-details{margin-top:32px}.health-details>summary{min-height:44px;cursor:pointer;font-size:14px;color:var(--nk-muted)}
- .room-menu{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0 0 30px}.room-menu-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:5px;background:var(--nk-selected);border-radius:999px;width:100%}.room-menu button{display:flex;justify-content:center;align-items:center;gap:8px;min-width:0;min-height:44px;width:100%;padding:9px 12px;font-size:13px;line-height:1.4;border:1px solid transparent;border-radius:999px;color:var(--nk-muted);background:transparent}.room-menu button svg{width:17px;height:17px;flex-shrink:0}.room-menu button:hover{background:color-mix(in srgb,var(--nk-surface) 50%,transparent);color:var(--primary-text-color)}.room-menu button[aria-current=page]{color:var(--primary-text-color);background:var(--nk-surface);border-color:color-mix(in srgb,var(--nk-border) 55%,transparent);box-shadow:0 1px 4px #0000000a;font-weight:600}.room-content-head{margin-bottom:25px}.room-content-head h2{font-size:23px;margin:0 0 7px}.room-content-head p{font-size:14px;color:var(--nk-muted);margin:0}.workspace-head{margin-bottom:25px}
+ .room-menu{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0 0 30px}.room-menu-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:5px;background:var(--nk-selected);border-radius:999px;width:100%}.room-menu button{display:flex;justify-content:center;align-items:center;gap:8px;min-width:0;min-height:44px;width:100%;padding:9px 12px;font-size:13px;line-height:1.4;border:1px solid transparent;border-radius:999px;color:var(--nk-muted);background:transparent}.room-menu button svg{width:17px;height:17px;flex-shrink:0}@media(hover:hover) and (pointer:fine){.room-menu button:hover{background:color-mix(in srgb,var(--nk-surface) 50%,transparent);color:var(--primary-text-color)}}.room-menu button[aria-current=page]{color:var(--primary-text-color);background:var(--nk-surface);border-color:color-mix(in srgb,var(--nk-border) 55%,transparent);box-shadow:0 1px 4px #0000000a;font-weight:600}.room-content-head{margin-bottom:25px}.room-content-head h2{font-size:23px;margin:0 0 7px}.room-content-head p{font-size:14px;color:var(--nk-muted);margin:0}.workspace-head{margin-bottom:25px}
 
  /* In HA mode, inherit Home Assistant colors and typography. */
  :host([data-appearance=ha]),:host([data-appearance=ha][data-theme=light]){--primary-background-color:inherit;--card-background-color:inherit;--ha-card-background:inherit;--primary-text-color:inherit;--secondary-text-color:inherit;--divider-color:inherit;--error-color:inherit;--warning-color:inherit;--nk-selected:var(--secondary-background-color,var(--card-background-color));--nk-raised:var(--card-background-color);--nk-button:var(--primary-color,#03a9f4);--nk-on-button:var(--text-primary-color,#fff);--nk-help-accent:var(--primary-color,#03a9f4);--nk-accent:var(--primary-color,#03a9f4);--nk-ok:var(--primary-color,#03a9f4);--nk-todo:var(--warning-color,#ff9800);--nk-action-bg:var(--nk-button);--nc-accent:var(--nk-accent);--nc-todo:var(--nk-todo);--nw-accent:var(--nk-accent);--nw-todo:var(--nk-todo);font-family:var(--ha-font-family-body,var(--paper-font-body1_-_font-family,Roboto,system-ui,sans-serif))}
@@ -162,7 +180,7 @@ export const modernStyles=css`
  @media(prefers-reduced-motion:no-preference){.room-menu button{transition:background-color .15s,color .15s}}
 `;
 // Line icons are decorative; all controls retain visible and accessible labels.
-export function hubIcon(kind:string){const paths:Record<string,string>={home:'M3 10 12 3l9 7M5 9v12h14V9M9 21v-8h6v8',settings:'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',temperature:'M9 14V5a3 3 0 0 1 6 0v9a5 5 0 1 1-6 0ZM12 8v10',openings:'M5 21V3h14v18M3 21h18M14 12h1',air:'M3 8h13a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h7',presence:'M16 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 22v-3a8 8 0 0 1 16 0v3',heating:'M5 21V3M19 21V3M5 6h14M5 18h14M9 6v12M15 6v12',room:'M3 21h18M5 21V4h14v17M9 8h2M14 8h1M9 12h2M14 12h1M10 21v-5h4v5',weather:'M5 16a5 5 0 1 1 4-9 5 5 0 1 1 8 6H5M4 3l1 2M14 2v2M2 10h2',pollen:'M12 21V10M6 8a3 3 0 1 1 6-3 3 3 0 1 1 6 3 3 3 0 1 1-6 3 3 3 0 1 1-6-3ZM5 15l7 4 7-4',entities:'M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z',review:'M4 20V10M10 20V4M16 20v-7M22 20H2',light:'M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3Z',extensions:'M9 3h5v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3h6Z'};return html`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${paths[kind]??paths.settings}></path></svg>`;}
+export function hubIcon(kind:string){const paths:Record<string,string>={menu:'M4 6h16M4 12h16M4 18h16',down:'m6 9 6 6 6-6',home:'M3 10 12 3l9 7M5 9v12h14V9M9 21v-8h6v8',settings:'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',temperature:'M9 14V5a3 3 0 0 1 6 0v9a5 5 0 1 1-6 0ZM12 8v10',openings:'M5 21V3h14v18M3 21h18M14 12h1',air:'M3 8h13a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h7',presence:'M16 6a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 22v-3a8 8 0 0 1 16 0v3',heating:'M5 21V3M19 21V3M5 6h14M5 18h14M9 6v12M15 6v12',room:'M3 21h18M5 21V4h14v17M9 8h2M14 8h1M9 12h2M14 12h1M10 21v-5h4v5',weather:'M5 16a5 5 0 1 1 4-9 5 5 0 1 1 8 6H5M4 3l1 2M14 2v2M2 10h2',pollen:'M12 21V10M6 8a3 3 0 1 1 6-3 3 3 0 1 1 6 3 3 3 0 1 1-6 3 3 3 0 1 1-6-3ZM5 15l7 4 7-4',entities:'M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z',review:'M4 20V10M10 20V4M16 20v-7M22 20H2',rooms:'M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z',learning:'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',light:'M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3Z',extensions:'M9 3h5v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3h6Z',info:'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18ZM12 11v6M12 7.5v.5'};return html`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${paths[kind]??paths.settings}></path></svg>`;}
 
 // ---- The pages every brick builds the same way (socle 1.12) ----
 // Three pages per brick: its Accueil (read only), its Réglages généraux (its places or rooms, extensions, cards) and
@@ -182,6 +200,10 @@ export interface NkLine {level:string;text:string;why?:string|null;go?:NkAction|
 export const line=(l:NkLine)=>html`<li class=${'nk-line '+l.level}><span class="nk-dot"></span><div><strong>${l.text}</strong>${l.why?html`<span class="nk-why">${l.why}</span>`:nothing}</div>
  ${l.go?html`<button class="link nk-go" ?disabled=${l.go.disabled} @click=${l.go.onClick}>${l.go.label}</button>`:nothing}</li>`;
 /** What is left to do: « À régler » first (orange), then « À améliorer »; nothing at all when everything works. */
+export function todoLists(todo:NkLine[],tips:NkLine[]=[]):TemplateResult{
+ const row=(l:NkLine,level?:'todo')=>listRow({label:html`<b>${l.text}</b>`,name:l.text,sub:l.why??undefined,level,go:l.go&&!l.go.disabled?l.go.onClick:undefined,value:l.go&&!l.go.disabled?undefined:nothing});
+ return html`${todo.length?listSection(t('À régler'),todo.map(l=>row(l,'todo'))):nothing}${tips.length?listSection(t('À améliorer'),tips.map(l=>row(l))):nothing}`;
+}
 export function todoFrame(todo:NkLine[],tips:NkLine[]=[]):TemplateResult|typeof nothing{
  if(!todo.length&&!tips.length)return nothing;
  return frame(todo.length?t('À régler'):t('À améliorer'),html`${todo.length?html`<ul class="nk-lines">${todo.map(line)}</ul>`:nothing}
@@ -224,6 +246,18 @@ export function versionsFrame(rows:[string,string][],repository:string,domain:st
    <a href=${repository+'#readme'} target="_blank" rel="noreferrer">${t('Documentation')}</a><a href=${repository+'/releases'} target="_blank" rel="noreferrer">${t('Versions publiées')}</a>
    <a href=${repository+'/issues'} target="_blank" rel="noreferrer">${t('Signaler un problème')}</a>${support?html`<a class="nk-support" href="https://paypal.me/frankblemont" target="_blank" rel="noreferrer">${t('Soutenez mon travail')}</a>`:nothing}</nav></div>`);
 }
+/** « À propos », a page of every brick's menu (socle 1.22): its versions, how to add its card, and the project's links —
+ *  its page on GitHub, where to report a problem, the versions published, support. The same page in every brick. */
+export function aboutPage(o:{name:string;versions:[string,unknown][];repository:string;card?:string;support?:boolean}):TemplateResult{
+ const link=(href:string,text:string)=>html`<a href=${href} target="_blank" rel="noreferrer">${text}</a>`;
+ return html`${pageHead({title:t('À propos'),subtitle:o.name})}
+  ${listSection(t('Versions'),o.versions.map(([label,value])=>listRow({label,value})))}
+  ${o.card?listSection(t('Ajouter une carte'),[listRow({label:o.card})]):nothing}
+  ${listSection(t('Liens'),[listRow({label:t('Page du projet'),sub:t('Présentation, documentation et nouveautés.'),value:link(o.repository,'GitHub')}),
+   listRow({label:t('Signaler un problème'),value:link(o.repository+'/issues','GitHub')}),
+   listRow({label:t('Versions publiées'),value:link(o.repository+'/releases','GitHub')}),
+   ...(o.support===false?[]:[listRow({label:t('Soutenez mon travail'),value:link('https://paypal.me/frankblemont','PayPal')})])])}`;
+}
 /** One extension, the same card in every brick: what it is for, its state in one word, the one thing to do, its switches. */
 export interface NkSwitch {label:string;checked:boolean;disabled?:boolean;note?:string;onChange:(on:boolean)=>void}
 export function extensionCard(o:{icon:string;name:string;pill:{text:string;level:NkLevel};use:string;detail?:unknown;action?:unknown;switches?:NkSwitch[];body?:unknown;todo?:boolean}):TemplateResult{
@@ -251,7 +285,109 @@ export function removeBlock(o:{link:string;title:string;lines:string[];keep:stri
   <div class="actions"><button @click=${o.onCancel}>${o.keep}</button><button class="danger" ?disabled=${o.busy} @click=${o.onConfirm}>${o.confirm}</button></div></section>`
   :html`<div class="nk-remove"><button class="link danger-link" ?disabled=${o.busy} @click=${o.onAsk}>${o.link}</button></div>`;
 }
-export const pageStyles=css`
+// Information to read, with nothing to do and no state to judge (ECOSYSTEME.md § 8): hub only, never on cards,
+// one box per frame and three per page. Actions, states, benefits and warnings keep their own colours.
+export function noteBox(title:string,body:unknown):TemplateResult{return html`<aside class="nk-note"><strong>${title}</strong> ${body}</aside>`;}
+export function noteTag(text:string):TemplateResult{return html`<span class="nk-note-tag">${text}</span>`;}
+// Lists, as on every page of the hub (CAHIER-HUB.md § 6): a section is a title and a list of rows; a row, a label on the left
+// and its value or control on the right; a row that leads further is a whole button. One line, one setting.
+export interface NkRow {name?:string;label:unknown;sub?:unknown;value?:unknown;go?:()=>unknown;level?:'ok'|'todo'|'none';control?:boolean}
+// A row that opens a page answers at the touch (socle 1.21): it waits, busy, until the address changes, its promise ends,
+// or 10 s pass. The spinner replaces the chevron only after 150 ms, so a page that opens at once never shows it.
+function opening(row:HTMLElement,go:()=>unknown){
+ if(row.hasAttribute('data-pending'))return;
+ let timer=0;const done=()=>{row.removeAttribute('data-pending');row.removeAttribute('aria-busy');window.removeEventListener('location-changed',done);clearTimeout(timer);};
+ row.setAttribute('data-pending','');row.setAttribute('aria-busy','true');window.addEventListener('location-changed',done);timer=window.setTimeout(done,10000);
+ try{const result=go();if(result&&typeof (result as Promise<unknown>).then==='function')void (result as Promise<unknown>).finally(done);}
+ catch(e){done();throw e;}
+}
+const rowEnd=html`<span class="nk-row-end" aria-hidden="true"><span class="nk-chev">›</span><span class="nk-spin"></span></span>`;
+export function listRow(r:NkRow):TemplateResult{
+ const body=html`<span class="nk-row-lab">${r.label}${r.sub?html`<small>${r.sub}</small>`:nothing}</span>${r.value!==undefined?html`<span class="nk-row-val">${r.value}</span>`:nothing}`;
+ const skip=(e:Event)=>!!(e.target as HTMLElement).closest('input,select,button:not(.nk-row),ha-selector,ha-entity-picker,.nk-row-stop');
+ if(r.go&&r.control)return html`<div class=${'nk-row nk-row-go'+(r.level==='todo'?' todo':'')} role="link" tabindex="0" aria-label=${r.name??(typeof r.label==='string'?r.label:nothing)} @click=${(e:Event)=>{if(!skip(e))opening(e.currentTarget as HTMLElement,r.go!);}} @keydown=${(e:KeyboardEvent)=>{if(e.key==='Enter'&&!skip(e))opening(e.currentTarget as HTMLElement,r.go!);}}>${body}${rowEnd}</div>`;
+ return r.go?html`<button type="button" class=${'nk-row nk-row-go'+(r.level==='todo'?' todo':'')} aria-label=${r.name??(typeof r.label==='string'?r.label:nothing)} @click=${(e:Event)=>{if(!(e.target as HTMLElement).closest('input,select,ha-selector,ha-entity-picker,.nk-row-stop'))opening(e.currentTarget as HTMLElement,r.go!);}}>${body}${rowEnd}</button>`
+  :html`<div class=${'nk-row'+(r.level==='todo'?' todo':'')}>${body}</div>`;
+}
+export function listSection(title:string,rows:unknown,o:{help?:unknown;more?:unknown}={}):TemplateResult{
+ return html`<section class="nk-lsec">${title||o.help?html`<div class="nk-lsec-h">${title?html`<h2>${title}</h2>`:nothing}${o.help?helpTip(title||t('Aide'),o.help,''):nothing}${o.more?html`<span class="nk-lsec-more">${o.more}</span>`:nothing}</div>`:nothing}<div class="nk-list">${rows}</div></section>`;
+}
+// The save bar: shown only once something changed (one way to save everywhere, CAHIER-HUB.md § 6).
+// The few numbers at the top of an overview (socle 1.21): side by side, even on a phone; one may open its page.
+export interface NkKpi {value:string;label:string;level?:'ok'|'todo';go?:()=>unknown}
+export function kpis(items:NkKpi[]):TemplateResult{
+ return html`<div class="nk-kpis">${items.map(k=>k.go?html`<button type="button" class=${'nk-kpi nk-kpi-go '+(k.level??'')} @click=${k.go}><b>${k.value}</b><span>${k.label} ›</span></button>`
+  :html`<div class=${'nk-kpi '+(k.level??'')}><b>${k.value}</b><span>${k.label}</span></div>`)}</div>`;
+}
+// The bar that holds a draft (socle 1.21). Hidden, it leaves the keyboard and screen readers alone (inert). With `done`
+// and nothing left to save, it says it once (« Enregistré ») for two seconds, then leaves faster than it came.
+export function saveBar(o:{count:number;busy?:boolean;cancel:()=>void;save:()=>void;done?:string}):TemplateResult{
+ const done=!o.count&&!!o.done;
+ return html`<div class=${'nk-savebar'+(o.count?' on':done?' done':'')} role="region" aria-label=${t('Modifications')} ?inert=${!o.count}><span role="status">${done?html`<b class="nk-saved">${o.done}</b>`:o.count>1?t('{n} modifications',{n:o.count}):t('1 modification')}</span>${done?nothing:html`<button type="button" ?disabled=${o.busy} @click=${o.cancel}>${t('Annuler')}</button><button type="button" class="primary" ?disabled=${o.busy} @click=${o.save}>${t('Enregistrer')}</button>`}</div>`;
+}
+// A page's tabs, in one line under its title (CAHIER-HUB.md § 5.3). Tabs that do not fit fade at the edge where more
+// remain (socle 1.21); the current one is brought into view.
+function tabEdges(nav:HTMLElement){nav.classList.toggle('more-r',nav.scrollLeft+nav.clientWidth<nav.scrollWidth-2);nav.classList.toggle('more-l',nav.scrollLeft>2);}
+function tabInView(nav:HTMLElement,tab:HTMLElement|null){if(tab){const n=nav.getBoundingClientRect(),b=tab.getBoundingClientRect();
+ if(b.left<n.left)nav.scrollLeft-=n.left-b.left+24;else if(b.right>n.right)nav.scrollLeft+=b.right-n.right+24;}tabEdges(nav);}
+const tabsMounted=(el?:Element)=>{if(el instanceof HTMLElement)requestAnimationFrame(()=>tabInView(el,el.querySelector<HTMLElement>('[aria-selected="true"]')));};
+export function tabBar(label:string,tabs:{label:string;current:boolean;onClick:()=>void}[],disabled=false):TemplateResult{
+ return html`<nav class="nk-tabs" role="tablist" aria-label=${label} ${ref(tabsMounted)} @scroll=${(e:Event)=>tabEdges(e.currentTarget as HTMLElement)}>${tabs.map(x=>html`<button type="button" role="tab" aria-selected=${String(x.current)} ?disabled=${disabled} @click=${(e:Event)=>{const tab=e.currentTarget as HTMLElement;x.onClick();tabInView(tab.parentElement!,tab);}}>${x.label}</button>`)}</nav>`;
+}
+// A number in a row: its unit, then « par défaut » while it is, « Rétablir » once changed. Empty is the default.
+export function numberField(o:{label:string;value:number|null|undefined;unit:string;dflt?:number;step?:number;min?:number;max?:number;set:(v:number|undefined)=>void}):TemplateResult{
+ const v=o.value??undefined,isDefault=o.dflt!==undefined&&(v===undefined||v===o.dflt),num=(n:number)=>String(n).replace('.',',');
+ return html`<input type="number" aria-label=${o.label} step=${o.step??1} min=${o.min??nothing} max=${o.max??nothing} placeholder=${o.dflt===undefined?'':num(o.dflt)} .value=${v===undefined?'':String(v)}
+  @input=${(e:Event)=>{const raw=(e.target as HTMLInputElement).value;o.set(raw===''?undefined:Number(raw));}}><span class="nk-unit">${o.unit}</span>${o.dflt===undefined?nothing:isDefault?html`<span class="nk-def">${t('par défaut')}</span>`:html`<button type="button" class="nk-reset-s" @click=${()=>o.set(o.dflt)}>${t('Rétablir')}</button>`}`;
+}
+// A choice among a few, in a row.
+export function segmented<V extends string>(label:string,options:[V,string][],value:V|undefined,set:(v:V)=>void,disabled=false):TemplateResult{
+ return html`<span class="nk-seg" role="group" aria-label=${label}>${options.map(([v,l])=>html`<button type="button" aria-pressed=${String(value===v)} ?disabled=${disabled} @click=${()=>set(v)}>${l}</button>`)}</span>`;
+}
+// An on/off switch, in a row.
+export function toggle(label:string,checked:boolean,set:(on:boolean)=>void,disabled=false):TemplateResult{
+ return html`<input type="checkbox" class="nk-sw" role="switch" aria-label=${label} .checked=${checked} ?disabled=${disabled} @change=${(e:Event)=>set((e.target as HTMLInputElement).checked)}>`;
+}
+// « Pour aller plus loin »: a row that opens on what is optional, with how much is filled.
+export function moreRow(title:string,count:string,body:unknown):TemplateResult{
+ return html`<details class="nk-more"><summary class="nk-row nk-row-go"><span class="nk-row-lab">${title}</span><span class="nk-row-val">${count}</span><span class="nk-chev" aria-hidden="true">›</span></summary><div class="nk-more-body">${body}</div></details>`;
+}
+// The common motion (socle 1.21): one curve to answer, one to move, one for sheets and drawers; exits faster than entries.
+export const motion=css`:host{--h-ease-out:cubic-bezier(.23,1,.32,1);--h-ease-move:cubic-bezier(.77,0,.175,1);--h-ease-sheet:cubic-bezier(.32,.72,0,1);--h-press:120ms;--h-fast:150ms;--h-exit:200ms;--h-base:220ms;--h-slow:280ms}`;
+export const pageStyles=css`${motion}
+
+ .nk-lsec{margin:0 0 26px}.nk-lsec-h{display:flex;align-items:center;gap:6px;margin:0 4px 8px;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--nk-muted)}
+ .nk-lsec-h h2{font:inherit;letter-spacing:inherit;margin:0;color:inherit}.nk-lsec-h hestia-hub-help-v1{text-transform:none;letter-spacing:0;font-weight:400}.nk-lsec-more{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500}
+ .nk-list{border:1px solid var(--nk-border);border-radius:16px;background:var(--nk-surface)}
+ .nk-row{display:flex;align-items:center;gap:14px;width:100%;min-height:54px;padding:10px 16px;border:0;border-top:1px solid var(--nk-border);border-radius:0;background:none;text-align:left;font:inherit;color:inherit;margin:0}
+ .nk-list>:first-child,.nk-list>:first-child>.nk-row{border-top:0}.nk-list>:first-child{border-radius:16px 16px 0 0}.nk-list>:last-child{border-radius:0 0 16px 16px}.nk-list>:only-child{border-radius:16px}
+ .nk-row-go{cursor:pointer}@media(hover:hover) and (pointer:fine){.nk-row-go:hover{background:color-mix(in srgb,var(--nk-selected,var(--nk-surface)) 70%,transparent)}}
+ .nk-row-lab{flex:1 1 160px;min-width:140px}.nk-row-lab small{display:block;color:var(--nk-muted);font-size:13px;line-height:1.45}
+ .nk-row-val{display:flex;align-items:center;gap:8px;color:var(--nk-muted);font-size:14px;text-align:right;flex-wrap:wrap;justify-content:flex-end;min-width:0}
+ .nk-row-val select,.nk-row-val input:not([type=checkbox]):not([type=radio]){width:auto;max-width:240px;margin:0;min-height:38px;padding:6px 10px}
+ .nk-row-val input[type=number]{width:84px;flex:0 0 auto;text-align:right}.nk-row-val:has(input[type=number]){flex-wrap:nowrap;white-space:nowrap}.nk-row-val:has(ha-selector,ha-entity-picker){flex:1 1 300px;max-width:460px}.nk-row-val ha-selector,.nk-row-val ha-entity-picker{flex:1;min-width:0;display:block}
+ .nk-row.todo .nk-row-lab>b,.nk-row.todo .nk-row-lab>strong{color:var(--nk-todo)}.nk-chev{color:var(--nk-muted);font-size:18px}
+ .nk-savebar{position:fixed;left:50%;bottom:20px;transform:translate(-50%,180%);transition:transform var(--h-exit) var(--h-ease-out);z-index:20;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:10px;padding:8px 8px 8px 18px;border:1px solid var(--nk-border);border-radius:999px;background:var(--nk-surface);box-shadow:0 12px 36px rgba(0,0,0,.35);max-width:calc(100% - 32px)}
+ .nk-tabs{display:flex;gap:4px;border-bottom:1px solid var(--nk-border);margin:0 0 22px;overflow-x:auto;scrollbar-width:none}
+ .nk-tabs button{border:0;border-radius:0;background:none;min-height:0;padding:10px;font:inherit;font-size:14px;font-weight:500;color:var(--nk-muted);border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;margin:0}
+ .nk-tabs button[aria-selected="true"]{color:var(--primary-text-color);border-bottom-color:var(--primary-text-color);font-weight:600}
+ .nk-unit{color:var(--nk-muted);font-size:13px}.nk-def{color:var(--nk-muted);font-size:12px}
+ .nk-reset-s{border:0;background:none;padding:0;min-height:0;color:var(--primary-color);font:inherit;font-size:13px;cursor:pointer;margin:0}
+ .nk-seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:3px;border:1px solid var(--nk-border);border-radius:999px;background:var(--nk-raised,var(--nk-surface))}
+ .nk-seg button{border:0;min-height:32px;padding:5px 12px;border-radius:999px;background:transparent;color:var(--nk-muted);font:inherit;font-size:13px;margin:0;cursor:pointer}
+ .nk-seg button[aria-pressed="true"]{background:var(--nk-selected,var(--nk-surface));color:var(--primary-text-color);font-weight:600}
+ input[type=checkbox].nk-sw{appearance:none;-webkit-appearance:none;width:42px;height:24px;min-height:24px;padding:0;border:0;border-radius:999px;background:var(--nk-border);position:relative;cursor:pointer;flex:0 0 auto;margin:0;transition:background .15s}
+ input[type=checkbox].nk-sw::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+ input[type=checkbox].nk-sw:checked{background:var(--primary-color)}input[type=checkbox].nk-sw:checked::after{left:21px}
+ .nk-chips{display:flex;flex-wrap:wrap;gap:6px}.nk-chip{border:1px solid var(--nk-border);border-radius:999px;background:none;min-height:32px;padding:4px 12px;font:inherit;font-size:13px;color:var(--nk-muted);cursor:pointer;margin:0}
+ .nk-chip[aria-pressed="true"]{background:var(--nk-selected,var(--nk-surface));color:var(--primary-text-color);font-weight:600;border-color:var(--primary-text-color)}
+ .nk-more>summary{list-style:none}.nk-more>summary::-webkit-details-marker{display:none}.nk-more .nk-chev{transition:transform .18s;display:inline-block}.nk-more[open] .nk-chev{transform:rotate(90deg)}
+ .nk-more-body{background:color-mix(in srgb,var(--nk-selected,var(--nk-surface)) 35%,transparent)}.nk-more-body>.nk-row{padding-left:28px}
+ .nk-savebar.on{transform:translate(-50%,0);transition-duration:var(--h-base)}.nk-savebar span{color:var(--nk-muted);font-size:14px;white-space:nowrap}
+ @media (max-width:640px){.nk-row{flex-wrap:wrap}.nk-row-val:has(input[type=number]){flex-wrap:wrap}.nk-row-val{justify-content:flex-start;text-align:left}.nk-row-val ha-selector,.nk-row-val ha-entity-picker{min-width:0;width:100%;max-width:none}}
+ .nk-note{display:block;margin:20px 0 0;padding:14px 18px;border:1px dashed var(--nk-note);border-radius:18px;background:var(--nk-note-bg);font-size:14px}.nk-note:first-child{margin-top:0}
+ .nk-note+*{margin-top:14px}.nk-note>strong{color:var(--nk-note);font-weight:700}.nk-note ul{margin:6px 0 0;padding-left:20px}.nk-note p{margin:6px 0 0}
+ .nk-note-tag{display:inline-block;margin-left:8px;padding:2px 8px;border:1px dashed var(--nk-note);border-radius:6px;background:var(--nk-note-bg);color:var(--nk-note);font-size:11px;font-weight:700;line-height:1.5;letter-spacing:.02em;vertical-align:2px;white-space:normal}
  .ex-sec{font-size:15px;font-weight:600;color:var(--nk-muted);margin:28px 0 6px}.ex-sec+.hint{margin:0 0 8px}
  /* The Extensions page: the third-party integrations under one heading per theme. */
  .ex-theme{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--nk-muted);margin:26px 0 4px}
@@ -287,4 +423,34 @@ export const pageStyles=css`
  .nk-step-menu button span{overflow-wrap:normal;word-break:normal;hyphens:auto}
  @media(max-width:600px){.nk-step-menu button{font-size:11px;padding:8px 2px}}
  @media(max-width:600px){.nk-meta{grid-template-columns:1fr}.nk-footer>*{flex:1 1 100%}.nk-footer-end>*{flex:1}}
+ /* Socle 1.21 — answer at the touch, nothing sticks on a finger, nothing makes the phone zoom. */
+ :host{-webkit-tap-highlight-color:transparent}
+ button,.button{transition:transform var(--h-press) var(--h-ease-out),background-color var(--h-fast) ease,filter var(--h-fast) ease}
+ button:not(.nk-row):not([role=tab]):not([role=switch]):not(:disabled):active,.button:active{transform:scale(.97)}
+ .nk-row-go{transition:background-color var(--h-fast) ease}.nk-row-go:active{background:color-mix(in srgb,var(--nk-selected,var(--nk-surface)) 85%,transparent);transition-duration:0s}
+ .nk-row-go,.nk-tabs button,.nav-fold{-webkit-user-select:none;user-select:none}
+ @media(pointer:coarse){input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px}}
+ .nk-row-end{display:grid;flex:none;place-items:center;width:18px;height:18px}.nk-row-end>*{grid-area:1/1}
+ .nk-spin{width:14px;height:14px;border:2px solid var(--nk-muted);border-top-color:transparent;border-radius:50%;opacity:0}
+ .nk-row[data-pending]{cursor:progress}
+ .nk-row[data-pending] .nk-chev{animation:nk-swap var(--h-fast) var(--h-ease-out) 150ms reverse both}
+ .nk-row[data-pending] .nk-spin{animation:nk-swap var(--h-fast) var(--h-ease-out) 150ms both,nk-spin .6s linear 150ms infinite}
+ @keyframes nk-swap{from{opacity:0}to{opacity:1}}@keyframes nk-spin{to{rotate:360deg}}
+ @media(prefers-reduced-motion:reduce){.nk-row[data-pending] .nk-spin{animation:nk-swap var(--h-fast) ease 150ms both}}
+ .nk-savebar.done{animation:nk-saved 2.4s var(--h-ease-out) both;padding:12px 20px}.nk-saved{color:var(--nk-ok);font-weight:600}.nk-saved::before{content:'✓';margin-right:6px}
+ @keyframes nk-saved{0%,85%{transform:translate(-50%,0)}100%{transform:translate(-50%,180%)}}
+ @media(prefers-reduced-motion:reduce){.nk-savebar,.nk-savebar.on{transition:opacity var(--h-fast) ease;transform:translate(-50%,0);opacity:0}.nk-savebar.on{opacity:1}.nk-savebar.done{animation:nk-saved-still 2.4s both}@keyframes nk-saved-still{0%,85%{opacity:1}100%{opacity:0}}}
+ .nk-tabs.more-r{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 48px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 48px),transparent)}
+ .nk-tabs.more-l{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 48px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 48px),transparent)}
+ .nk-tabs.more-l.more-r{-webkit-mask-image:linear-gradient(to right,transparent,#000 48px,#000 calc(100% - 48px),transparent);mask-image:linear-gradient(to right,transparent,#000 48px,#000 calc(100% - 48px),transparent)}
+ .nk-kpis{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:12px;margin:0 0 18px}
+ .nk-kpi{display:block;margin:0;min-height:0;padding:12px 16px;border:1px solid var(--nk-border);border-radius:14px;background:var(--nk-surface);font:inherit;color:inherit;text-align:left}
+ .nk-kpi b{display:block;font-size:24px;line-height:1.25;font-variant-numeric:tabular-nums}.nk-kpi span{display:block;color:var(--nk-muted);font-size:13px;line-height:1.35}
+ .nk-kpi.ok b{color:var(--nk-accent)}.nk-kpi.todo b{color:var(--nk-todo)}.nk-kpi-go{cursor:pointer}
+ @media(hover:hover) and (pointer:fine){.nk-kpi-go:hover{border-color:var(--primary-color)}}
+ @media(max-width:600px){.nk-kpis{gap:8px}.nk-kpi{padding:10px 12px;border-radius:12px}.nk-kpi b{font-size:18px}.nk-kpi span{font-size:12px}}
 `;
+
+// The newest copy loaded on the page is the one every brick's pages use (hub.ts). Published last: every piece above exists.
+const shared=globalThis as {hestiaSocleUi?:typeof self};
+if(!shared.hestiaSocleUi||!sameOrNewer(shared.hestiaSocleUi,self))shared.hestiaSocleUi=self;
