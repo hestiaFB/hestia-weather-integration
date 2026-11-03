@@ -210,7 +210,7 @@ export class HestiaWeatherCardEditor extends LitElement {
     window.dispatchEvent(new CustomEvent('location-changed', { bubbles: true, composed: true }));
   };
   static styles = css`
-    .note { color:var(--secondary-text-color); font-size:13px; line-height:1.6; margin:0 0 16px; }
+    .note { color:var(--secondary-text-color); font-size:var(--nw-fs-small,12px); line-height:1.6; margin:0 0 16px; }
     .note.warn { color:var(--primary-text-color); }
     a { color:var(--primary-color); }
   `;

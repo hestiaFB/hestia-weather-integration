@@ -41,7 +41,7 @@ export const tokens = css`
 
     /* Type scale: six sizes for the whole card, nothing else.
        label 10 (small capitals) · small 12 · text 13 · title 17 · value 30 · temperature 42 */
-    --nw-fs-label: 10px; --nw-fs-small: 12px; --nw-fs-text: 13px; --nw-fs-title: 17px; --nw-fs-value: 30px; --nw-fs-temp: 42px;
+    --nw-fs-label: 11px; --nw-fs-small: 12px; --nw-fs-text: 14px; --nw-fs-title: 17px; --nw-fs-case: 21px; --nw-fs-value: 34px; --nw-fs-temp: 58px;
     --nw-label-spacing: .6px;
 
     /* Meaning colours, « Aube » palette: OKLCH, same lightness and chroma, only the hue changes, so they always match.

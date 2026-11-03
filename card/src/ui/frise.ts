@@ -185,8 +185,8 @@ export class HestiaFrise extends LitElement {
     .item.on { opacity:1; translate:0 0; } .item.off { opacity:0; translate:0 -100%; }
     .item > div { min-width:0; }
     /* The point on show (2 November): a large tinted icon, the time in small grey capitals, the sentence in bold. */
-    .when { font-size:11px; line-height:14px; letter-spacing:.08em; text-transform:uppercase; font-weight:650; white-space:nowrap; color:var(--nw-fg2); }
-    .x { font-size:15px; line-height:20px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .when { font-size:var(--nw-fs-label); line-height:14px; letter-spacing:.08em; text-transform:uppercase; font-weight:650; white-space:nowrap; color:var(--nw-fg2); }
+    .x { font-size:var(--nw-fs-text); line-height:20px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .badge { display:grid; place-items:center; width:36px; height:36px; flex:none; border-radius:11px; background:color-mix(in oklab, var(--tone) 34%, transparent); }
     .badge ha-icon { --mdc-icon-size:18px; color:color-mix(in oklab, var(--tone) 40%, var(--nw-fg)); }
     .item.al .badge { background:color-mix(in oklab, var(--al) 40%, transparent); }
@@ -210,7 +210,7 @@ export class HestiaFrise extends LitElement {
     .pin:focus-visible { outline:none; } .pin:focus-visible .chip { outline:2px solid var(--nw-accent); outline-offset:2px; }
     /* A label: one pill tinted with its point, its icons (two at most) plain, its time, how many share it. */
     .chip { position:relative; display:flex; gap:4px; align-items:center; padding:3px 8px 3px 6px; border-radius:var(--nw-radius-pill);
-      white-space:nowrap; font-size:12px; line-height:16px; font-weight:650; font-variant-numeric:tabular-nums;
+      white-space:nowrap; font-size:var(--nw-fs-small); line-height:16px; font-weight:650; font-variant-numeric:tabular-nums;
       background:color-mix(in oklab, var(--tone) 30%, var(--nw-bg)); box-shadow:0 0 0 1px var(--nw-line);
       transition:background .26s var(--nw-ease), transform .26s var(--nw-ease), box-shadow .26s var(--nw-ease); }
     .chip ha-icon { --mdc-icon-size:14px; transition:opacity .26s, transform .26s var(--nw-ease); }
@@ -224,7 +224,7 @@ export class HestiaFrise extends LitElement {
     .pin.on .chip { background:color-mix(in oklab, var(--tone) 55%, var(--nw-bg)); transform:translateY(-4px) scale(1.06);
       box-shadow:0 0 0 1px var(--nw-line), 0 4px 10px -4px rgb(0 0 0 / .35); }
     .count { display:grid; place-items:center; min-width:16px; height:16px; padding:0 4px; box-sizing:border-box; border-radius:8px;
-      font-size:10px; font-weight:700; background:var(--nw-fg); color:var(--nw-bg); }
+      font-size:var(--nw-fs-label); font-weight:700; background:var(--nw-fg); color:var(--nw-bg); }
     /* A label holding an alert: the alert's outline, no coloured halo (neutral shadows only, 2 November). */
     /* A label holding an alert keeps the same neutral outline: its icon says it (as the maquette). */
     .lane { position:absolute; left:0; right:0; top:56px; height:18px; display:flex; gap:3px; }
@@ -253,7 +253,7 @@ export class HestiaFrise extends LitElement {
     .mark { top:61px; }
     @keyframes ripple { from { transform:scale(.6); opacity:.9; } to { transform:scale(2.2); opacity:0; } }
     .track.bare .needle { top:6px; }
-    .hours { position:relative; height:16px; margin:6px 16px 0; font-size:11px; line-height:16px; color:var(--nw-fg2); font-variant-numeric:tabular-nums; }
+    .hours { position:relative; height:16px; margin:6px 16px 0; font-size:var(--nw-fs-label); line-height:16px; color:var(--nw-fg2); font-variant-numeric:tabular-nums; }
     .hours span { position:absolute; translate:-50% 0; white-space:nowrap; }
     .hours span.first { translate:0 0; } .hours span.last { translate:-100% 0; } .hours span.hide { visibility:hidden; }
     @media (prefers-reduced-motion:reduce) {

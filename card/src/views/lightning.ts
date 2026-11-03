@@ -66,8 +66,8 @@ export const lightningStyles = css`
   .lz-radar .ring { fill:none; stroke:var(--nw-line); }
   .lz-radar .ring.near { stroke:color-mix(in oklab, var(--nw-level2) 75%, transparent); stroke-dasharray:3 3; }
   .lz-radar .unplaced { fill:none; stroke:var(--nw-level1); stroke-opacity:.5; stroke-dasharray:1 3; }
-  .lz-radar text { font-size:12px; font-weight:700; fill:var(--nw-fg2); text-anchor:middle; }
-  .lz-radar text.km { font-size:10px; font-weight:600; text-anchor:start; }
+  .lz-radar text { font-size:var(--nw-fs-small); font-weight:700; fill:var(--nw-fg2); text-anchor:middle; }
+  .lz-radar text.km { font-size:var(--nw-fs-label); font-weight:600; text-anchor:start; }
   .lz-pulse { fill:none; stroke:var(--nw-level3); stroke-width:1.5; transform-box:fill-box; transform-origin:center;
     animation:lz-pulse 1.8s ease-out infinite; animation-play-state:var(--nw-motion, running); }
   @keyframes lz-pulse { from { opacity:.9; transform:scale(1); } to { opacity:0; transform:scale(3.2); } }

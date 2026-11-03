@@ -220,11 +220,12 @@ export class HestiaShell extends LitElement {
     :active?this.tabs.get(active)??html`<main><p class="muted" role="status">${t('Chargement…')}</p></main>`:settings?html`<main><h1>${t('Réglages Hestia')}</h1><p class="muted">${t('Les préférences communes à votre hub.')}</p>${this.appearance()}${this.display()}</main>`:slug?html`<main><h1>${t('Cette page est indisponible')}</h1><p>${t('La brique correspondante n’est pas installée ou cette adresse est inconnue.')}</p><button @click=${()=>this.go('')}>${t('Retour à l’accueil')}</button></main>`:this.home()}</div>`;
  }
  static styles=[css`
-  :host{display:flex;flex-direction:column;height:100%;color:var(--primary-text-color,#edf1f7);background:var(--primary-background-color,#151c25);font:16px/1.65 var(--paper-font-body1_-_font-family,Roboto,system-ui,sans-serif);--nk-accent:#a1c9e8;--nk-action-bg:#285f87;--nk-ok:#a1c9e8;--nk-todo:#f2a65a;--nk-border:var(--divider-color,#657386);--nk-muted:var(--secondary-text-color,#bdc5d1);--nk-surface:var(--card-background-color,#222932)}
+  /* Les sept tailles de texte de la charte (hestia-ecosysteme/charte, échelle C) : le hub les reprend telles quelles. */
+  :host{--nw-fs-label:11px;--nw-fs-small:12px;--nw-fs-text:14px;--nw-fs-title:17px;--nw-fs-case:21px;--nw-fs-value:34px;--nw-fs-temp:58px;display:flex;flex-direction:column;height:100%;color:var(--primary-text-color,#edf1f7);background:var(--primary-background-color,#151c25);font:var(--nw-fs-text,14px)/1.65 var(--paper-font-body1_-_font-family,Roboto,system-ui,sans-serif);--nk-accent:#a1c9e8;--nk-action-bg:#285f87;--nk-ok:#a1c9e8;--nk-todo:#f2a65a;--nk-border:var(--divider-color,#657386);--nk-muted:var(--secondary-text-color,#bdc5d1);--nk-surface:var(--card-background-color,#222932)}
   :host([data-theme=light]){--nk-accent:#285f87;--nk-ok:#285f87;--nk-todo:#b25a00}
   *{box-sizing:border-box}
   header{background:var(--nk-surface);border-bottom:1px solid var(--nk-border);padding:0 24px;flex-shrink:0}
-  .bar{display:flex;gap:12px;align-items:center;padding:8px 0 0}.bar strong{font-size:18px}
+  .bar{display:flex;gap:12px;align-items:center;padding:8px 0 0}.bar strong{font-size:var(--nw-fs-title,17px)}
   .menu-icon{font-size:0;width:22px;height:20px;display:block;border-top:2px solid currentColor;border-bottom:2px solid currentColor;position:relative}.menu-icon:after{content:'';height:2px;background:currentColor;position:absolute;top:7px;left:0;right:0}
   nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
   nav a{border:1px solid transparent;border-radius:8px;margin:8px 0;background:transparent;color:var(--nk-muted);padding:10px 14px;min-height:44px;font:inherit;font-weight:500;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center}
@@ -232,7 +233,7 @@ export class HestiaShell extends LitElement {
   .content{flex:1;min-height:0;overflow:auto}
   .content>*:not(main){display:block;height:100%}
   main{max-width:940px;margin:0 auto;padding:32px 28px 64px}
-  h1{font-size:30px;line-height:1.25;margin:0 0 8px}h2{font-size:22px;margin:0}h3{font-size:18px;margin:0 0 4px}
+  h1{font-size:var(--nw-fs-case,21px);line-height:1.25;margin:0 0 8px}h2{font-size:var(--nw-fs-case,21px);margin:0}h3{font-size:var(--nw-fs-title,17px);margin:0 0 4px}
   p{margin:8px 0}.muted{color:var(--nk-muted)}
   button,.button{font:inherit;color:inherit;min-height:44px;border:1px solid var(--nk-border);border-radius:8px;background:var(--nk-surface);padding:10px 14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;flex-shrink:0}
   button.icon{padding:8px;min-width:44px;justify-content:center}
@@ -240,11 +241,11 @@ export class HestiaShell extends LitElement {
   :focus-visible{outline:3px solid var(--nk-accent);outline-offset:3px}
   .brick{border:1px solid var(--nk-border);border-radius:12px;padding:18px 20px;margin:20px 0;background:var(--nk-surface);--nk-level:var(--nk-muted)}
   .brick.ok{--nk-level:var(--nk-ok)}.brick.action{--nk-level:var(--nk-todo)}.brick.action{border-color:color-mix(in srgb,var(--nk-todo) 50%,var(--nk-border))}
-  .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}.version{font-size:14px;color:var(--nk-muted)}
+  .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}.version{font-size:var(--nw-fs-text,14px);color:var(--nk-muted)}
   .level{font-weight:600;color:var(--nk-level);display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap}.level .summary{color:var(--primary-text-color);font-weight:400}
   .dot{width:10px;height:10px;border-radius:50%;background:var(--nk-level);flex-shrink:0;align-self:center}
   ul{margin:8px 0 12px;padding-left:22px}li{margin:4px 0}
-  .links{display:flex;gap:8px;flex-wrap:wrap}.links span{font-size:14px;border:1px solid var(--nk-border);border-radius:999px;padding:4px 12px;color:var(--nk-muted)}
+  .links{display:flex;gap:8px;flex-wrap:wrap}.links span{font-size:var(--nw-fs-text,14px);border:1px solid var(--nk-border);border-radius:999px;padding:4px 12px;color:var(--nk-muted)}
   .brick .primary{margin-top:8px}
   .others-title{margin:36px 0 4px}
   .other{display:flex;justify-content:space-between;align-items:center;gap:20px;border-top:1px solid var(--nk-border);padding:16px 0}
@@ -252,7 +253,7 @@ export class HestiaShell extends LitElement {
   button[role=switch][aria-checked=true] .track{background:var(--nk-action-bg)}button[role=switch][aria-checked=true] .thumb{left:19px}button[disabled]{opacity:.6;cursor:default}
   @media(prefers-reduced-motion:reduce){.thumb{transition:none}}
   .notice{padding:14px 16px;border:1px solid var(--nk-border);border-radius:8px}
-  @media(max-width:600px){header{padding:0 12px}main{padding:24px 16px 48px}h1{font-size:26px}.brick{padding:16px}.other{flex-direction:column;align-items:flex-start;gap:8px}}
+  @media(max-width:600px){header{padding:0 12px}main{padding:24px 16px 48px}h1{font-size:var(--nw-fs-case,21px)}.brick{padding:16px}.other{flex-direction:column;align-items:flex-start;gap:8px}}
  `,hubStyles,css`
   .nk-body>.brick{border:0;border-radius:0;padding:0;margin:0;background:transparent}
   @media(min-width:760px){header{display:grid;grid-template-columns:auto 1fr;gap:32px;align-items:center;padding:8px 28px}.bar{padding:0}nav a{margin:0}}
@@ -260,9 +261,9 @@ export class HestiaShell extends LitElement {
  `,modernStyles,css`
   .nk-lines{list-style:none;margin:0;padding:0}.nk-line{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--nk-border)}.nk-line:first-child{border-top:0;padding-top:0}
   .nk-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:var(--nk-muted);margin-top:8px}.ok>.nk-dot{background:var(--nk-ok)}.todo>.nk-dot{background:var(--nk-todo)}
-  .nk-line>div{flex:1 1 180px;min-width:0;display:flex;flex-direction:column}.nk-why{font-size:13px;color:var(--nk-muted)}.nk-go{white-space:normal;flex-shrink:0;max-width:100%;margin-left:auto}
- :host{position:relative;display:grid;grid-template-columns:264px minmax(0,1fr);height:var(--nk-viewport-height,100dvh);min-height:0;grid-template-rows:minmax(0,1fr)}aside{padding:28px 18px 20px;border-right:1px solid var(--nk-border);overflow:auto;background:var(--nk-surface)}.brand{display:flex;align-items:center;gap:8px;padding:0 4px 26px}.brand strong{font-size:25px;letter-spacing:-.04em}.brand button{border:0;padding:8px;min-width:44px}.brand svg{width:25px;height:25px}.brand .nk-logo{width:40px;height:40px;margin:-6px 0 -6px -4px;flex-shrink:0}.brand button{margin-left:auto}.mobile-bar .nk-logo{width:30px;height:30px;flex-shrink:0;margin-right:-4px}nav{display:block;overflow:visible;margin:0 0 20px}nav+nav{border-top:1px solid var(--nk-border);padding-top:18px}.nav-label{margin:0 12px 9px;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--nk-muted)}nav a{display:flex;gap:12px;align-items:center;border:0;border-radius:24px;margin:3px 0;min-height:44px;padding:9px 13px;font-size:13px;white-space:normal}nav a svg{width:19px;height:19px;flex-shrink:0}nav a[aria-current=page]{background:var(--nk-selected);border:0;color:var(--primary-text-color);font-weight:600}@media(hover:hover) and (pointer:fine){nav a:hover{background:var(--nk-selected)}}nav a:active{background:var(--nk-selected)}.content{min-width:0;overflow:auto;height:100%;grid-column:2}.content>*:not(main){height:100%}.mobile-bar,.backdrop{display:none}.theme-label{display:block;margin-bottom:6px}select{width:100%;max-width:460px;min-height:44px;padding:10px 14px;border:1px solid var(--nk-border);border-radius:15px;background:var(--nk-surface);color:inherit;font:inherit}.other{padding:0}.other+ .other{margin-top:20px;padding-top:20px}.nk-home-head{margin-top:0}
- @media(max-width:760px){:host{display:flex;flex-direction:column}.mobile-bar{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--nk-border);padding:6px 10px;flex-shrink:0}.mobile-bar button{border:0;background:transparent;padding:8px;min-width:44px}.mobile-bar strong{font-size:20px}
+  .nk-line>div{flex:1 1 180px;min-width:0;display:flex;flex-direction:column}.nk-why{font-size:var(--nw-fs-small,12px);color:var(--nk-muted)}.nk-go{white-space:normal;flex-shrink:0;max-width:100%;margin-left:auto}
+ :host{position:relative;display:grid;grid-template-columns:264px minmax(0,1fr);height:var(--nk-viewport-height,100dvh);min-height:0;grid-template-rows:minmax(0,1fr)}aside{padding:28px 18px 20px;border-right:1px solid var(--nk-border);overflow:auto;background:var(--nk-surface)}.brand{display:flex;align-items:center;gap:8px;padding:0 4px 26px}.brand strong{font-size:var(--nw-fs-case,21px);letter-spacing:-.04em}.brand button{border:0;padding:8px;min-width:44px}.brand svg{width:25px;height:25px}.brand .nk-logo{width:40px;height:40px;margin:-6px 0 -6px -4px;flex-shrink:0}.brand button{margin-left:auto}.mobile-bar .nk-logo{width:30px;height:30px;flex-shrink:0;margin-right:-4px}nav{display:block;overflow:visible;margin:0 0 20px}nav+nav{border-top:1px solid var(--nk-border);padding-top:18px}.nav-label{margin:0 12px 9px;font-size:var(--nw-fs-label,11px);font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--nk-muted)}nav a{display:flex;gap:12px;align-items:center;border:0;border-radius:24px;margin:3px 0;min-height:44px;padding:9px 13px;font-size:var(--nw-fs-text,14px);white-space:normal}nav a svg{width:19px;height:19px;flex-shrink:0}nav a[aria-current=page]{background:var(--nk-selected);border:0;color:var(--primary-text-color);font-weight:600}@media(hover:hover) and (pointer:fine){nav a:hover{background:var(--nk-selected)}}nav a:active{background:var(--nk-selected)}.content{min-width:0;overflow:auto;height:100%;grid-column:2}.content>*:not(main){height:100%}.mobile-bar,.backdrop{display:none}.theme-label{display:block;margin-bottom:6px}select{width:100%;max-width:460px;min-height:44px;padding:10px 14px;border:1px solid var(--nk-border);border-radius:15px;background:var(--nk-surface);color:inherit;font:inherit}.other{padding:0}.other+ .other{margin-top:20px;padding-top:20px}.nk-home-head{margin-top:0}
+ @media(max-width:760px){:host{display:flex;flex-direction:column}.mobile-bar{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--nk-border);padding:6px 10px;flex-shrink:0}.mobile-bar button{border:0;background:transparent;padding:8px;min-width:44px}.mobile-bar strong{font-size:var(--nw-fs-title,17px)}
   .nk-where{gap:8px;padding:6px 12px 6px 8px!important;border-radius:999px!important;transition:background-color var(--h-fast) var(--h-ease-out)}.nk-where svg{width:18px;height:18px;color:var(--nk-muted);transition:transform var(--h-base) var(--h-ease-out)}.nk-where[aria-expanded=true] svg{transform:rotate(180deg)}.nk-where:active{background:var(--nk-selected)}
   aside{display:block;position:absolute;inset:0 auto 0 0;width:min(290px,86vw);z-index:21;border-radius:0 24px 24px 0;box-shadow:0 12px 40px #0003;touch-action:pan-y;transform:translateX(-104%);visibility:hidden;transition:transform var(--h-exit) var(--h-ease-sheet),visibility 0s linear var(--h-exit)}
   aside.open{transform:none;visibility:visible;transition:transform var(--h-slow) var(--h-ease-sheet),visibility 0s}aside.dragging{transition:none}
@@ -270,7 +271,7 @@ export class HestiaShell extends LitElement {
   .backdrop.open{opacity:1;visibility:visible;transition:opacity var(--h-slow) var(--h-ease-out),visibility 0s}
   .content{flex:1;height:auto}.other{gap:12px}.brand{padding-bottom:20px}}
  @media(max-width:760px) and (prefers-reduced-motion:reduce){aside,aside.open{transform:none;transition-property:opacity,visibility}aside{opacity:0}aside.open{opacity:1}}
- .nav-fold{display:flex;align-items:center;justify-content:space-between;width:calc(100% - 12px);min-height:44px;margin:0 0 0 12px;padding:0;border:0;border-radius:0;background:none;font:inherit;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--nk-muted);cursor:pointer}
+ .nav-fold{display:flex;align-items:center;justify-content:space-between;width:calc(100% - 12px);min-height:44px;margin:0 0 0 12px;padding:0;border:0;border-radius:0;background:none;font:inherit;font-size:var(--nw-fs-label,11px);font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--nk-muted);cursor:pointer}
  .nav-fold svg{width:16px;height:16px;transition:transform var(--h-base) var(--h-ease-out)}.nav-fold[aria-expanded=false] svg{transform:rotate(-90deg)}nav:has(.nav-fold[aria-expanded=false]){margin-bottom:8px}
  @media(hover:hover) and (pointer:fine){.nav-fold:hover{color:var(--primary-text-color)}}
  :host{-webkit-tap-highlight-color:transparent}@media(pointer:coarse){select{font-size:16px}}

@@ -223,7 +223,7 @@ export const todayStyles = css`
   .feel-row { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 12px; }
   .feel-word { font-size:var(--nw-fs-text); font-weight:650; }
   .feel-say { font-size:var(--nw-fs-small); color:var(--nw-fg2); }
-  .feel-ends { display:flex; justify-content:space-between; margin:2px 6px 0; font-size:11px; color:var(--nw-fg2); font-variant-numeric:tabular-nums; }
+  .feel-ends { display:flex; justify-content:space-between; margin:2px 6px 0; font-size:var(--nw-fs-label); color:var(--nw-fg2); font-variant-numeric:tabular-nums; }
   .feel-factors { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
   @container (min-width:600px) { .feel-factors { grid-template-columns:repeat(4, minmax(0,1fr)); } }
   .feel-factors > div { container-type:inline-size; display:grid; gap:2px; align-content:start; padding:10px 12px; border-radius:12px; min-width:0;
@@ -238,7 +238,7 @@ export const todayStyles = css`
   @container (max-width:150px) { .ff-head { flex-direction:column; align-items:flex-start; gap:4px; } }
   .ff-eff { flex:none; padding:0 6px; border-radius:var(--nw-radius-pill); font-size:var(--nw-fs-label); font-weight:700; white-space:nowrap;
     background:color-mix(in oklab, var(--c) 28%, transparent); color:color-mix(in oklab, var(--c) 40%, var(--nw-fg)); }
-  .feel-factors b { font-size:17px; font-weight:500; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+  .feel-factors b { font-size:var(--nw-fs-title); font-weight:500; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
   .feel-factors small { font-size:var(--nw-fs-small); color:var(--nw-fg2); }
   /* Rain of the last seven days: the value on each bar. */
   .bars, .bars-axis { display:grid; grid-template-columns:repeat(var(--n, 7), 1fr); gap:6px; }
@@ -246,10 +246,10 @@ export const todayStyles = css`
   .bars.dense span { overflow:visible; white-space:nowrap; }
   .bars { align-items:end; height:66px; }
   .bars > div { display:flex; flex-direction:column; justify-content:flex-end; height:100%; gap:3px; }
-  .bars span { font-size:10px; font-weight:700; text-align:center; line-height:1; min-height:12px; white-space:nowrap; }
+  .bars span { font-size:var(--nw-fs-label); font-weight:700; text-align:center; line-height:1; min-height:12px; white-space:nowrap; }
   .bars i { display:block; border-radius:5px 5px 2px 2px; background:color-mix(in oklab, var(--nw-rain) 80%, transparent); min-height:3px; }
   .bars i.zero { background:color-mix(in oklab, var(--nw-line) 80%, transparent); }
   .bars-axis { text-align:center; }
-  .bars-axis .nw-label { font-size:9.5px; letter-spacing:.02em; }
+  .bars-axis .nw-label { font-size:var(--nw-fs-label); letter-spacing:.02em; }
   .bars:not(.dense), .bars-axis { gap:3px; }
 `;

@@ -25,7 +25,7 @@ from .engine import legacy
 
 SOCLE_VERSION = (1, 22)
 # Which copy of a same version is the newest: written by copier.sh when the socle changes (EMPREINTE), equal in ui.ts.
-SOCLE_BUILD = "20261103.1428"
+SOCLE_BUILD = "20261103.1646"
 # 1.1: an optional `tab`, the tab's own name when it is not the brick's (« Météo » for Hestia Weather).
 # 1.2: async_register_card, the brick's card on every dashboard, also as a dashboard resource.
 # 1.3: the home page says « À découvrir » and « Voir » for the bricks not installed (same contract as 1.2).

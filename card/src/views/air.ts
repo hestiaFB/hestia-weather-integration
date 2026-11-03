@@ -18,7 +18,7 @@ function disc(r: AtmoReading | undefined, scale: number): TemplateResult {
   return html`<svg class="disc" viewBox="0 0 64 64" aria-hidden="true">
     <circle cx="32" cy="32" r="26" fill="none" stroke="color-mix(in oklab,var(--nw-fg) 8%,transparent)" stroke-width="7"/>
     ${svg`<circle cx="32" cy="32" r="26" fill="none" stroke=${color} stroke-width="7" stroke-linecap="round" stroke-dasharray=${`${(share * C).toFixed(1)} ${C}`} transform="rotate(-90 32 32)"/>`}
-    <text x="32" y="38" text-anchor="middle" font-size="18" font-weight="300" fill="currentColor">${value ?? '–'}</text></svg>`;
+    <text x="32" y="38" text-anchor="middle" style="font-size:var(--nw-fs-title)" font-weight="300" fill="currentColor">${value ?? '–'}</text></svg>`;
 }
 
 /** One line per pollutant or species: its name, a bar up to its level in its step's colour, its level in words (or its concentration). */
@@ -103,10 +103,10 @@ export const airStyles = css`
   .aq.pollen .aq-main .txt { display:none; }
   .aq .disc { width:64px; height:64px; }
   .aq .txt { display:flex; flex-direction:column; gap:2px; min-width:0; }
-  .aq strong { font-size:17px; font-weight:650; }
+  .aq strong { font-size:var(--nw-fs-title); font-weight:650; }
   .aq small { font-size:var(--nw-fs-small); color:var(--nw-fg2); }
   .aq-bars { display:grid; gap:6px; min-width:0; }
-  .aq-bars > div { display:grid; grid-template-columns:minmax(56px,auto) minmax(40px,1fr) auto; align-items:center; gap:8px; font-size:13px; }
+  .aq-bars > div { display:grid; grid-template-columns:minmax(56px,auto) minmax(40px,1fr) auto; align-items:center; gap:8px; font-size:var(--nw-fs-text); }
   .aq-bars i { position:relative; display:block; height:5px; border-radius:9px; overflow:hidden; background:color-mix(in srgb, var(--nw-fg) 6%, transparent); }
   .aq-bars b { position:absolute; inset:0 auto 0 0; border-radius:9px; background:var(--c); }
   .aq-bars span:last-child { color:var(--nw-fg2); font-size:var(--nw-fs-small); text-align:right; white-space:nowrap; }

@@ -6,7 +6,7 @@ import { css } from 'lit';
 export const traitStyles = css`
   /* The card, its panels, heads, labels, values and stats come from the shared charter (hestia-charte); here only what is Weather's. */
   ha-card { --nw-ease:cubic-bezier(.23,1,.32,1); }
-  .mini-axis { font-size:10.5px; color:var(--nw-fg2); font-variant-numeric:tabular-nums; }
+  .mini-axis { font-size:var(--nw-fs-label); color:var(--nw-fg2); font-variant-numeric:tabular-nums; }
 
   /* « En ce moment »: a soft veil behind it, so leaves, rain and snow never cross the figures; no source pill (in its tooltip). */
   /* « En ce moment » in the charter's glass frame (3 November): readable over leaves, rain and clouds, without a shadow. */

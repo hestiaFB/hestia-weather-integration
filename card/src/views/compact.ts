@@ -125,7 +125,7 @@ export const compactStyles = css`
   .nw-mini.still { cursor:default; }
   .nw-mini:focus-visible, .nw-alertcard:focus-visible { outline:2px solid var(--nw-accent); outline-offset:-2px; }
   .mini-icon { --mdc-icon-size:30px; color:color-mix(in oklab, var(--nw-wind) var(--nw-ink), var(--nw-fg)); flex:none; }
-  .mini-temp { font-size:24px; font-weight:700; letter-spacing:-.6px; white-space:nowrap; line-height:1; }
+  .mini-temp { font-size:var(--nw-fs-value); font-weight:700; letter-spacing:-.6px; white-space:nowrap; line-height:1; }
   .mini-temp small { font-size:var(--nw-fs-small); font-weight:400; vertical-align:super; margin-left:1px; letter-spacing:0; }
   .mini-text { display:flex; flex-direction:column; min-width:0; flex:1; line-height:1.3; }
   .mini-text b { font-size:var(--nw-fs-text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

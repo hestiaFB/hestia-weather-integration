@@ -132,10 +132,10 @@ export const forecastStyles = css`
   .fc.scrubbing .fc-scrub { opacity:.8; } .fc.scrubbing .fc-tip { opacity:1; }
   /* Each tick sits exactly under its point of the curve: the hour, then its sky. */
   .fc-hours { position:relative; height:56px; }
-  .fc-wind { display:inline-flex; align-items:center; gap:3px; margin-top:2px; font-size:11px; color:var(--nw-fg2); white-space:nowrap; }
-  .fc-unit { margin:0; text-align:right; font-size:10.5px; color:var(--nw-fg2); }
+  .fc-wind { display:inline-flex; align-items:center; gap:3px; margin-top:2px; font-size:var(--nw-fs-label); color:var(--nw-fg2); white-space:nowrap; }
+  .fc-unit { margin:0; text-align:right; font-size:var(--nw-fs-label); color:var(--nw-fg2); }
   .fc-hours > div { position:absolute; top:0; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:2px;
-    font-size:11px; color:var(--nw-fg2); white-space:nowrap; font-variant-numeric:tabular-nums; }
+    font-size:var(--nw-fs-label); color:var(--nw-fg2); white-space:nowrap; font-variant-numeric:tabular-nums; }
   .fc-hours > div:first-child { transform:none; align-items:flex-start; }
   .fc-hours > div:last-child:not(:first-child) { transform:translateX(-100%); align-items:flex-end; }
   .fc-hours ha-icon { --mdc-icon-size:15px; }
@@ -143,13 +143,13 @@ export const forecastStyles = css`
   .wk { display:grid; }
   .wk details + details { border-top:1px solid color-mix(in srgb, var(--nw-fg) 6%, transparent); }
   .wk summary { display:grid; grid-template-columns:44px 22px 72px 28px minmax(40px,1fr) 28px 14px; align-items:center; gap:8px; padding:8px 2px;
-    list-style:none; cursor:pointer; font-size:14px; font-variant-numeric:tabular-nums; }
+    list-style:none; cursor:pointer; font-size:var(--nw-fs-text); font-variant-numeric:tabular-nums; }
   .wk summary::-webkit-details-marker { display:none; }
   .wk .day { font-weight:650; }
   .wk .day.today { color:color-mix(in oklab, var(--nw-wind) var(--nw-ink), var(--nw-fg)); }
   .wk summary > ha-icon { --mdc-icon-size:20px; color:var(--nw-fg2); }
   .wk .lo { color:var(--nw-fg2); text-align:right; } .wk .hi { font-weight:650; }
-  .wk .rain { display:inline-flex; align-items:center; gap:3px; white-space:nowrap; font-size:12px; color:color-mix(in oklab, var(--nw-rain) 45%, var(--nw-fg)); } /* the charter's rain, enough of the text in it to read on a light card */
+  .wk .rain { display:inline-flex; align-items:center; gap:3px; white-space:nowrap; font-size:var(--nw-fs-small); color:color-mix(in oklab, var(--nw-rain) 45%, var(--nw-fg)); } /* the charter's rain, enough of the text in it to read on a light card */
   .wk .rain ha-icon { --mdc-icon-size:13px; }
   .wk .track { position:relative; height:6px; border-radius:9px; background:color-mix(in srgb, var(--nw-fg) 6%, transparent); }
   .wk .track > i { position:absolute; top:0; bottom:0; border-radius:9px;
@@ -158,7 +158,7 @@ export const forecastStyles = css`
   .wk .dx { padding:0 2px 10px; }
   .wk .dx p { margin:6px 0 0; font-size:var(--nw-fs-small); color:var(--nw-fg2); }
   .dx-curve { display:block; width:100%; height:46px; overflow:visible; }
-  .dx-axis { display:flex; justify-content:space-between; font-size:10.5px; color:var(--nw-fg2); }
-  @container (max-width:420px) { .wk summary { grid-template-columns:34px 18px 66px 24px minmax(30px,1fr) 26px 12px; gap:5px; } .wk .rain { font-size:11px; } }
+  .dx-axis { display:flex; justify-content:space-between; font-size:var(--nw-fs-label); color:var(--nw-fg2); }
+  @container (max-width:420px) { .wk summary { grid-template-columns:34px 18px 66px 24px minmax(30px,1fr) 26px 12px; gap:5px; } .wk .rain { font-size:var(--nw-fs-label); } }
   @media (prefers-reduced-motion:reduce) { .fc-scrub, .fc-tip { transition:none; } }
 `;

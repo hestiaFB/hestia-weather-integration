@@ -21,8 +21,9 @@ export default String.raw`/* CHARTE COMMUNE HESTIA — jetons et pièces partag�
   --nw-frost: blur(14px) saturate(1.6);
   --nw-frame-line: color-mix(in srgb, var(--nw-fg) 16%, transparent);
   --nw-pad-panel: 18px 20px;
-  /* Six tailles de texte, rien d'autre : étiquette 10 · secondaire 12 · texte 13 · titre 17 · valeur 30 · température 42. */
-  --nw-fs-label: 10px; --nw-fs-small: 12px; --nw-fs-text: 13px; --nw-fs-title: 17px; --nw-fs-value: 30px; --nw-fs-temp: 42px;
+  /* Sept tailles de texte, rien d'autre (échelle C, 3 novembre) : étiquette 11 · secondaire 12 · texte et titre de case 14 ·
+     titre de carte et de section 17 · valeur de case 21 · conseil et valeur vedette 34 · température 58. */
+  --nw-fs-label: 11px; --nw-fs-small: 12px; --nw-fs-text: 14px; --nw-fs-title: 17px; --nw-fs-case: 21px; --nw-fs-value: 34px; --nw-fs-temp: 58px;
   --nw-label-spacing: .6px;
   /* Couleurs de sens, palette « Aube » (OKLCH, même clarté et même saturation). Un thème peut les remplacer. */
   --nw-rain: var(--hestia-rain-color, oklch(.8 .07 190));
@@ -52,7 +53,7 @@ button { font:inherit; color:inherit; }
 button:focus-visible { outline:2px solid var(--nw-accent); outline-offset:2px; }
 .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 /* Étiquette en petites capitales, une seule taille partout (style Trait, 3 novembre). */
-.nw-label { font-size:11px; line-height:14px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; color:var(--nw-fg2); white-space:nowrap; }
+.nw-label { font-size:var(--nw-fs-label); line-height:14px; font-weight:650; letter-spacing:.08em; text-transform:uppercase; color:var(--nw-fg2); white-space:nowrap; }
 /* Texte coloré toujours lisible : la couleur de sens mélangée au texte. */
 .nw-ink { font-size:var(--nw-fs-small); font-weight:600; color:color-mix(in oklab, var(--c) var(--nw-ink), var(--nw-fg)); }
 /* Pastille de source : une seule règle. */
@@ -68,42 +69,44 @@ button:focus-visible { outline:2px solid var(--nw-accent); outline-offset:2px; }
 ha-card { font-family:Manrope, var(--ha-font-family-body, Roboto), system-ui, sans-serif; line-height:1.5; border-radius:22px;
   --nw-surface:color-mix(in srgb, var(--nw-fg) 3.5%, var(--nw-bg)); }
 /* Le titre de la carte (« Synthèse », le nom de la pièce) et la grande température fine. */
-.nw-title { margin:0; font-size:19px; line-height:1.25; font-weight:700; letter-spacing:-.02em; }
+.nw-title { margin:0; font-size:var(--nw-fs-title); line-height:1.25; font-weight:700; letter-spacing:-.02em; }
 /* La lecture (3 novembre) : la grande température, son unité en exposant hors du bloc des chiffres, le mini–maxi aligné à droite
    sur la fin des chiffres (après la virgule, avant « °C »). La même dans Weather et Confort (hestia-lecture.ts). */
 .nw-reading { display:inline-grid; justify-items:end; padding-right:26px; }
 .nw-reading .nw-temp { position:relative; }
-.nw-reading .nw-temp sup { position:absolute; left:100%; top:.3em; margin-left:3px; font-size:14px; line-height:1; font-weight:500; letter-spacing:0; color:var(--nw-fg2); }
+.nw-reading .nw-temp sup { position:absolute; left:100%; top:.3em; margin-left:3px; font-size:var(--nw-fs-text); line-height:1; font-weight:500; letter-spacing:0; color:var(--nw-fg2); }
 .nw-reading-tap { all:unset; cursor:pointer; border-radius:8px; }
 .nw-reading-tap:focus-visible { outline:2px solid var(--nw-accent); outline-offset:2px; }
-.nw-reading-more { margin-top:4px; font-size:12px; color:var(--nw-fg2); white-space:nowrap; }
-.nw-range { margin-top:4px; font-size:12px; font-weight:500; color:var(--nw-fg2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.nw-reading-more { margin-top:4px; font-size:var(--nw-fs-small); color:var(--nw-fg2); white-space:nowrap; }
+.nw-range { margin-top:4px; font-size:var(--nw-fs-small); font-weight:500; color:var(--nw-fg2); font-variant-numeric:tabular-nums; white-space:nowrap; }
 /* 58 px au plus, plus petite dans une carte étroite (15 % de sa largeur) : le titre et son « i » gardent leur ligne. */
-.nw-temp { font-size:min(58px, 15cqi); font-weight:300; letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
+.nw-temp { font-size:min(var(--nw-fs-temp), 15cqi); font-weight:300; letter-spacing:-.05em; line-height:1; font-variant-numeric:tabular-nums; }
 /* Le titre d'une section (« Aujourd'hui », « Maintenant ») : en clair, son résumé à côté, le chevron rond à droite s'il se replie. */
 .nw-section-head { display:flex; align-items:center; gap:10px; min-width:0; }
-.nw-section-head h2 { margin:0; font-size:17px; line-height:1.3; font-weight:700; letter-spacing:-.2px; }
-.nw-section-head .nw-sum { flex:1; min-width:0; font-size:13px; color:var(--nw-fg2); }
+.nw-section-head h2 { margin:0; font-size:var(--nw-fs-title); line-height:1.3; font-weight:700; letter-spacing:-.2px; }
+.nw-section-head .nw-sum { flex:1; min-width:0; font-size:var(--nw-fs-text); color:var(--nw-fg2); }
 /* Le panneau : une surface teintée, sans contour, arrondie dans l'arrondi de la carte. */
 .nw-panel { min-width:0; box-sizing:border-box; padding:14px 16px; border:0; border-radius:16px; background:var(--nw-surface); }
 /* Son en-tête : un pictogramme au trait, le titre et son « i », un mot ou des onglets à droite. */
 .nw-panel-head { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
 .nw-panel-icon { display:grid; place-items:center; flex:none; color:var(--nw-fg2); }
 .nw-panel-icon ha-icon { --mdc-icon-size:18px; display:flex; } .nw-panel-icon svg { width:18px; height:18px; }
-.nw-panel-head h3 { display:flex; align-items:center; gap:8px; margin:0; min-width:0; font-size:16px; line-height:1.3; font-weight:650; letter-spacing:-.015em; white-space:nowrap; }
+.nw-panel-head h3 { display:flex; align-items:center; gap:8px; margin:0; min-width:0; font-size:var(--nw-fs-text); line-height:1.3; font-weight:650; letter-spacing:0; white-space:nowrap; }
 .nw-panel-head h3 > span { overflow:hidden; text-overflow:ellipsis; }
-.nw-panel-head .aside { margin-left:auto; font-size:12px; line-height:1.4; font-weight:500; color:var(--nw-fg2); }
+.nw-panel-head .aside { margin-left:auto; font-size:var(--nw-fs-small); line-height:1.4; font-weight:500; color:var(--nw-fg2); }
 .nw-panel-head .seg { margin-left:auto; }
 /* La grande valeur fine et son unité ; la phrase grise qui la suit. */
 .nw-value { display:flex; align-items:baseline; gap:5px; }
-.nw-value b { font-size:34px; font-weight:300; letter-spacing:-.04em; line-height:1.1; font-variant-numeric:tabular-nums; }
-.nw-value > span, .nw-value b small { font-size:13px; line-height:1.1; font-weight:500; letter-spacing:0; color:var(--nw-fg2); }
-.nw-say { font-size:12px; color:var(--nw-fg2); }
+.nw-value b { font-size:var(--nw-fs-value); font-weight:300; letter-spacing:-.04em; line-height:1.1; font-variant-numeric:tabular-nums; }
+.nw-value > span, .nw-value b small { font-size:var(--nw-fs-text); line-height:1.1; font-weight:500; letter-spacing:0; color:var(--nw-fg2); }
+/* Dans une grille de petites cases (.nw-cases), la valeur passe à 21 demi-gras : la grande valeur fine reste à la case pleine largeur. */
+.nw-cases .nw-value b { font-size:var(--nw-fs-case); font-weight:600; letter-spacing:-.015em; line-height:1.2; }
+.nw-say { font-size:var(--nw-fs-small); color:var(--nw-fg2); }
 /* Les chiffres sous un panneau : leur nom en petits mots simples, jamais coupés, la valeur en gras. */
 .nw-stats { display:grid; grid-template-columns:repeat(var(--n, 3), minmax(0,1fr)); gap:8px; margin-top:auto; padding-top:10px; border-top:1px solid color-mix(in srgb, var(--nw-fg) 6%, transparent); }
 .nw-stats > * { display:flex; flex-direction:column; gap:2px; min-width:0; }
-.nw-stats > * > :first-child { font-size:11px; line-height:1.35; font-weight:500; letter-spacing:0; text-transform:none; color:var(--nw-fg2); white-space:normal; }
-.nw-stats b { font-size:13px; line-height:1.35; font-weight:650; font-variant-numeric:tabular-nums; }
+.nw-stats > * > :first-child { font-size:var(--nw-fs-label); line-height:1.35; font-weight:500; letter-spacing:0; text-transform:none; color:var(--nw-fg2); white-space:normal; }
+.nw-stats b { font-size:var(--nw-fs-text); line-height:1.35; font-weight:650; font-variant-numeric:tabular-nums; }
 /* Légende : toujours centrée sous son graphique. */
 .nw-legend { display:flex; justify-content:center; flex-wrap:wrap; gap:6px 16px; font-size:var(--nw-fs-small); color:var(--nw-fg2); }
 .nw-legend span { display:inline-flex; align-items:center; gap:6px; }
@@ -113,7 +116,7 @@ ha-card { font-family:Manrope, var(--ha-font-family-body, Roboto), system-ui, sa
 /* Bouton « i » (3 novembre) : un petit disque gris, sans contour ; la lettre est dessinée ici, la même dans toutes les cartes.
    Le bouton reste vide (son aria-label dit ce qu'il explique). */
 .nw-info { display:inline-grid; place-items:center; width:18px; height:18px; min-height:0; margin:0; padding:0; flex:none; border-radius:50%; border:0;
-  background:color-mix(in srgb, var(--nw-fg) 6%, transparent); color:var(--nw-fg2); cursor:pointer; font:700 11px/1 Manrope, system-ui, sans-serif; }
+  background:color-mix(in srgb, var(--nw-fg) 6%, transparent); color:var(--nw-fg2); cursor:pointer; font:700 var(--nw-fs-label)/1 Manrope, system-ui, sans-serif; }
 .nw-info::before { content:'i'; }
 .nw-info > * { display:none; }
 .nw-info:hover { color:var(--nw-fg); background:color-mix(in srgb, var(--nw-fg) 10%, transparent); }
@@ -151,13 +154,13 @@ ha-card { font-family:Manrope, var(--ha-font-family-body, Roboto), system-ui, sa
   background:linear-gradient(180deg, color-mix(in oklab, var(--tone) 85%, #fff), color-mix(in oklab, var(--tone) 78%, transparent));
   box-shadow:inset 0 1px 0 rgb(255 255 255 / .35), inset 0 -1px 0 rgb(0 0 0 / .08); animation:nw-grow .52s var(--nw-ease) both; animation-delay:calc(var(--n, 0) * 90ms); }
 .nw-scale-part:first-child { border-radius:9px 6px 6px 9px; } .nw-scale-part:last-child { border-radius:6px 9px 9px 6px; } .nw-scale-part:only-child { border-radius:9px; }
-.nw-scale-part span { font-size:10.5px; line-height:1; font-weight:700; letter-spacing:.02em; color:rgb(20 26 45 / .72); white-space:nowrap; }
+.nw-scale-part span { font-size:var(--nw-fs-label); line-height:1; font-weight:700; letter-spacing:.02em; color:rgb(20 26 45 / .72); white-space:nowrap; }
 @container (max-width:62px) { .nw-scale-part span { display:none; } }
 .nw-scale-part.wl { place-items:center start; padding-left:10px; } .nw-scale-part.wr { place-items:center end; padding-right:10px; }
 @keyframes nw-grow { from { transform:scaleX(0); } }
 /* La bulle peut être un bouton (un appui ouvre le détail) : la règle passe devant celles des boutons d'une brique. */
 .nw-scale .nw-scale-pin { --tx:-50%; position:absolute; min-height:0; margin:0; font-family:inherit; top:8px; z-index:2; display:inline-flex; align-items:center; padding:3px 9px; border:0; border-radius:var(--nw-radius-pill);
-  white-space:nowrap; font-size:12.5px; font-weight:700; line-height:18px; font-variant-numeric:tabular-nums; color:var(--nw-fg); transform:translateX(var(--tx)) translateY(-2px) scale(1.04);
+  white-space:nowrap; font-size:var(--nw-fs-small); font-weight:700; line-height:18px; font-variant-numeric:tabular-nums; color:var(--nw-fg); transform:translateX(var(--tx)) translateY(-2px) scale(1.04);
   background:color-mix(in oklab, var(--tone) 55%, var(--nw-bg)); box-shadow:0 0 0 1px var(--nw-line), 0 4px 10px -4px rgb(0 0 0 / .35); animation:nw-pop .3s var(--nw-ease) .2s both; }
 .nw-scale .nw-scale-pin.edge-l { --tx:-14px; } .nw-scale .nw-scale-pin.edge-r { --tx:calc(-100% + 14px); }
 @keyframes nw-pop { from { opacity:0; transform:translateX(var(--tx)) translateY(6px) scale(.92); } }
@@ -167,7 +170,7 @@ ha-card { font-family:Manrope, var(--ha-font-family-body, Roboto), system-ui, sa
 .nw-scale-span::before, .nw-scale-span::after { content:''; position:absolute; top:-2px; width:1.5px; height:7px; border-radius:1px; background:inherit; }
 .nw-scale-span::before { left:0; } .nw-scale-span::after { right:0; }
 .nw-scale .nw-scale-mk { position:absolute; top:48px; z-index:2; width:10px; height:10px; min-height:0; margin:0 0 0 -5px; padding:0; box-sizing:border-box; border-radius:50%; background:var(--nw-bg); border:2px solid var(--nw-fg2); }
-.nw-scale-lb { position:absolute; top:66px; translate:-50% 0; font-size:11px; line-height:16px; color:var(--nw-fg2); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.nw-scale-lb { position:absolute; top:66px; translate:-50% 0; font-size:var(--nw-fs-label); line-height:16px; color:var(--nw-fg2); white-space:nowrap; font-variant-numeric:tabular-nums; }
 .nw-scale-lb.up { top:22px; } .nw-scale-lb.first { translate:0 0; } .nw-scale-lb.last { translate:-100% 0; } .nw-scale-lb b { color:var(--nw-fg); font-weight:650; }
 @media (prefers-reduced-motion:reduce) { .nw-scale-part, .nw-scale-pin, .nw-dot::after { animation:none; } }
 
@@ -206,7 +209,7 @@ ha-card { font-family:Manrope, var(--ha-font-family-body, Roboto), system-ui, sa
 .nw-feel-row { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 12px; }
 .nw-feel-word { font-size:var(--nw-fs-text); font-weight:650; }
 .nw-feel-say { font-size:var(--nw-fs-small); color:var(--nw-fg2); }
-.nw-feel-ends { display:flex; justify-content:space-between; margin:2px 6px 0; font-size:11px; color:var(--nw-fg2); font-variant-numeric:tabular-nums; }
+.nw-feel-ends { display:flex; justify-content:space-between; margin:2px 6px 0; font-size:var(--nw-fs-label); color:var(--nw-fg2); font-variant-numeric:tabular-nums; }
 .nw-feel-factors { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
 @container (min-width:600px) { .nw-feel-factors { grid-template-columns:repeat(var(--nw-ff-cols, 4), minmax(0,1fr)); } }
 .nw-feel-factors > * { container-type:inline-size; display:grid; gap:2px; align-content:start; padding:10px 12px; border-radius:12px; min-width:0;
@@ -218,7 +221,7 @@ ha-card { font-family:Manrope, var(--ha-font-family-body, Roboto), system-ui, sa
 @container (max-width:150px) { .nw-ff-head { flex-direction:column; align-items:flex-start; gap:4px; } }
 .nw-ff-eff { flex:none; padding:0 6px; border-radius:var(--nw-radius-pill); font-size:var(--nw-fs-label); font-weight:700; white-space:nowrap;
   background:color-mix(in oklab, var(--c) 28%, transparent); color:color-mix(in oklab, var(--c) 40%, var(--nw-fg)); }
-.nw-feel-factors b { font-size:17px; font-weight:500; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.nw-feel-factors b { font-size:var(--nw-fs-title); font-weight:500; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
 .nw-feel-factors small { font-size:var(--nw-fs-small); color:var(--nw-fg2); }
 .nw-feel-why { padding:10px 12px; border-radius:12px; background:var(--nw-bg); border:1px solid var(--nw-line); font-size:var(--nw-fs-text); }
 .nw-feel-why p { margin:4px 0; } .nw-feel-why .ex { color:var(--nw-fg2); }
