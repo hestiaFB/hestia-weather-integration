@@ -588,7 +588,7 @@ button.nw-scale-mk::before { content:''; position:absolute; inset:-6px -10px; }
   .nw-tilecard:focus-visible { outline:2px solid var(--nw-accent); outline-offset:-2px; }
   /* The sky keeps its drawing size and shrinks as one block: clouds, sun and rain stay in proportion. */
   .sky { position:absolute; top:0; right:0; z-index:-2; width:calc(100% / var(--k)); height:calc(100% / var(--k)); transform:scale(var(--k)); transform-origin:top right; pointer-events:none; }
-  .nw-tilecard .sky { --k:.5; --nw-orb-x:calc(100% - 370px); }
+  .nw-tilecard .sky { --k:.68; --nw-orb-x:calc(100% - 270px); }
   .veil { position:absolute; inset:0; z-index:-1; pointer-events:none; }
   .nw-tilecard .veil { background:linear-gradient(90deg, var(--nw-bg) 0%, color-mix(in srgb, var(--nw-bg) 96%, transparent) 18%,
     color-mix(in srgb, var(--nw-bg) 70%, transparent) 30%, color-mix(in srgb, var(--nw-bg) 30%, transparent) 46%, transparent 64%); }
@@ -660,7 +660,7 @@ button.nw-scale-mk::before { content:''; position:absolute; inset:-6px -10px; }
   .pressing .press-ring { opacity:.9; }
   @container (max-width:480px) {
     .top { grid-template-areas:"meta now" "brief brief"; }
-    .nw-tilecard .sky { --k:.42; --nw-orb-x:calc(100% - 300px); }
+    .nw-tilecard .sky { --k:.54; --nw-orb-x:calc(100% - 260px); }
     .days { grid-template-columns:repeat(5, minmax(58px,1fr)); overflow-x:auto; scrollbar-width:none; }
   }
   @media (prefers-reduced-motion:reduce) { .more, .more-in, .reveal, .brief, .brief > div, .top .nw-now .nw-badge { transition:none; } }

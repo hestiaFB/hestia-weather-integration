@@ -1,3 +1,9 @@
+## À venir
+
+### Améliorations
+
+- Tuile : l’animation du ciel est plus grande, en pleine largeur comme sur téléphone.
+
 ## 3.1.0b6 — Bêta : le ciel bien visible et des textes harmonisés
 
 ### Avant de mettre à jour
