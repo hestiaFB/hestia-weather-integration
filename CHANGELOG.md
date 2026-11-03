@@ -1,4 +1,8 @@
-## À venir
+## 3.1.0b7 — Bêta : un ciel plus grand sur la tuile
+
+### Avant de mettre à jour
+
+- Gardez Hestia Confort 2.1.0b8, si vous l’avez.
 
 ### Améliorations
 
