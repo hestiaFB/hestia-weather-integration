@@ -9,9 +9,11 @@
 - Cette version installe Hestia Weather 3.1 à côté d’elle, puis y fait passer toute votre maison : lieux, réglages, entités, historiques, statistiques, tableaux de bord et automatisations. Rien n’est perdu.
 - Après le redémarrage, une réparation demande un second redémarrage : faites-le.
 - Home Assistant 2026.11 : quand Hestia Weather 3.1.0 sortira, une réparation « Reprendre les mises à jour » vous demandera un appui pour que le Marketplace la suive.
+- La carte change d’allure : frise du temps prévu, vigilance dans le bandeau, Ressenti, air et pollens d’aujourd’hui et de demain. Rechargez la page si l’ancienne s’affiche encore.
 
 ### À savoir
 
+- Le numéro reste en 2.9 alors que vous recevez déjà Hestia Weather 3.1 : c’est une phase de test avant le passage définitif en 3.x. La version 3.1.0 suivra dans environ deux semaines. D’ici là, dites-nous ce qui vous gêne dans une issue GitHub.
 - Hestia Weather 3.1 est livrée avec cette version : son installation ne passe ni par le réseau ni par le Marketplace.
 
 ## 2.9.8 — Le vent, la pression et l’orage à venir
