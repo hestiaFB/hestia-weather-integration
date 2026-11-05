@@ -1,12 +1,15 @@
 // What the « Météo » tab receives from Hestia Weather (panel.py, draft.py), in the panel's language.
 import {t,fr} from './socle/i18n';
+import type {PlaceView,Trust} from './emplacement';
 export interface Hass {callWS<T>(msg:Record<string,unknown>):Promise<T>;themes?:{darkMode?:boolean};language?:string}
 export interface Entity {id:string;name:string;state:string;available:boolean;missing:boolean}
 export interface Field {key:string;label:string;help:string;value:string;entity:Entity|null;need:string;options:Entity[];warning:string;better:Entity|null;recognized:string[]}
 export interface Choice {value:string;label:string;hint?:string;available?:boolean}
 // The technical state of a place (engine/health.py): orange (bad) stops something, tip could be better, none is not used.
 export type Level='ok'|'bad'|'tip'|'none';
-export interface Line {level:Level;text:string;why:string;stage:number|null}
+export interface Line {level:Level;text:string;why:string;stage:number|null;
+ /** « Où est votre station ? »: the overview opens the questionnaire itself. */
+ quiz?:boolean}
 export interface Health {title:string;level:'ok'|'action';summary:string;tips_summary:string;todo:Line[];tips:Line[];
  technical?:Technical;
  sources:{key?:string;label:string;level:Level;text:string}[];version?:string;sensors:{label:string;name:string;level:Level;text:string}[];entities:Line[];versions:Line[]}
@@ -18,7 +21,9 @@ export interface Technical {
 export interface Extension {id:string;name:string;description:string;installed:boolean;configured:boolean;online?:boolean;detail?:string;air_configured?:boolean;pollen_configured?:boolean;stage:number;field:string;url:string;integration:string;install:string}
 // A Hestia brick: Hestia Confort keeps the link, Hestia Weather reads and changes it through Confort's interface.
 export interface Official {id:string;name:string;official:true;installed:boolean;linked:boolean;elsewhere:string;switchable:boolean;description:string;url:string}
-export interface Place {entry_id:string;title:string;loaded:boolean;failed:boolean;health:Health;extensions?:Extension[];official?:Official[]}
+export interface Place {entry_id:string;title:string;loaded:boolean;failed:boolean;health:Health;extensions?:Extension[];official?:Official[];
+ /** How far each of the station's measures can be trusted (engine/station_place.describe). */
+ trust?:Record<string,Trust>}
 export interface Places {places:Place[];can_add:boolean;extensions?:Extension[];others?:{key:string;name:string;use:string}[]}
 export interface Species extends Entity {label:string;chosen:boolean}
 export interface EntityItem {key:string;name:string;hint:string;enabled:boolean;need:string;optional?:boolean}
@@ -29,7 +34,9 @@ export interface View {
  in_draft?:Extension[];
  official?:Official[];
  prevision:{fields:Field[];location:string;location_placeholder:string;advanced:Field[];forecast_source:string};
- station:{model:string;models:Choice[];device:string;devices:Choice[];profile:string;history:boolean;history_help:string;groups:{name:string;title:string;fields:Field[]}[];shade:string;shades:Choice[];shade_help:string;shade_learned:string};
+ station:{model:string;models:Choice[];device:string;devices:Choice[];profile:string;history:boolean;history_help:string;groups:{name:string;title:string;fields:Field[]}[];shade:string;shades:Choice[];shade_help:string;shade_learned:string;
+  /** Station › Emplacement (draft.py `_place_view`); null without a station. */
+  place?:PlaceView|null};
  air:{value:string;sources:Choice[];area:string;areas:Choice[];station:string;stations:Choice[]};
  pollen:{value:string;sources:Choice[];area:string;areas:Choice[];species:Species[];risk:Field|null;station:string;stations:Choice[]};
  entities:{new:boolean;families:Family[]};

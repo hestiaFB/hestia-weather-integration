@@ -19,7 +19,7 @@ from homeassistant.util import dt as dt_util
 from .api import API_KEY
 from .config_flow import NONE, _clean, _context, _SourceSteps
 from .const import DOMAIN
-from .engine import detection, ecosystem, families, polleninfo
+from .engine import detection, ecosystem, families, polleninfo, station_place
 from .extensions import inventory, official
 from .engine.settings import Settings
 from .engine.i18n import N_, language, t
@@ -44,7 +44,11 @@ HELP = {
     "station_shade": N_("Une maison ou un arbre cache parfois le soleil au capteur de la station. Hestia l’apprend chaque nuit ; dites-le ici pour qu’il s’en serve dès maintenant."),
 }
 # When the station is in the shade, as the household says (engine/station_shade.py DECLARED).
-SHADES = (("", N_("Je ne sais pas")), ("never", N_("Jamais")), ("morning", N_("Le matin")), ("afternoon", N_("L’après-midi")))
+SHADES = (("", N_("Je ne sais pas")), ("never", N_("Plein soleil")), ("morning", N_("À l’ombre le matin")), ("afternoon", N_("À l’ombre l’après-midi")),
+          ("always", N_("Presque toujours à l’ombre")))
+# Where the station stands (docs/STATION-EMPLACEMENT.md): the answers each question takes; "" is « Je ne sais pas ».
+PLACE = {"station_side": station_place.PLACES, "station_wall": station_place.WALLS, "station_height": station_place.HEIGHTS,
+         "station_ground": station_place.GROUNDS, "station_shade": station_place.SHADES, "rain_gauge_shelter": station_place.GAUGES}
 MODELS = (("gw2000a", "Ecowitt GW2000A", N_("Passerelle Ecowitt et ses capteurs")),
           ("ws90", "Ecowitt WS90", N_("Capteur tout-en-un, souvent via Zigbee2MQTT")),
           (detection.NETATMO, "Netatmo", N_("Station Netatmo et ses modules : extérieur, pluviomètre, anémomètre")),
@@ -153,6 +157,8 @@ class Draft(_SourceSteps):
 
     def change(self, change: dict[str, Any]) -> str:
         op, value, s = change.get("op"), change.get("value"), self.sources
+        if op == "place":
+            return self._place(str(change.get("key")), value)
         if op == "set" and change.get("key") in SIMPLE:
             s[change["key"]] = bool(value) if change["key"] in ("station_history", "open_meteo_pressure") else (value or "")
         elif op == "station":
@@ -359,7 +365,45 @@ class Draft(_SourceSteps):
                 "profile": t(detection.station_profile(states, registry, devices, s.get("station_device_id"))),
                 "history": bool(s.get("station_history", True)), "history_help": t(HELP["station_history"]), "groups": groups,
                 "shade": s.get("station_shade") or "", "shades": [{"value": v, "label": t(label)} for v, label in SHADES],
-                "shade_help": t(HELP["station_shade"]), "shade_learned": self._shade_learned()}
+                "shade_help": t(HELP["station_shade"]), "shade_learned": self._shade_learned(),
+                "place": self._place_view() if model != NONE else None}
+
+    def _place(self, key: str, value: Any) -> str:
+        """One answer of « Emplacement »: a choice, "" for « Je ne sais pas », None to ask the question again. The wind takes
+        the list of the sides it is hindered from ([] for clear on every side)."""
+        s = self.sources
+        if key == "wind_shelter":
+            if isinstance(value, list) and all(v in station_place.DIRS for v in value):
+                s[key] = [d for d in station_place.DIRS if d in value]
+            elif value == "":
+                s[key] = ""
+            elif value is None:
+                s.pop(key, None)
+            else:
+                return t("Réponse inconnue.")
+            return ""
+        if key not in PLACE or (value not in (None, "") and value not in PLACE[key]):
+            return t("Réponse inconnue.")
+        if value is None:
+            s.pop(key, None)
+        else:
+            s[key] = value
+        if key == "station_side":
+            # The wall only means something beside the house; the height and the ground, off the roof.
+            if value not in station_place.SIDES:
+                s.pop("station_wall", None)
+            if value == "roof":
+                s.pop("station_height", None)
+                s.pop("station_ground", None)
+        return ""
+
+    def _place_view(self) -> dict[str, Any]:
+        """What « Emplacement » shows: the answers (absent: not asked yet; "": « Je ne sais pas »), the questions this
+        station asks, and how far each measure can be trusted (what the nights learned)."""
+        s = self.sources
+        coordinator = getattr(self.entry, "runtime_data", None) if self.entry else None
+        trust = coordinator.trust_view() if coordinator is not None and hasattr(coordinator, "trust_view") else {}
+        return {"values": {k: s[k] for k in (*PLACE, "wind_shelter") if k in s}, "asked": station_place.asked(_settings(s), s), "trust": trust}
 
     def _shade_learned(self) -> str:
         """How much of the station's shade the nights have learned, for the line under the choice."""

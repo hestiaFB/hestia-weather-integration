@@ -64,6 +64,20 @@ class HestiaWeatherApi:
             return None
         return entry.runtime_data.shade_view()
 
+    def station_trust(self, entry_id: str | None = None) -> dict[str, Any] | None:
+        """How far each of the station's measures can be trusted (docs/STATION-EMPLACEMENT.md), by `temperature`, `wind`,
+        `rain`, `sun` — only those the station gives:
+
+        `level`: « ok » (fiable), « handled » (fiable sauf…, Hestia s'en charge) or « watch » (à vérifier); `title`, `line`,
+        `learned`: what to say, in Home Assistant's language. `now`: « station », « corrected » (the excess learned taken
+        off) or « forecast » (the forecast taken in its place) at the last calculation, with `value` (°C, or km/h for the
+        gust) and `why` when it is not « station ». Hestia Comfort reads `temperature.value` instead of the raw sensor, and
+        the stronger gust from a sheltered side. None without a place."""
+        entry = self._entry(entry_id)
+        if entry is None or not hasattr(entry.runtime_data, "trust_view"):
+            return None
+        return entry.runtime_data.trust_view()
+
     def hourly(self, entry_id: str | None = None) -> list[dict[str, Any]]:
         """The hourly forecast as Hestia Weather reads it: °C, %, mm, km/h and degrees, ISO times; `cloud_coverage` in %
         when the weather service gives it (Hestia Confort estimates with it the sun its station cannot see)."""

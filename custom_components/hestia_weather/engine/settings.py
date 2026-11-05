@@ -84,8 +84,23 @@ class Settings:
     pressure_entity: str | None = None
     solar_radiation_entity: str | None = None
     station_shade: str | None = None
-    """When the station is in the shade, as the household says (« never », « morning », « afternoon »): the start of its
-    shade, until the nights have learned it (engine/station_shade.py)."""
+    """When the station is in the shade, as the household says (« never », « morning », « afternoon », « always »): the start
+    of its shade, until the nights have learned it (engine/station_shade.py)."""
+    # Where the station stands (docs/STATION-EMPLACEMENT.md, engine/station_place.py): unset is « Je ne sais pas ».
+    station_side: str | None = None
+    """The side of the house (« n »… « nw »), « roof » or « open » (in the garden, away from the house)."""
+    station_wall: str | None = None
+    """« against » (under 1 m), « near » (1 to 3 m) or « far » from the wall of its side."""
+    station_height: str | None = None
+    """« low » (under 1.5 m), « standard » (1.5 to 2 m) or « high »."""
+    station_ground: str | None = None
+    """« grass », « gravel » or « paving » under the station."""
+    rain_gauge_shelter: str | None = None
+    """« open », « tree » or « eave » (near a wall or under the eaves)."""
+    wind_shelter: tuple[str, ...] | None = None
+    """The sides the wind is hindered from (« w »…); () clear on every side."""
+    station_notes: Mapping[str, Any] = field(default_factory=dict)
+    """Set by engine/station_place.overlay, never saved: why the temperature or the wind read now is not the station's own."""
     uv_index_entity: str | None = None
     illuminance_entity: str | None = None
     # Air and pollens
@@ -114,12 +129,15 @@ class Settings:
     @classmethod
     def from_options(cls, options: Mapping[str, Any]) -> Settings:
         """Settings from the integration's options (or a card's YAML): empty values count as unset, unknown keys are ignored."""
-        known = {f.name for f in fields(cls)} - {"atmo", "waqi", "pollens"}
+        known = {f.name for f in fields(cls)} - {"atmo", "waqi", "pollens", "station_notes"}
         values: dict[str, Any] = {}
         for key in known:
             value = options.get(key)
             if value not in (None, ""):
                 values[key] = value
+        if "wind_shelter" in values:
+            shelter = values["wind_shelter"]
+            values["wind_shelter"] = tuple(str(s) for s in shelter) if isinstance(shelter, (list, tuple)) else None
         values["atmo"] = {k: options[k] for k in ATMO_KEYS if options.get(k)}
         values["waqi"] = {k: options[k] for k in WAQI_KEYS if options.get(k)} if options.get("air_source") == "waqi" else {}
         values["pollens"] = tuple(LegacyPollen(str(p.get("id")), str(p.get("nom") or p.get("name") or ""), str(p.get("ico") or p.get("icon") or ""),

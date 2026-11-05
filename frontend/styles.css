@@ -91,3 +91,40 @@ ul{padding-left:22px}
 /* Socle 1.21: a source to choose is a row with a radio on the right, like Confort's lists. */
 .nk-radio{width:22px;height:22px;min-height:0;margin:0;padding:0;accent-color:var(--primary-color);flex:none}
 .nk-row-lab label{cursor:pointer}.nk-row-lab .warn{color:var(--nk-todo)}.nk-more-note{margin:12px 16px 4px}
+/* Station › Emplacement (emplacement.ts, docs/STATION-EMPLACEMENT.md): blue a side or a measure that is fine, dashed grey
+   a side the wind is hindered from, plain grey what Hestia takes care of. Neither orange nor green: nothing to do. */
+.pl-ctl{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.pl-def{font-size:var(--nw-fs-small,12px);color:var(--nk-muted)}.pl-reset{font-size:var(--nw-fs-small,12px)}
+.pl-learned{color:var(--nk-muted)}.pl-sum{font-size:var(--nw-fs-small,12px);color:var(--nk-muted);text-align:right;max-width:260px}
+.pl-rose{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:330px;margin:0 auto 14px}
+.pl-rose button,.pl-mid{aspect-ratio:1.25;min-height:0;margin:0;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:inherit;font-weight:600}
+.pl-rose button{border:1px solid var(--nk-border);background:var(--nk-raised,var(--nk-surface));color:var(--primary-text-color);cursor:pointer;padding:0}
+.pl-rose button small{font-size:var(--nw-fs-label,11px);font-weight:500;color:var(--nk-muted)}
+.pl-rose button[aria-pressed="true"]{border-color:var(--nk-ok);color:var(--nk-ok);background:var(--nk-selected,var(--nk-surface))}
+.pl-rose button.pl-shut{border:1.5px dashed var(--nk-muted);background:transparent;color:var(--nk-muted)}
+.pl-mid{border:1px dashed var(--nk-border);color:var(--nk-muted);font-weight:500;font-size:var(--nw-fs-small,12px)}
+.pl-rose.pl-small{grid-template-columns:repeat(3,46px);max-width:none;gap:4px;margin:0}.pl-small button,.pl-small .pl-mid{width:46px;height:32px;aspect-ratio:auto;border-radius:10px;font-size:var(--nw-fs-small,12px)}
+.pl-small .pl-mid{font-size:0}
+.pl-quiz{max-width:520px;margin:8px auto 0}
+.pl-step{margin:0;font-size:var(--nw-fs-label,11px);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--nk-muted)}
+.pl-progress{height:4px;border-radius:99px;background:var(--nk-border);overflow:hidden;margin:10px 0 24px}
+.pl-progress i{display:block;height:100%;background:var(--nk-ok);transition:width .3s cubic-bezier(.2,.8,.2,1)}
+.pl-title{font-size:var(--nw-fs-case,21px);font-weight:650;letter-spacing:-.02em;line-height:1.3;margin:0 0 6px}
+.pl-hint{font-size:var(--nw-fs-small,12px);color:var(--nk-muted);margin:0 0 14px}.pl-center{text-align:center}
+.pl-or{display:flex;align-items:center;gap:10px;color:var(--nk-muted);font-size:var(--nw-fs-small,12px);margin:4px 0 10px}
+.pl-or::before,.pl-or::after{content:"";flex:1;border-top:1px solid var(--nk-border)}
+.pl-choices{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.pl-choice{display:flex;align-items:center;justify-content:space-between;min-height:56px;margin:0;padding:12px 18px;border:1px solid var(--nk-border);border-radius:16px;background:var(--nk-raised,var(--nk-surface));color:inherit;cursor:pointer;text-align:left;font:inherit;font-weight:500}
+.pl-choice small{display:block;font-weight:400;font-size:var(--nw-fs-small,12px);color:var(--nk-muted)}
+.pl-choice[aria-pressed="true"]{border-color:var(--nk-ok);font-weight:650}
+.pl-choice[aria-pressed="true"]::after{content:"✓";color:var(--nk-ok);font-weight:700}
+.pl-foot{display:flex;align-items:center;gap:14px;margin-top:24px}.pl-sp{flex:1}
+.pl-done{text-align:center;padding:24px 0}.pl-done h2{margin:6px 0}
+.pl-mark{display:inline-grid;place-items:center;width:56px;height:56px;border-radius:50%;border:1.5px solid var(--nk-ok);color:var(--nk-ok);font-size:var(--nw-fs-case,21px)}
+.pl-trust{display:inline-flex;align-items:center;gap:6px;font-size:var(--nw-fs-small,12px);font-weight:600;white-space:nowrap}
+.pl-trust::before{content:"";width:8px;height:8px;border-radius:50%;box-sizing:border-box}
+.pl-trust.ok{color:var(--nk-ok)}.pl-trust.ok::before{background:var(--nk-ok)}
+.pl-trust.handled{color:var(--nk-muted)}.pl-trust.handled::before{background:var(--nk-muted)}
+.pl-trust.watch{color:var(--nk-muted)}.pl-trust.watch::before{border:1.5px solid var(--nk-muted)}
+.pl-legend{margin:-8px 4px 16px}
+@media(max-width:600px){.pl-ctl{align-items:flex-start}.pl-sum{text-align:left}.pl-trust{white-space:normal}}

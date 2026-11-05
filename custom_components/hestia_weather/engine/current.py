@@ -29,6 +29,21 @@ def station_label() -> str:
     return t(STATION)
 
 
+def noted(settings: Settings, key: str) -> tuple[str, str] | None:
+    """When the temperature or the wind read now is not the station's own (engine/station_place.overlay): its source
+    (« Prévision », « Station corrigée ») and why, as a sentence."""
+    note = settings.station_notes.get(key)
+    if note is None:
+        return None
+    text = note.text()
+    return (t("Prévision") if note.how == "forecast" else t("Station corrigée")), text[:1].upper() + text[1:]
+
+
+def gauge_sheltered(settings: Settings) -> bool:
+    """A rain gauge under a tree or near a wall collects less: its 0 never contradicts the bulletin's rain."""
+    return settings.rain_gauge_shelter in ("tree", "eave")
+
+
 def available(state: Any) -> bool:
     return state is not None and state.state not in ("unknown", "unavailable")
 
@@ -99,7 +114,7 @@ def current_weather(get: Getter, settings: Settings, w: LocalWeather, temperatur
         condition_entity = settings.rain_rate_entity or settings.weather_entity
         source = t("Pluie mesurée · orage du bulletin") if condition == "lightning-rainy" else t("Pluie mesurée ici")
     # A working gauge can contradict the bulletin's rain, but cannot establish sunshine, cloud cover, or the absence of snow or lightning.
-    if settings.rain_rate_entity and rate == 0 and condition in ("rainy", "pouring", "lightning-rainy"):
+    if settings.rain_rate_entity and rate == 0 and condition in ("rainy", "pouring", "lightning-rainy") and not gauge_sheltered(settings):
         condition = "lightning" if condition == "lightning-rainy" else "cloudy"
         source, condition_entity = NO_RAIN_MEASURED, settings.rain_rate_entity
     # Strikes within 10 km in the last ten minutes: the storm is here, whatever the bulletin says. Snow and hail keep their sky.
@@ -137,10 +152,12 @@ def current_weather(get: Getter, settings: Settings, w: LocalWeather, temperatur
     label = t(label)
     if source == NO_RAIN_MEASURED and condition == "cloudy":
         label = t("Nuageux, sans pluie mesurée")
+    note = noted(settings, "temperature")
     return CurrentWeather(
         condition=condition, label=label, icon=icon, phase=phase, temperature=temperature, feels=w.feel.value if w.available else None,
         temperature_entity=settings.temperature_entity if local is not None else settings.weather_entity, condition_entity=condition_entity,
-        source=t(source) if source == NO_RAIN_MEASURED else source, temperature_source=station_label() if local is not None else weather_source_label(get, settings), wind=w.wind.speed,
+        source=t(source) if source == NO_RAIN_MEASURED else source,
+        temperature_source=note[0] if note and local is not None else station_label() if local is not None else weather_source_label(get, settings), wind=w.wind.speed,
         trend=temperature_trend if temperature_trend is not None and abs(temperature_trend) >= 0.1 else None, dark_sky=condition in DARK_SKIES,
         detail=sky_detail(condition, description, rate if rate is not None else hour_rain, temperature))
 
@@ -194,8 +211,10 @@ def current_metrics(get: Getter, settings: Settings, w: LocalWeather, hours: Seq
 
     temperature = read(settings.temperature_entity, "temperature", "temperature_unit", Kind.TEMPERATURE)
     if temperature.value is not None or settings.temperature_entity:
+        note = noted(settings, "temperature") if temperature.source == STATION else None
         result.append(Metric("temperature", t("Température"), "mdi:thermometer", "°C",
-                             t("Mesurée chez vous") if temperature.source == STATION else t("Température du bulletin"), station_label() if temperature.source == STATION else temperature.source, temperature.entity,
+                             note[1] if note else t("Mesurée chez vous") if temperature.source == STATION else t("Température du bulletin"),
+                             note[0] if note else station_label() if temperature.source == STATION else temperature.source, temperature.entity,
                              temperature.value, detail=t("Ressenti {value} °C", value=french(w.feel.value)) if meaningful_comfort(get, settings, w) else None,
                              fallback=temperature.fallback))
 
@@ -204,8 +223,10 @@ def current_metrics(get: Getter, settings: Settings, w: LocalWeather, hours: Seq
     if wind.value is not None or gust.value is not None or settings.wind_speed_entity or settings.wind_gust_entity:
         detail = "" if gust.value is None else t("Rafales {value} km/h", value=french(gust.value, 0)) + (f" · {station_label() if gust.source == STATION else gust.source}" if gust.source != wind.source else "")
         local_bearing = local(settings.wind_bearing_entity)
-        result.append(Metric("wind", t("Vent"), "mdi:weather-windy", "km/h", (w.wind.beaufort_text or t("Mesuré chez vous")) if wind.source == STATION else t("Vent du bulletin"),
-                             station_label() if wind.source == STATION else wind.source, wind.entity, wind.value, detail=detail, fallback=wind.fallback,
+        note = noted(settings, "wind") if wind.source == STATION else None
+        result.append(Metric("wind", t("Vent"), "mdi:weather-windy", "km/h",
+                             note[1] if note else (w.wind.beaufort_text or t("Mesuré chez vous")) if wind.source == STATION else t("Vent du bulletin"),
+                             note[0] if note else station_label() if wind.source == STATION else wind.source, wind.entity, wind.value, detail=detail, fallback=wind.fallback,
                              bearing=local_bearing if local_bearing is not None else finite(bulletin.get("wind_bearing")),
                              bearing_source=station_label() if local_bearing is not None else provider,
                              bearing_entity=settings.wind_bearing_entity if local_bearing is not None else settings.weather_entity, gust=gust))

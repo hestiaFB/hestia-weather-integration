@@ -38,7 +38,7 @@ BLEND = 0.5
 DIFFUSE = 0.15
 # What a declared shade gives: the station in its shade, or seeing the sun.
 SHADED, SUNNY = 0.3, 1.0
-DECLARED = ("never", "morning", "afternoon")
+DECLARED = ("never", "morning", "afternoon", "always")
 MOST = 1.2
 # How many days of statistics the night reads (Open-Meteo gives 92 past days at most).
 DAYS = 92
@@ -118,12 +118,14 @@ def learn(hours: Iterable[tuple[datetime, float | None, float | None, float | No
 
 
 def declared_share(choice: str | None, where: str) -> float | None:
-    """What the household declared for that cell: « never » in the shade, in the shade « morning » (sun in the east) or
-    « afternoon » (sun in the west); None when nothing was declared."""
+    """What the household declared for that cell: « never » in the shade, in the shade « morning » (sun in the east),
+    « afternoon » (sun in the west) or « always »; None when nothing was declared."""
     if choice not in DECLARED:
         return None
     if choice == "never":
         return SUNNY
+    if choice == "always":
+        return SHADED
     azimuth = int(where.split("/")[0])
     east = azimuth < 180
     return SHADED if (choice == "morning") == east else SUNNY

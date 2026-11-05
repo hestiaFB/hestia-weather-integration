@@ -80,6 +80,10 @@ class Facts:
     """(key, name, family, enabled, has a value)."""
     needs: dict[str, str] = field(default_factory=dict)
     """What an entity still misses, by key: « la vigilance officielle »."""
+    place_left: int = 0
+    """The questions of Station › Emplacement not answered yet (engine/station_place.py)."""
+    gauge_share: float | None = None
+    """The share of the forecast rain the gauge collects, when learned and its place not said."""
     ready_families: Sequence[str] = ()
     """Families switched off whose entities would all have their source."""
     integration: str = ""
@@ -172,6 +176,14 @@ def report(f: Facts) -> dict:
         for key, label, name in f.unused:
             tips.append(_line("tip", t("Ajouter : {what}", what=f"{label[:1].lower()}{label[1:]}" if language() == "fr" else label),
                               t("Votre station en a un (« {name} ») : {gain}.", name=name, gain=t(GAINS.get(key, N_("une mesure de plus")))), 1))
+        if f.place_left:
+            # « quiz »: the overview opens the questionnaire itself, saved at its end (Frank, 5 November 2026).
+            tips.append({**_line("tip", t("Où est votre station ?"),
+                                 _count(f.place_left, "{n} question, une minute : ce que les capteurs ne disent pas.",
+                                        "{n} questions, une minute : ce que les capteurs ne disent pas."), 1), "quiz": True})
+        if f.gauge_share is not None and f.gauge_share < 0.5:
+            tips.append(_line("tip", t("Le pluviomètre semble à l’abri"),
+                              t("Il recueille environ {pct} % de la pluie prévue : dites où il est dans Station › Emplacement.", pct=round(f.gauge_share * 100)), 1))
         if not f.history:
             tips.append(_line("tip", t("Calculer depuis l’historique"),
                               t("Cumuls de pluie, tendance de la température et rafale du jour, quand la station ne les donne pas."), 1))

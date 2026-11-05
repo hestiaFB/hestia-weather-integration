@@ -4,6 +4,7 @@ import {LitElement,html,unsafeCSS,nothing,type TemplateResult,type PropertyValue
 import {customElement,property,state} from 'lit/decorators.js';
 import styles from './styles.css';
 import {frame,hubStyles,modernStyles,helpTip,pageHead,todoLists,listSection,listRow,moreRow,tabBar,saveBar,toggle,kpis,stepFooter,leaveNotice,detectedFrame,removeBlock,pageStyles,aboutPage,SOCLE,setLanguage,addDictionary,t,fr,type NkLine,type NkLevel} from './socle/ui';
+import {placeSection,quizScreen,trustSection,questions as placeQuestions} from './emplacement';
 import {PANEL_EN} from './i18n-en';
 import {PANEL_DE} from './i18n-de';
 import {NONE,stages,intros,extensionGroups,extensionSwitch,enabledKeys,provenance,sameSet,entityLine,grouped,capital,type Change,type Choice,type DraftReply,type Entity,type Field,type Hass,type Place,type Places,type Sources,type View,type Extension,type Official,type RenamePreview,type RenameReply,type RenameUse} from './model';
@@ -47,6 +48,10 @@ export class WeatherSetup extends LitElement {
  // The Extensions page reads each place's draft: its switches change and save that place at once.
  @state() private extViews=new Map<string,{draft:Sources;view:View;enabled:string[]}>();
  @state() private confirmRemove=false;
+ // The questionnaire of Station › Emplacement, one question a screen; null when not open.
+ @state() private quizStep:number|null=null;
+ // Where the questionnaire was opened: the overview (saved at its end, back to the overview) or the Station tab.
+ private quizFrom:'home'|'station'='station';
  // Renaming the entities « hestia_weather » (Réglages généraux): read when the page opens, shown only to a home that has old ids.
  @state() private rename?:RenamePreview;
  @state() private renameShown=false;
@@ -109,6 +114,7 @@ export class WeatherSetup extends LitElement {
   if(parts[0]==='a-propos'&&!parts[1]){this.page='about';this.editing=false;this.draft=undefined;this.view=undefined;return;}
   if(this.page==='extensions'){this.editing=false;this.draft=undefined;this.view=undefined;void this.loadExtensions();return;}
   const target=id;
+  if(target&&target!=='nouveau'&&parts[1]==='emplacement'&&this.places?.places.some(p=>p.entry_id===target)){await this.openQuiz(target,false);return;}
   if(stage>=0&&target){
    const cached=this.drafts.get(target);if(cached){Object.assign(this,cached);this.entryId=target==='nouveau'?null:target;this.stage=stage;this.editing=true;return;}
    if(target==='nouveau'||this.places?.places.some(p=>p.entry_id===target)){await this.open(target==='nouveau'?null:target,stage,false);return;}
@@ -154,7 +160,7 @@ export class WeatherSetup extends LitElement {
    await this.ws({type:'hestia_weather/panel/save',draft:this.draft,...(this.entryId?{entry_id:this.entryId,enabled:this.enabled}:{})});
    if(generation!==this.routeGeneration){this.places=undefined;return;}
    const title=this.view?.title??'',created=!this.entryId;
-   this.close();
+   this.close(this.quizFrom==='home'&&this.quizStep!==null?'':'lieux');
    this.saved=created?t('{name} est créé : ses entités apparaissent dans quelques secondes.',{name:title})
     :t('{name} est enregistré : le lieu redémarre avec ses nouveaux réglages, la carte suit dans quelques secondes.',{name:title});
    this.places=undefined;
@@ -168,9 +174,9 @@ export class WeatherSetup extends LitElement {
   try{await this.ws({type:'hestia_weather/panel/remove',entry_id:this.entryId});this.confirmRemove=false;this.close();this.saved=t('« {name} » est supprimé. Les capteurs de votre station n’ont pas été touchés.',{name:title});this.places=undefined;}
   catch(e){this.error=this.message(e);}finally{this.busy=false;}
  }
- private close(){this.confirmRemove=false;this.drafts.delete(this.entryId??'nouveau');this.path('lieux');this.editing=false;this.draft=undefined;this.view=undefined;this.confirmLeave=false;this.error='';void this.updateComplete.then(()=>{this.top();});}
+ private close(to='lieux'){this.confirmRemove=false;this.quizStep=null;this.drafts.delete(this.entryId??'nouveau');this.path(to);this.editing=false;this.draft=undefined;this.view=undefined;this.confirmLeave=false;this.error='';void this.updateComplete.then(()=>{this.top();});}
  private leave(){if(this.dirty()&&!this.confirmLeave){this.confirmLeave=true;return;}this.close();}
- private go(stage:number){this.stage=stage;this.path((this.entryId??'nouveau')+'/'+categories[stage]);void this.updateComplete.then(()=>{this.top();});}
+ private go(stage:number){this.stage=stage;this.quizStep=null;this.path((this.entryId??'nouveau')+'/'+categories[stage]);void this.updateComplete.then(()=>{this.top();});}
 
  // ---- Pieces: each setting is a row, as in Confort (socle 1.21) ----
  /** An entity's state in the user's words: Home Assistant's own translation when it has one, never « partlycloudy ». */
@@ -228,6 +234,7 @@ export class WeatherSetup extends LitElement {
    ${this.refreshSources()}${this.bottom()}`;
  }
  private station(v:View){const s=v.station;
+  const place=s.place?{view:s.place,busy:this.busy,answer:(key:string,value:unknown)=>void this.change({op:'place',key,value})}:null;
   const head=listSection(t('Votre station'),[...this.choiceRows('model',s.models,s.model,m=>void this.change({op:'station',value:m})),
    ...(s.model!==NONE?[listRow({name:t('Appareil'),label:html`${t('Appareil')}${helpTip(t('Appareil de la station'),t('Limite les capteurs proposés à cet appareil.'),'')}`,sub:t('Reconnue : {name}',{name:s.profile}),
     value:html`<select aria-label=${t('Appareil')} ?disabled=${this.busy} @change=${(e:Event)=>void this.change({op:'device',value:(e.target as HTMLSelectElement).value})}>${s.devices.map(d=>html`<option value=${d.value} ?selected=${d.value===s.device}>${d.label}</option>`)}</select>`})]:[])]);
@@ -239,8 +246,7 @@ export class WeatherSetup extends LitElement {
    ${folded.length?listSection(t('Autres mesures'),folded.map(g=>moreRow(g.title,filled(g),g.fields.map(f=>this.field(f))))):nothing}
    ${listSection(t('Historique de la station'),[listRow({name:t('Calculer depuis l’historique'),label:html`${t('Calculer depuis l’historique')}${helpTip(t('Calculer depuis l’historique'),s.history_help,'')}`,
     value:toggle(t('Calculer depuis l’historique'),s.history,on=>this.set('station_history',on),this.busy)})])}
-   ${s.shades?.length?listSection('',[moreRow(t('Pour aller plus loin'),t('{n} sur {total}',{n:s.shade?1:0,total:1}),[
-    this.zoneRow(t('Station à l’ombre'),s.shades,s.shade,x=>this.set('station_shade',x),[s.shade_help,s.shade_learned].filter(Boolean).join(' '))])]):nothing}
+   ${place?placeSection({...place,quiz:()=>{this.quizFrom='station';this.quizStep=this.firstQuestion();}}):nothing}
    <button class="link" ?disabled=${this.busy} @click=${()=>void this.change({op:'redetect',value:'station'})}>${t('Rechercher à nouveau les capteurs')}</button>${this.bottom()}`;
  }
  private air(v:View){const a=v.air;
@@ -357,7 +363,8 @@ export class WeatherSetup extends LitElement {
  private lines(kind:'todo'|'tips'):NkLine[]{
   const several=(this.places?.places.length??0)>1;
   return (this.places?.places??[]).flatMap(p=>p.health[kind].map(l=>({level:l.level,text:several?`${p.title} : ${l.text}`:l.text,why:l.why,
-   go:l.stage!==null&&l.stage!==undefined?{label:t(stages[l.stage]),onClick:()=>void this.open(p.entry_id,l.stage!),disabled:this.busy}:null})));
+   go:l.quiz?{label:t('Répondre'),onClick:()=>void this.openQuiz(p.entry_id),disabled:this.busy}
+    :l.stage!==null&&l.stage!==undefined?{label:t(stages[l.stage]),onClick:()=>void this.open(p.entry_id,l.stage!),disabled:this.busy}:null})));
  }
  /** What the place is made of, in a few words: its state is on its pill. */
  private placeDetail(p:Place){const station=p.health.technical?.station?.name;return station?t('Station {name}',{name:station}):t('Sans station, le service météo seul');}
@@ -404,6 +411,7 @@ export class WeatherSetup extends LitElement {
     ...h.sources.filter(x=>['forecast','vigilance'].includes(x.key??'')).map(x=>row(x.label,x.text)),
     row(t('Dernier calcul'),tech?.computation??t('Non disponible')),row(t('Station'),station?.name||t('Non configurée')),
     row(t('Historique'),!station?.name?t('Sans station'):!station.history?t('Désactivé'):station.history_sources==null?t('Non disponible'):station.history_sources>1?t('{n} sources avec des données',{n:station.history_sources}):t('{n} source avec des données',{n:station.history_sources}))])}
+   ${trustSection(p.trust)}
    ${listSection(t('Statistiques'),[row(t('Capteurs de station qui répondent'),station?.configured?`${station.responding} / ${station.configured}`:'—'),
     row(t('Entités activées'),entities?`${entities.active} / ${entities.total}`:'—'),row(t('Entités actives avec une valeur'),entities?`${entities.with_value} / ${entities.active}`:'—'),
     row(t('Créneaux horaires reçus'),String(tech?.forecast.hours??'—')),row(t('Prévisions quotidiennes reçues'),tech?.forecast.days==null?'—':(tech.forecast.days>1?t('{n} jours',{n:tech.forecast.days}):t('{n} jour',{n:tech.forecast.days})))])}
@@ -471,6 +479,7 @@ export class WeatherSetup extends LitElement {
     <button class="primary" ?disabled=${this.busy} @click=${()=>void this.runRename('hestia_weather/rename/apply')}>${t('Renommer')}</button></div>`);
  }
  private editor(){
+  if(this.quizStep!==null&&this.view?.station.place)return this.quizPage();
   const v=this.view!,creating=!this.entryId;
   const body=[this.prevision,this.station,this.air,this.pollen,this.entities,this.recap,this.water,this.recap,this.stateTab][this.stage].call(this,v);
   const tabs=creating?createSections:sections,at=order.indexOf(this.stage);
@@ -482,6 +491,28 @@ export class WeatherSetup extends LitElement {
    ${tabBar(t('Réglages du lieu'),tabs.map(x=>({label:t(x.label),current:x.stage===this.stage,onClick:()=>this.go(x.stage)})),this.busy)}
    ${this.error?html`<p class="notice error" role="alert">${this.error}</p>`:nothing}
    ${intros[this.stage]?this.intro():nothing}${body}</main>${this.busy?html`<p class="busy" role="status">${t('Un instant…')}</p>`:nothing}`;
+ }
+ // ---- « Où est votre station ? » (docs/STATION-EMPLACEMENT.md § 6) ----
+ private firstQuestion(){const place=this.view?.station.place;if(!place)return 0;const i=placeQuestions(place).findIndex(q=>!(q.key in place.values));return i<0?0:i;}
+ /** From the overview: the place's draft, straight to its first question not answered; saved at its end. */
+ private async openQuiz(entryId:string,route=true){
+  await this.open(entryId,1,false);
+  if(!this.view?.station.place||this.entryId!==entryId)return;
+  this.quizFrom='home';this.quizStep=this.firstQuestion();
+  if(route)this.path(entryId+'/emplacement');
+ }
+ /** Leaving the questionnaire: opened from the overview, what was answered is saved and the overview comes back. */
+ private exitQuiz(){
+  if(this.quizFrom!=='home'){this.quizStep=null;return;}
+  if(this.entryId&&this.changeCount()>0){void this.save();return;}
+  this.close('');
+ }
+ private quizPage(){const place=this.view!.station.place!,home=this.quizFrom==='home';
+  return html`<main>${pageHead({back:{label:home?t('Vue d’ensemble'):t('Station'),onClick:()=>this.exitQuiz()},title:t('Votre station'),subtitle:this.placeTitle||this.view!.title})}
+   ${this.error?html`<p class="notice error" role="alert">${this.error}</p>`:nothing}
+   ${quizScreen({view:place,busy:this.busy,answer:(key:string,value:unknown)=>void this.change({op:'place',key,value}),step:this.quizStep!,go:n=>{this.quizStep=n;},
+    close:home?undefined:()=>{this.quizStep=null;},saves:!!this.entryId,finish:()=>{if(this.entryId)void this.save();else this.quizStep=null;}})}</main>
+   ${this.busy?html`<p class="busy" role="status">${t('Un instant…')}</p>`:nothing}`;
  }
  protected render(){
   if(this.editing&&this.view)return this.editor();

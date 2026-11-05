@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emplacement de la station</title>
+<meta name="description" content="Maquette des réglages d'emplacement de la station dans Hestia Weather (STATION-EMPLACEMENT.md). Rien n'est enregistré.">
+<style>
+/* Échelle C de la charte (hestia-ecosysteme/charte) : seules ces tailles sont employées. */
+:root{--nw-fs-label:11px;--nw-fs-small:12px;--nw-fs-text:14px;--nw-fs-title:17px;--nw-fs-case:21px;--nw-fs-big:34px}
+@font-face{font-family:Manrope;font-weight:400;src:url(../../hestia-ecosysteme/socle/fonts/manrope-400.ttf)}
+@font-face{font-family:Manrope;font-weight:500;src:url(../../hestia-ecosysteme/socle/fonts/manrope-500.ttf)}
+@font-face{font-family:Manrope;font-weight:600;src:url(../../hestia-ecosysteme/socle/fonts/manrope-600.ttf)}
+@font-face{font-family:Manrope;font-weight:700;src:url(../../hestia-ecosysteme/socle/fonts/manrope-700.ttf)}
+/* Palette du hub (socle 1.19), reprise de maquette-habitudes.html : bleu ce qui va, violet pointillé une information. Ni orange ni vert ici : rien à faire, pas de bénéfice. */
+:root{color-scheme:dark;--bg:#1b1c1e;--side:#1f2022;--text:#eeece8;--muted:#b2aea7;--faint:#8c8882;--line:#323336;--row:#232426;--hover:#2b2c2f;--sel:#303133;
+ --button:#ebe8e1;--on-button:#202122;--ok:#a6c8d7;--todo:#e2b777;--benefit:#8cc084;--note:#c7a6ef;--note-bg:rgba(199,166,239,.10)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){color-scheme:light;--bg:#faf9f7;--side:#f3f1ed;--text:#242321;--muted:#6c6862;--faint:#8a857e;--line:#e4e1db;--row:#fff;--hover:#f1efea;--sel:#eceae5;
+ --button:#272623;--on-button:#fff;--ok:#36677d;--todo:#966528;--benefit:#3f7337;--note:#7a4bb5;--note-bg:rgba(122,75,181,.08)}}
+:root[data-theme="light"]{color-scheme:light;--bg:#faf9f7;--side:#f3f1ed;--text:#242321;--muted:#6c6862;--faint:#8a857e;--line:#e4e1db;--row:#fff;--hover:#f1efea;--sel:#eceae5;
+ --button:#272623;--on-button:#fff;--ok:#36677d;--todo:#966528;--benefit:#3f7337;--note:#7a4bb5;--note-bg:rgba(122,75,181,.08)}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1b1c1e;--side:#1f2022;--text:#eeece8;--muted:#b2aea7;--faint:#8c8882;--line:#323336;--row:#232426;--hover:#2b2c2f;--sel:#303133;
+ --button:#ebe8e1;--on-button:#202122;--ok:#a6c8d7;--todo:#e2b777;--benefit:#8cc084;--note:#c7a6ef;--note-bg:rgba(199,166,239,.10)}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:400 var(--nw-fs-text)/1.6 Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+.mock{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:8px 16px;font-size:var(--nw-fs-small);color:var(--muted);border-bottom:1px dashed var(--note)}
+.mock b{color:var(--note)}.mock .sp{flex:1}
+.mock select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px 8px}
+.mock label{display:inline-flex;align-items:center;gap:6px}
+
+.shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:calc(100vh - 37px)}
+nav.side{background:var(--side);border-right:1px solid var(--line);padding:22px 12px}
+.brand{display:flex;align-items:center;gap:10px;font-size:var(--nw-fs-title);font-weight:650;letter-spacing:-.02em;margin:0 10px 22px}
+.brand i{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--ok);color:var(--ok);font-style:normal;font-size:var(--nw-fs-small)}
+.side h6{margin:18px 12px 6px;font-size:var(--nw-fs-label);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.side button{display:flex;width:100%;align-items:center;gap:10px;padding:7px 12px;border-radius:10px;color:var(--text);background:none;border:0;text-align:left;cursor:pointer}
+.side button:hover{background:var(--hover)}.side button[aria-current="page"]{background:var(--sel);font-weight:600}
+.side button.off{color:var(--faint);cursor:default}.side button.off:hover{background:none}
+
+main{width:100%;max-width:808px;margin:0 auto;padding:36px 24px 120px}
+.crumb{display:inline-flex;gap:6px;align-items:center;color:var(--muted);margin-bottom:14px;cursor:pointer;background:none;border:0;padding:0}
+.crumb:hover{color:var(--text)}
+h1{font-size:var(--nw-fs-case);font-weight:650;letter-spacing:-.03em;line-height:1.25;margin:0}
+.lead{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:8px 0 26px;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:var(--nw-fs-small);font-weight:600;border-radius:999px;padding:3px 10px;background:var(--sel);white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.tag{display:inline-block;margin-left:6px;padding:0 7px;border:1px dashed var(--note);border-radius:999px;color:var(--note);font-size:var(--nw-fs-label);font-weight:600;letter-spacing:0;text-transform:none;vertical-align:2px}
+body:not(.tags) .tag{display:none}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:14px 0 22px;overflow-x:auto;scrollbar-width:none}
+.tabs button{padding:10px;color:var(--muted);font-weight:500;border:0;border-bottom:2px solid transparent;white-space:nowrap;background:none;cursor:pointer}
+.tabs button.on{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+.tabs button.off{cursor:default}
+
+section.sec{margin:0 0 26px}
+.sec-h{display:flex;align-items:center;gap:8px;margin:0 4px 8px;font-size:var(--nw-fs-small);font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);position:relative}
+.list{background:var(--row);border:1px solid var(--line);border-radius:16px}
+.row{display:flex;align-items:center;gap:14px;min-height:54px;padding:10px 16px;border:0;border-top:1px solid var(--line);width:100%;text-align:left;background:none}
+.list>.row:first-child{border-top:0}
+button.row{cursor:pointer}button.row:hover{background:var(--hover)}
+.list>.row:first-child{border-radius:16px 16px 0 0}.list>.row:last-child{border-radius:0 0 16px 16px}.list>.row:only-child{border-radius:16px}
+.row .lab{flex:1;min-width:0}.row .lab small{display:block;color:var(--muted);font-size:var(--nw-fs-small);line-height:1.45}
+.row .lab small.learn{color:var(--faint)}
+.row .val{color:var(--muted);text-align:right}
+.row .chev{color:var(--faint);font-size:var(--nw-fs-title);line-height:1}
+.row .ctl{display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-width:58%}
+.row select{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 10px;min-height:36px}
+.def{font-size:var(--nw-fs-small);color:var(--faint);white-space:nowrap}
+.reset{background:none;border:0;color:var(--ok);font-size:var(--nw-fs-small);cursor:pointer;padding:0;white-space:nowrap}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:18px;background:var(--bg);border:1px solid var(--line);flex-wrap:wrap;justify-content:flex-end}
+.seg button{border:0;background:none;border-radius:999px;padding:5px 12px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--sel);color:var(--text);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.chip{border:1px solid var(--line);background:none;border-radius:999px;padding:4px 12px;cursor:pointer;min-width:42px}
+.chip[aria-pressed="true"]{border-color:var(--ok);background:var(--sel);font-weight:600}
+.btn{border:1px solid var(--line);background:none;border-radius:999px;padding:8px 16px;cursor:pointer}
+.btn:hover{background:var(--hover)}.btn.primary{background:var(--button);color:var(--on-button);border-color:var(--button);font-weight:600}
+.linkbtn{background:none;border:0;color:var(--ok);cursor:pointer;padding:0}
+.note{border:1px dashed var(--note);background:var(--note-bg);border-radius:14px;padding:10px 14px;margin:0 0 10px}
+.note b{color:var(--note)}
+
+/* Repère de fiabilité : bleu = fiable ; gris plein = pris en compte ; gris creux = à vérifier. */
+.trust{display:inline-flex;align-items:center;gap:6px;font-size:var(--nw-fs-small);font-weight:600;white-space:nowrap}
+.trust::before{content:"";width:8px;height:8px;border-radius:50%;box-sizing:border-box}
+.trust.ok{color:var(--ok)}.trust.ok::before{background:var(--ok)}
+.trust.handled{color:var(--muted)}.trust.handled::before{background:var(--muted)}
+.trust.watch{color:var(--faint)}.trust.watch::before{border:1.5px solid var(--faint)}
+
+/* Infobulle « i » */
+.i{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--faint);color:var(--faint);font-size:var(--nw-fs-label);font-weight:700;cursor:pointer;background:none;padding:0;text-transform:none;letter-spacing:0}
+.tip{display:none;position:absolute;left:0;top:26px;z-index:20;max-width:360px;background:var(--row);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:var(--nw-fs-small);line-height:1.5;color:var(--text);text-transform:none;letter-spacing:0;font-weight:400;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.tip.on{display:block}
+
+/* Le questionnaire : une question par écran */
+.quiz{max-width:520px;margin:8px auto 0}
+.progress{height:4px;border-radius:99px;background:var(--sel);overflow:hidden;margin:10px 0 28px}
+.progress i{display:block;height:100%;background:var(--ok);transition:width .3s cubic-bezier(.2,.8,.2,1)}
+.q-step{font-size:var(--nw-fs-label);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.q-title{font-size:var(--nw-fs-case);font-weight:650;letter-spacing:-.02em;line-height:1.3;margin:6px 0 6px}
+.q-why{color:var(--muted);margin:0 0 20px}
+.choices{display:flex;flex-direction:column;gap:10px}
+.choice{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:12px 18px;border:1px solid var(--line);border-radius:16px;background:var(--row);cursor:pointer;text-align:left;font-weight:500}
+.choice:hover{background:var(--hover)}
+.choice[aria-pressed="true"]{border-color:var(--ok);background:var(--sel);font-weight:650}
+.choice[aria-pressed="true"]::after{content:"✓";color:var(--ok);font-weight:700}
+.choice small{display:block;color:var(--muted);font-weight:400;font-size:var(--nw-fs-small)}
+.q-foot{display:flex;align-items:center;gap:16px;margin-top:26px}
+.q-foot .sp{flex:1}
+.q-foot .linkbtn{color:var(--muted)}
+.done{text-align:center;padding:30px 0}
+.done .mark{display:inline-grid;place-items:center;width:56px;height:56px;border-radius:50%;border:1.5px solid var(--ok);color:var(--ok);font-size:var(--nw-fs-case);margin-bottom:14px}
+.recap{margin:22px 0 0;text-align:left}
+
+/* La rose : la maison au milieu, la station autour (question 1) ; la station au milieu, les côtés gênés autour (question 7). */
+.rose{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:330px;margin:0 auto 14px}
+.rose button{aspect-ratio:1.25;border:1px solid var(--line);border-radius:16px;background:var(--row);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:600}
+.rose button:hover{background:var(--hover)}
+.rose button small{font-size:var(--nw-fs-label);font-weight:500;color:var(--faint)}
+.rose button[aria-pressed="true"]{border-color:var(--ok);background:var(--sel);color:var(--ok)}
+/* Rose du vent : bleu = côté dégagé ; pointillé gris = côté gêné. */
+.rose.wind button[aria-pressed="false"]{border:1.5px dashed var(--faint);background:none;color:var(--faint)}
+.rose.small{max-width:228px;gap:5px;margin:0}
+.rose.small button,.rose.small .mid{aspect-ratio:1.5;border-radius:12px;font-size:var(--nw-fs-small)}
+.rose.small .mid svg{width:20px;height:20px}
+.rose-sum{font-size:var(--nw-fs-small);color:var(--muted);text-align:right;max-width:260px}
+.rose .mid{aspect-ratio:1.25;border:1px dashed var(--line);border-radius:16px;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:var(--nw-fs-small)}
+.rose .mid svg{width:30px;height:30px;stroke:var(--muted);fill:none;stroke-width:1.6;display:block;margin:0 auto 2px}
+.or{display:flex;align-items:center;gap:10px;color:var(--faint);font-size:var(--nw-fs-small);margin:4px 0 10px}
+.or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
+
+/* Aperçu de carte (simplifié) */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{background:var(--row);border:1px solid var(--line);border-radius:18px;padding:14px 16px;position:relative}
+.tile h4{margin:0 0 4px;font-size:var(--nw-fs-small);font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.tile .big{font-size:var(--nw-fs-big);font-weight:600;letter-spacing:-.03em;line-height:1.1}
+.tile .big span{font-size:var(--nw-fs-title);font-weight:500;color:var(--muted);margin-left:3px}
+.tile .word{font-size:var(--nw-fs-title);font-weight:650;line-height:1.3;margin:8px 0 6px}
+.tile .src{font-size:var(--nw-fs-small);color:var(--muted);margin-top:6px;line-height:1.45}
+.tile .raw{font-size:var(--nw-fs-label);color:var(--faint);margin-top:4px}
+
+@media (max-width:860px){
+ .shell{grid-template-columns:minmax(0,1fr)} nav.side{display:none}
+ main{padding:22px 16px 120px}
+ .row{flex-wrap:wrap;gap:8px 12px}.row .lab{flex-basis:100%}.row .ctl{align-items:flex-start;width:100%;max-width:none}.seg,.chips{justify-content:flex-start}
+ .tiles{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body class="tags">
+<div class="mock">
+ <b>Maquette</b><span>Emplacement de la station · rien n'est enregistré</span><span class="sp"></span>
+ <label>Écran <select id="screen">
+  <option value="hub">1 · Vue d'ensemble</option>
+  <option value="station">2 · Maison › Station</option>
+  <option value="quiz">3 · Le questionnaire</option>
+  <option value="etat">4 · Maison › État</option>
+  <option value="carte">5 · Sur la carte, à 15 h</option>
+ </select></label>
+ <label><input type="checkbox" id="learned"> Nuits apprises</label>
+ <label><input type="checkbox" data-sensor="sun" checked> Soleil</label>
+ <label><input type="checkbox" data-sensor="rain" checked> Pluviomètre</label>
+ <label><input type="checkbox" data-sensor="wind" checked> Anémomètre</label>
+ <label><input type="checkbox" id="tags" checked> Étiquettes</label>
+ <label>Thème <select id="theme"><option value="">Système</option><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
+</div>
+<div class="shell">
+ <nav class="side" id="side"></nav>
+ <main id="main"></main>
+</div>
+<script>
+// Lieu de démonstration : 46° N, 4° E, le 5 novembre 2026 (pas la vraie maison).
+const LAT=46,LON=4,DAY=new Date(Date.UTC(2026,10,5)),TZ=1;
+const SIDES=[['nw','NO','Nord-ouest',315],['n','N','Nord',0],['ne','NE','Nord-est',45],['w','O','Ouest',270],null,['e','E','Est',90],['sw','SO','Sud-ouest',225],['s','S','Sud',180],['se','SE','Sud-est',135]];
+const SIDE=Object.fromEntries(SIDES.filter(Boolean).map(s=>[s[0],s]));
+const OPP={n:'s',ne:'sw',e:'w',se:'nw',s:'n',sw:'ne',w:'e',nw:'se'};
+const of=k=>({n:'du nord',ne:'du nord-est',e:'de l’est',se:'du sud-est',s:'du sud',sw:'du sud-ouest',w:'de l’ouest',nw:'du nord-ouest'}[k]);
+// Réponses : absente = pas encore répondu ; null = « Je ne sais pas » ; sinon la valeur.
+const S={screen:'station',step:0,ans:{},learned:false,sensors:{sun:true,rain:true,wind:true},windTouched:false};
+const HOUSE='<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>';
+const STATION='<svg viewBox="0 0 24 24"><path d="M12 21V8"/><path d="M8 21h8"/><rect x="8" y="3" width="8" height="5" rx="1.5"/></svg>';
+
+// Le soleil (formules NOAA simplifiées, comme engine/station_shade.py sun_position).
+function sun(date){const day=Math.floor((date-Date.UTC(date.getUTCFullYear(),0,0))/864e5),hour=date.getUTCHours()+date.getUTCMinutes()/60;
+ const g=2*Math.PI/365*(day-1+(hour-12)/24);
+ const eq=229.18*(0.000075+0.001868*Math.cos(g)-0.032077*Math.sin(g)-0.014615*Math.cos(2*g)-0.040849*Math.sin(2*g));
+ const dec=0.006918-0.399912*Math.cos(g)+0.070257*Math.sin(g)-0.006758*Math.cos(2*g)+0.000907*Math.sin(2*g)-0.002697*Math.cos(3*g)+0.00148*Math.sin(3*g);
+ const ang=((hour*60+eq+4*LON)/4-180)*Math.PI/180,lat=LAT*Math.PI/180;
+ const cz=Math.sin(lat)*Math.sin(dec)+Math.cos(lat)*Math.cos(dec)*Math.cos(ang),z=Math.acos(Math.max(-1,Math.min(1,cz)));
+ const az=(Math.atan2(Math.sin(ang),Math.cos(ang)*Math.sin(lat)-Math.tan(dec)*Math.cos(lat))*180/Math.PI+180+360)%360;
+ return [90-z*180/Math.PI,az];}
+const hm=m=>`${Math.floor(m/60)} h${m%60?' '+String(m%60).padStart(2,'0'):''}`;
+// Les heures où le soleil fait face au mur (à moins de 45°), jusqu'au coucher : la fenêtre de méfiance déclarée.
+function wallWindow(side){const facing=SIDE[side][3];let first=null,last=null;
+ for(let m=5*60;m<22*60;m+=5){const [e,a]=sun(new Date(DAY.getTime()+(m-TZ*60)*6e4));
+  if(e>0)last=m; const d=Math.abs(((a-facing+540)%360)-180); if(e>0&&d<=45&&first===null)first=m;}
+ return first===null?null:[first,last];}
+
+const DIRS=['n','ne','e','se','s','sw','w','nw'];
+const isSide=v=>DIRS.includes(v);
+const Q=[
+ {k:'side',q:'Où est la station ?',short:'Où est la station',why:'Hestia saura quand le soleil chauffe le mur près d’elle.',type:'rose',
+  opts:[...DIRS.map(d=>[d,'Côté '+SIDE[d][2].toLowerCase()]),['roof','Sur le toit'],['open','Loin de la maison, au jardin']]},
+ {k:'wall',q:'À quelle distance du mur ?',short:'Distance du mur',why:'Contre un mur au soleil, le thermomètre monte trop.',
+  opts:[['against','Contre le mur','moins de 1 m'],['near','De 1 à 3 m'],['far','Plus loin']],show:()=>isSide(S.ans.side)},
+ {k:'height',q:'À quelle hauteur ?',short:'Hauteur',why:'Près du sol, les nuits claires paraissent plus froides.',
+  opts:[['low','Moins de 1,5 m'],['standard','De 1,5 à 2 m','la hauteur conseillée'],['high','Plus haut']],show:()=>S.ans.side!=='roof'},
+ {k:'ground',q:'Qu’y a-t-il sous la station ?',short:'Le sol dessous',why:'Une dalle au soleil chauffe l’air autour.',
+  opts:[['grass','Herbe ou terre'],['gravel','Gravier'],['paving','Dalle, terrasse ou bitume']],show:()=>S.ans.side!=='roof'},
+ {k:'shade',q:'Le soleil arrive-t-il sur la station ?',short:'Le soleil',why:'Hestia ne prendra pas l’ombre pour un nuage.',
+  opts:[['never','Plein soleil'],['morning','À l’ombre le matin'],['afternoon','À l’ombre l’après-midi'],['always','Presque toujours à l’ombre']],show:()=>S.sensors.sun,was:'Remplace « Station à l’ombre »'},
+ {k:'rain',q:'Le pluviomètre est-il à l’abri ?',short:'Le pluviomètre',why:'À l’abri, il recueille moins de pluie.',
+  opts:[['open','À découvert'],['tree','Sous un arbre'],['eave','Près d’un mur ou sous un avant-toit']],show:()=>S.sensors.rain},
+ {k:'wind',q:'Autour de la station, d’où le vent arrive-t-il librement ?',short:'Le vent autour de la station',why:'Un côté gêné par la maison, une haie ou un mur : Hestia y prendra le vent prévu.',type:'windrose',show:()=>S.sensors.wind},
+];
+const asked=()=>Q.filter(q=>!q.show||q.show());
+// Le réglage garde les côtés gênés (wind_shelter) ; l'écran montre les côtés dégagés.
+const abbr=list=>list.map(d=>SIDE[d][1]).join(', ');
+function windText(v){if(!Array.isArray(v))return 'Je ne sais pas';if(!v.length)return 'Dégagée de tous côtés';
+ return `Dégagée : ${abbr(DIRS.filter(d=>!v.includes(d)))} · gênée : ${abbr(v)}`;}
+const label=(q,v)=>{if(q.k==='wind')return windText(v);const o=(q.opts||[]).find(o=>o[0]===v);return o?o[1]:'Je ne sais pas';};
+const left=()=>asked().filter(q=>S.ans[q.k]===undefined).length;
+// La question 7 préremplie : contre ou près du mur, la maison est de l'autre côté.
+function windDefault(){return isSide(S.ans.side)&&['against','near'].includes(S.ans.wall)?[OPP[S.ans.side]]:[];}
+function windVal(){if(Array.isArray(S.ans.wind))return S.ans.wind;if(S.ans.wind===null||S.windTouched)return [];return windDefault();}
+const windClear=()=>Array.isArray(S.ans.wind)&&!S.ans.wind.length;
+
+function side(){
+ const go=(s,l,off)=>`<button ${off?'class="off"':`data-go="${s}"`} ${S.screen===s||(['station','quiz','etat','carte'].includes(S.screen)&&s==='station')?'aria-current="page"':''}>${l}</button>`;
+ return `<div class="brand"><i>H</i>Hestia</div><h6>Hestia</h6>${go('hub','Vue d’ensemble')}<h6>Weather</h6>${go('station','Maison')}${go('','Ajouter un lieu',1)}${go('','Extensions',1)}`;
+}
+function tabs(on){return `<div class="tabs">${[['','Sources'],['station','Station'],['','Air'],['','Pollens'],['','Eau et jardin'],['','Entités'],['etat','État']].map(([k,l])=>`<button class="${k===on?'on':''} ${k?'':'off'}" ${k?`data-go="${k}"`:''}>${l}</button>`).join('')}</div>`;}
+function info(id,text){return `<button class="i" data-tip="${id}" aria-label="Explication">i</button><span class="tip" id="tip-${id}">${text}</span>`;}
+function sec(title,body,tip){return `<section class="sec"><div class="sec-h">${title}${tip?info(title.replace(/\W/g,''),tip):''}</div><div class="list">${body}</div></section>`;}
+
+function hub(){
+ const n=left(),rows=[];
+ if(n)rows.push(`<button class="row" data-go="quiz" data-restart="1"><div class="lab">Emplacement de la station · Maison <span class="tag">Nouveau</span><small>${n} question${n>1?'s':''}, une minute : ce que les capteurs ne disent pas</small></div><span class="val">${asked().length-n} sur ${asked().length}</span><span class="chev">›</span></button>`);
+ if(S.learned&&S.sensors.rain&&S.ans.rain==null)rows.push(`<button class="row" data-go="station"><div class="lab">Le pluviomètre semble à l’abri<small>Il recueille la moitié de la pluie prévue, sur 22 jours de pluie.</small></div><span class="chev">›</span></button>`);
+ return `<h1>Hestia</h1><div class="lead"><span class="pill">Tout fonctionne · 1 lieu</span></div>
+ ${rows.length?sec('À améliorer',rows.join('')):`<p class="def" style="margin:0 4px">Rien à améliorer : les lignes s’effacent une fois les questions répondues.</p>`}`;
+}
+
+function rose(multi,small){
+ const cur=multi?windVal():S.ans.side,houseSide=multi&&windDefault()[0];
+ const word=d=>!cur.includes(d)?'dégagé':d===houseSide?'la maison':'gêné';
+ return `<div class="rose${multi?' wind':''}${small?' small':''}">${SIDES.map(s=>s?`<button data-${multi?'wind':'side'}="${s[0]}" aria-pressed="${multi?!cur.includes(s[0]):cur===s[0]}" aria-label="${s[2]} : ${multi?word(s[0]):''}">${s[1]}${small&&multi?'':`<small>${multi?word(s[0]):s[2].toLowerCase()}</small>`}</button>`
+  :`<div class="mid">${multi?STATION+(small?'':'la station'):HOUSE+'la maison'}</div>`).join('')}</div>`;
+}
+
+function quiz(){
+ const list=asked();
+ if(S.step>=list.length){
+  return `<button class="crumb" data-go="station">‹ Station</button>
+  <div class="quiz"><div class="done"><div class="mark">✓</div><div class="q-title">C’est noté.</div>
+  <p class="q-why" style="margin:0">Hestia s’en sert tout de suite.<br>Chaque nuit, il vérifie sur l’historique.<br>Tout se change dans Station › Emplacement.</p></div>
+  <div class="list recap">${list.map(q=>`<div class="row"><div class="lab">${q.short}</div><span class="val">${label(q,q.k==='wind'&&S.ans.wind!==null?windVal():S.ans[q.k])}</span></div>`).join('')}</div>
+  <div class="q-foot"><span class="sp"></span><button class="btn" data-go="etat">Voir la fiabilité</button><button class="btn primary" data-go="station">Terminer</button></div></div>`;
+ }
+ const q=list[S.step],v=S.ans[q.k];
+ let body;
+ if(q.type==='rose')body=`<p class="def" style="margin:-12px 0 14px">Touchez l’endroit de la station autour de la maison.</p>${rose(false)}<div class="or">ou</div>
+  <div class="choices">${q.opts.slice(8).map(([k,l])=>`<button class="choice" data-pick="${k}" aria-pressed="${v===k}">${l}</button>`).join('')}</div>`;
+ else if(q.type==='windrose')
+  body=`<p class="def" style="margin:-12px 0 14px;white-space:normal">Touchez un côté pour le passer de dégagé à gêné.</p>${rose(true)}
+  <p class="def" style="text-align:center;margin:0;white-space:normal">${windText(windVal())}${windDefault().length&&!S.windTouched?'<br>Le côté de la maison est déjà gêné.':''}</p>`;
+ else body=`<div class="choices">${q.opts.map(([k,l,s])=>`<button class="choice" data-pick="${k}" aria-pressed="${v===k}"><span>${l}${s?`<small>${s}</small>`:''}</span></button>`).join('')}</div>`;
+ const ready=q.k==='wind'||v!==undefined;
+ return `<button class="crumb" data-go="station">‹ Station</button>
+ <div class="quiz"><div class="q-step">Votre station · ${S.step+1} sur ${list.length}</div>
+ <div class="progress"><i style="width:${S.step/list.length*100}%"></i></div>
+ <div class="q-title">${q.q}</div><p class="q-why">${q.why}</p>${body}
+ <div class="q-foot">${S.step?'<button class="linkbtn" data-a="prev">‹ Précédent</button>':''}<span class="sp"></span>
+ <button class="linkbtn" data-a="dunno">Je ne sais pas</button>
+ <button class="btn primary" data-a="next" ${ready?'':'disabled style="opacity:.45;cursor:default"'}>${S.step===list.length-1?'Terminer':'Suivant'}</button></div></div>`;
+}
+
+// Ce que les nuits ont appris, sous chaque ligne (exemple : mur SO, pluviomètre sous un arbre, abritée de l'ouest).
+function learnedLine(k){
+ if(!S.learned)return k==='shade'?'Pas encore apprise : il faut quelques heures de ciel clair.':'Pas encore appris : Hestia vérifie chaque nuit.';
+ const wall=S.ans.wall==='against'||S.ans.wall==='near'||S.ans.side==='roof';
+ return {side:wall?'Appris : par beau temps, le mur ajoute 2 °C de 13 h à 18 h.':'Appris : pas d’écart par beau temps.',
+  wall:wall?'Appris : par beau temps, le mur ajoute 2 °C de 13 h à 18 h.':'Appris : pas d’écart par beau temps.',
+  height:S.ans.height==='low'?'Appris : les nuits claires, 1,5 °C de moins que la prévision.':'Appris : rien de plus.',
+  ground:'Appris : rien de plus par beau temps.',
+  shade:'Appris : 40 positions du soleil sur 120.',
+  rain:'Appris : recueille la moitié de la pluie prévue, sur 22 jours de pluie.',
+  wind:'Appris sur 60 heures de vent : dégagée de 7 côtés, abritée à l’ouest.'}[k];
+}
+function settingRow(q){
+ const v=S.ans[q.k];
+ let ctl;
+ if(q.k==='side')ctl=`<select data-sel="side" aria-label="${q.short}"><option value="">Je ne sais pas</option>${q.opts.map(([k,l])=>`<option value="${k}" ${v===k?'selected':''}>${l}</option>`).join('')}</select>`;
+ else if(q.k==='wind')ctl=v==null?`<span class="seg"><button data-pick-wind="clear" aria-pressed="false">Dire les côtés</button></span>`
+  :`${rose(true,true)}<span class="rose-sum">${windText(windVal())}</span>`;
+ else ctl=`<span class="seg">${q.opts.map(([k,l])=>`<button data-set="${q.k}" data-v="${k}" aria-pressed="${v===k}">${l}</button>`).join('')}</span>`;
+ const foot=v!=null?`<button class="reset" data-unset="${q.k}">Rétablir : Je ne sais pas</button>`:`<span class="def">Par défaut : Je ne sais pas</span>`;
+ return `<div class="row"><div class="lab">${q.short}${q.was?` <span class="tag">${q.was}</span>`:''}<small>${q.why}</small><small class="learn">${learnedLine(q.k)}</small></div><div class="ctl">${ctl}${foot}</div></div>`;
+}
+function station(){
+ const n=left();
+ return `<button class="crumb" data-go="hub">‹ Lieux</button><h1>Maison</h1>${tabs('station')}
+ ${sec('Votre station',`<div class="row"><div class="lab">Une autre station<small>Vous choisissez chaque capteur</small></div><span class="val">Ecowitt GW2000A</span><span class="chev">›</span></div>
+  <div class="row"><div class="lab">Capteurs<small>Température, humidité${S.sensors.wind?', vent':''}${S.sensors.rain?', pluie':''}${S.sensors.sun?', soleil':''}, pression</small></div><span class="chev">›</span></div>`)}
+ ${sec('Historique de la station',`<div class="row"><div class="lab">Calculer depuis l’historique</div><span class="val">Oui</span></div>`)}
+ ${n?`<section class="sec"><div class="list"><button class="row" data-go="quiz" data-restart="1"><div class="lab">Où est votre station ? <span class="tag">Nouveau</span><small>${n} question${n>1?'s':''}, une minute</small></div><span class="chev">›</span></button></div></section>`:''}
+ ${sec('Emplacement <span class="tag">Nouveau</span>',asked().map(settingRow).join(''),
+  'Ce que les capteurs ne disent pas. Hestia s’en sert tout de suite pour savoir quand se méfier d’une mesure. Chaque nuit, il compare la station à la prévision : ce qu’il apprend remplace vos réponses. « Je ne sais pas » laisse Hestia apprendre seul.')}
+ <p class="def" style="margin:0 4px;white-space:normal">Les lignes du soleil, du pluviomètre et du vent ne paraissent que pour les capteurs choisis.</p>`;
+}
+
+// Le repère de fiabilité de chaque mesure, d'après les réponses et l'appris.
+function trust(){
+ const out=[],side=S.ans.side,wall=S.ans.wall;
+ let t;
+ if(isSide(side)&&wall==='against'){const w=wallWindow(side),name=of(side).replace(/^(du |de l’)/,'');
+  t=S.learned?['handled','Fiable, sauf par beau temps','De 13 h à 18 h, le mur ajoute 2 °C : Hestia l’enlève.','Appris sur 41 jours.']
+   :w?['handled','Fiable, sauf par beau temps',`De ${hm(w[0])} à ${hm(w[1])} en ce moment, Hestia prend la prévision.`,`Le soleil est sur le mur ${name} à ces heures.`]
+   :['ok','Fiable','Pas de soleil sur ce mur en ce moment de l’année.',''];}
+ else if(side==='roof')t=S.learned?['handled','Fiable, sauf par beau temps','Le toit ajoute 1,5 °C au soleil : Hestia l’enlève.','Appris sur 41 jours.']:['handled','Fiable, sauf au soleil','Au soleil, Hestia prend la prévision.','Le toit chauffe la station.'];
+ else if((isSide(side)&&wall==='near')||S.ans.height==='low'||S.ans.ground==='paving'||S.ans.ground==='gravel')
+  t=S.learned?['ok','Fiable','Vérifié sur 41 jours : pas d’écart par beau temps.','']:['watch','À vérifier','Hestia compare chaque nuit avec la prévision.',''];
+ else t=S.learned||side==='open'?['ok','Fiable','Pas d’écart par beau temps.','']:['watch','Pas encore vérifiée','Hestia compare chaque nuit avec la prévision.',''];
+ out.push(['Température',...t]);
+ if(S.sensors.wind){const w=windVal();
+  out.push(['Vent',...(w.length?['handled','Fiable, sauf vent '+w.map(of).join(', '),`Dégagée : ${abbr(DIRS.filter(d=>!w.includes(d)))}.`,`Vent ${w.map(of).join(', ')} : Hestia prend le vent prévu.${S.learned?' Vérifié sur 60 heures.':''}`]
+   :S.learned?['ok','Fiable','Pas de côté abrité.','']:['watch','Pas encore vérifié','Hestia compare chaque nuit avec la prévision.',''])]);}
+ if(S.sensors.rain){const r=S.ans.rain;
+  out.push(['Pluie',...(r==='tree'||r==='eave'?['handled','À l’abri','Une pluie annoncée n’est pas démentie.',S.learned?'Il recueille la moitié de la pluie prévue.':'Les cumuls sont peut-être en dessous.']
+   :S.learned&&r==null?['watch','Semble à l’abri','Il recueille la moitié de la pluie prévue.','Répondez à « Le pluviomètre » pour confirmer.']
+   :['ok','Fiable',S.learned?'Il recueille autant que la prévision.':r==='open'?'Pluviomètre à découvert.':'Rien ne dit le contraire.',''])]);}
+ if(S.sensors.sun){const s=S.ans.shade;
+  out.push(['Soleil',...(s&&s!=='never'?['handled','Fiable, sauf à l’ombre','À l’ombre, Hestia prend le soleil prévu.',S.learned?'40 positions du soleil apprises sur 120.':'Ombre déclarée, en attendant les nuits.']
+   :S.learned?['handled','Fiable, sauf à l’ombre','À l’ombre, Hestia prend le soleil prévu.','40 positions du soleil apprises sur 120.']
+   :['watch','Pas encore vérifié','Il faut quelques heures de ciel clair.',''])]);}
+ return out;
+}
+function etat(){
+ const rows=trust().map(([m,lvl,word,l1,l2])=>`<div class="row"><div class="lab">${m}<small>${l1}</small>${l2?`<small class="learn">${l2}</small>`:''}</div><span class="trust ${lvl}">${word}</span></div>`).join('');
+ return `<button class="crumb" data-go="hub">‹ Lieux</button><h1>Maison</h1>${tabs('etat')}
+ ${sec('État du lieu',`<div class="row"><div class="lab">Lieu</div><span class="val">Chargé</span></div><div class="row"><div class="lab">Station</div><span class="val">Ecowitt GW2000A</span></div><div class="row"><div class="lab">Dernier calcul</div><span class="val">il y a 1 min</span></div>`)}
+ <section class="sec"><div class="sec-h">Fiabilité de la station <span class="tag">Nouveau</span></div>
+  <p class="note"><b>Bon à savoir.</b> Une station près d’un mur, d’un arbre ou de la maison peut se tromper. Hestia le dit ici, mesure par mesure, et prend la prévision quand il faut.</p>
+  <div class="list">${rows}
+  <div class="row"><div class="lab">Apprentissage<small>${S.learned?'Appris sur 92 jours d’historique · cette nuit à 4 h 10':'Première nuit à venir : Hestia lira 92 jours d’historique.'}</small></div></div></div></section>
+ <p class="def" style="margin:0 4px;white-space:normal">Bleu : fiable. Gris plein : Hestia s’en charge, rien à faire. Gris creux : à vérifier.</p>`;
+}
+
+function carte(){
+ // Une journée de démonstration à 15 h, beau temps : station 19,4 °C, prévision 16 °C ; vent 6 km/h mesuré, 28 km/h prévu d'ouest ; averse annoncée, pluviomètre à 0.
+ const side=S.ans.side,w15=isSide(side)&&S.ans.wall==='against'?wallWindow(side):null;
+ const wallHot=!!w15&&w15[0]<=15*60&&15*60<=w15[1];
+ let temp=['19,4','Station locale',''];
+ if(wallHot)temp=S.learned?['17,3','Corrigée : le mur au soleil ajoute 2 °C','Mesuré : 19,4 °C']:['16','Prévision · la station est au soleil contre le mur','Mesuré : 19,4 °C'];
+ if(side==='roof')temp=S.learned?['17,9','Corrigée : le toit au soleil ajoute 1,5 °C','Mesuré : 19,4 °C']:['16','Prévision · la station est sur le toit, au soleil','Mesuré : 19,4 °C'];
+ const west=S.sensors.wind&&windVal().includes('w');
+ const wind=west?['28','Prévision · station abritée de l’ouest','Mesuré : 6 km/h']:['6','Station locale',''];
+ const sheltered=S.ans.rain==='tree'||S.ans.rain==='eave';
+ const rain=!S.sensors.rain?['Averses','Bulletin météo','']:sheltered?['Averses','Bulletin · le pluviomètre est à l’abri','Mesuré : 0 mm/h']:['Nuageux, sans pluie mesurée','Station locale','Annoncé : averses'];
+ return `<button class="crumb" data-go="station">‹ Maison</button><h1>Sur la carte, à 15 h</h1>
+ <div class="lead">Une journée de beau temps, vent d’ouest prévu, averse annoncée. Aperçu simplifié des tuiles.</div>
+ <div class="tiles">
+  <div class="tile"><h4>Température</h4><div class="big">${temp[0]}<span>°C</span></div><div class="src">${temp[1]}</div>${temp[2]?`<div class="raw">${temp[2]}</div>`:''}</div>
+  ${S.sensors.wind?`<div class="tile"><h4>Vent</h4><div class="big">${wind[0]}<span>km/h</span></div><div class="src">${wind[1]}</div>${wind[2]?`<div class="raw">${wind[2]}</div>`:''}</div>`:''}
+  <div class="tile"><h4>Ciel</h4><div class="word">${rain[0]}</div><div class="src">${rain[1]}</div>${rain[2]?`<div class="raw">${rain[2]}</div>`:''}</div>
+ </div>
+ <p class="def" style="margin:14px 4px 0;white-space:normal">Essayez : côté sud-ouest + contre le mur, pluviomètre sous un arbre, vent gêné à l’ouest. Puis cochez « Nuits apprises ».</p>`;
+}
+
+function render(){
+ document.body.classList.toggle('tags',document.getElementById('tags').checked);
+ document.getElementById('side').innerHTML=side();
+ document.getElementById('main').innerHTML={hub,station,quiz,etat,carte}[S.screen]();
+ document.getElementById('screen').value=S.screen;
+}
+function pick(k,v){S.ans[k]=v;if(k==='side'&&!isSide(v))delete S.ans.wall;}
+document.addEventListener('click',e=>{
+ const t=e.target.closest('button');
+ if(!t){document.querySelectorAll('.tip.on').forEach(x=>x.classList.remove('on'));return;}
+ const d=t.dataset;
+ if(d.tip){const tip=document.getElementById('tip-'+d.tip),on=tip.classList.contains('on');document.querySelectorAll('.tip.on').forEach(x=>x.classList.remove('on'));if(!on)tip.classList.add('on');return;}
+ if(d.go){S.screen=d.go;if(d.restart){const i=asked().findIndex(q=>S.ans[q.k]===undefined);S.step=i<0?asked().length:i;}window.scrollTo(0,0);}
+ else if(d.pick){pick(asked()[S.step].k,d.pick);}
+ else if(d.side){pick('side',d.side);}
+ else if(d.pickWind){S.ans.wind=[];S.windTouched=true;}
+ else if(d.wind){const w=windVal();S.ans.wind=w.includes(d.wind)?w.filter(x=>x!==d.wind):[...w,d.wind];S.windTouched=true;}
+ else if(d.a==='next'){const q=asked()[S.step];if(q.k==='wind'&&S.ans.wind===undefined)S.ans.wind=windVal();if(S.ans[q.k]!==undefined)S.step++;}
+ else if(d.a==='prev'){S.step=Math.max(0,S.step-1);}
+ else if(d.a==='dunno'){const k=asked()[S.step].k;S.ans[k]=null;if(k==='side')delete S.ans.wall;S.step++;}
+ else if(d.set){pick(d.set,d.v);}
+ else if(d.unset){delete S.ans[d.unset];if(d.unset==='wind')S.windTouched=false;}
+ else return;
+ render();
+});
+document.addEventListener('change',e=>{
+ const t=e.target;
+ if(t.dataset.sel){t.value?pick(t.dataset.sel,t.value):(S.ans[t.dataset.sel]=null);}
+ else if(t.dataset.sensor){S.sensors[t.dataset.sensor]=t.checked;S.step=Math.min(S.step,asked().length);}
+ else if(t.id==='screen'){S.screen=t.value;}
+ else if(t.id==='learned'){S.learned=t.checked;}
+ else if(t.id==='theme'){t.value?document.documentElement.setAttribute('data-theme',t.value):document.documentElement.removeAttribute('data-theme');return;}
+ render();
+});
+render();
+</script>
+</body>
+</html>

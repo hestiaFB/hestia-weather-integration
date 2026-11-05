@@ -24,7 +24,7 @@ from .api import API_VERSION
 from .config_flow import NONE, _context
 from .const import DOMAIN, LOGGER
 from .draft import Draft, ecosystem_of, entity_keys, entity_label, family_label, field_label, linked, needs_text
-from .engine import atmo, detection, families, health, home, polleninfo
+from .engine import atmo, detection, families, health, home, polleninfo, station_place
 from .engine.settings import Settings
 from .engine.i18n import speaking, t
 from .extensions import inventory, official, others, set_official
@@ -181,7 +181,9 @@ def facts(hass: HomeAssistant, entry: Any, card_twice: bool = False, context: Co
         pollen_ok=any(get(i) is not None and get(i).state not in GONE for i in pollen_ids),
         pollen_available=bool(areas) or any(polleninfo.candidates(states, registry, p)[0] for p in polleninfo.PROVIDERS),
         entities=entities, needs=needs, ready_families=ready, integration=str(hass.data.get(VERSION_KEY, "")),
-        card_twice=card_twice, links=names)
+        card_twice=card_twice, links=names,
+        place_left=station_place.questions_left(settings, sources) if settings is not None and model != NONE else 0,
+        gauge_share=((getattr(coordinator, "place_learned", None) or {}).get("rain") or {}).get("share") if not sources.get("rain_gauge_shelter") else None)
 
 
 def place(hass: HomeAssistant, entry: Any, card_twice: bool = False, context: Context | None = None) -> tuple[dict[str, Any], home.Place]:
@@ -190,7 +192,9 @@ def place(hass: HomeAssistant, entry: Any, card_twice: bool = False, context: Co
     enabled = {key for key, _, _, on, _ in f.entities if on}
     info = {"entry_id": entry.entry_id, "title": entry.title, "loaded": entry.state is ConfigEntryState.LOADED,
             "failed": f.failed, "health": health.report(f), "extensions": inventory(hass, entry.options),
-            "official": official(hass, entry.entry_id)}
+            "official": official(hass, entry.entry_id),
+            # How far each of the station's measures can be trusted (État › Fiabilité de la station).
+            "trust": entry.runtime_data.trust_view() if entry.state is ConfigEntryState.LOADED and hasattr(getattr(entry, "runtime_data", None), "trust_view") else {}}
     status = home.Place(title=entry.title, loaded=not f.failed, station=len(f.sensors),
                         silent=[s.label for s in f.sensors if s.status != "ok"],
                         forecast=f.restarting or f.failed or f.forecast_age is not None,

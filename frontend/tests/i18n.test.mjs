@@ -32,7 +32,7 @@ function frenchTexts(source){
  }
  return found;
 }
-const texts=new Set(['panel.ts','model.ts'].flatMap(f=>frenchTexts(readFileSync(join(root,f),'utf8'))).filter(Boolean));
+const texts=new Set(['panel.ts','model.ts','emplacement.ts'].flatMap(f=>frenchTexts(readFileSync(join(root,f),'utf8'))).filter(Boolean));
 const names=text=>[...text.matchAll(/\{(\w+)\}/g)].map(x=>x[1]).sort().join();
 
 test('the panel has English words for every French text it shows',()=>{

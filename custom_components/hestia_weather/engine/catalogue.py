@@ -171,6 +171,9 @@ def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, sett
         raining = bulletin_state in RAINY
         items["pluie_en_cours"] = Item(raining, f"Bulletin : {CONDITION_TITLES.get(bulletin_state, bulletin_state).lower()}" if raining
                                        else "Pas de pluie selon le bulletin", "bulletin")
+    if settings.rain_rate_entity and settings.rain_gauge_shelter in ("tree", "eave") and w.rain.rate == 0 and bulletin_state in RAINY:
+        # A sheltered gauge collects less: its 0 does not contradict the bulletin's rain (docs/STATION-EMPLACEMENT.md § 4.3).
+        items["pluie_en_cours"] = Item(True, f"Bulletin : {CONDITION_TITLES.get(bulletin_state, bulletin_state).lower()} ; pluviomètre à l’abri", "bulletin")
 
     fog_later = signal.get("fog-later")
     if w.condition == "fog" and w.observed:
@@ -224,7 +227,8 @@ def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, sett
                               level=max(lightning.level, 1), extra=strikes)
 
     if settings.wind_speed_entity or settings.wind_gust_entity:
-        speed, gust, wind_source = w.wind.speed, w.wind.gust, "station"
+        # From a sheltered side the forecast may stand in (engine/station_place.overlay): « annoncées », then.
+        speed, gust, wind_source = w.wind.speed, w.wind.gust, "bulletin" if "wind" in settings.station_notes else "station"
     else:
         unit = bulletin.get("wind_speed_unit")
         speed, gust = measurement(bulletin.get("wind_speed"), unit, Kind.WIND), measurement(bulletin.get("wind_gust_speed"), unit, Kind.WIND)
@@ -267,7 +271,9 @@ def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, sett
     if temperature is None and not forecast:
         items["gel"] = Item(None, "Température et prévisions indisponibles")
     elif freezing or frost:
-        parts = [f"{number(temperature or 0)} °C {'mesurés' if station_temperature else 'annoncés'}"] if freezing else []
+        # A station under 1.5 m measures the cold near the ground: a ground frost, not always the air's.
+        low = " au ras du sol" if station_temperature and settings.station_height == "low" else ""
+        parts = [f"{number(temperature or 0)} °C {'mesurés' if station_temperature else 'annoncés'}{low}"] if freezing else []
         if frost:
             parts.append(frost.text)
         coldest = min(v for v in (temperature if freezing else None, low18) if v is not None)

@@ -24,7 +24,7 @@ from .engine.i18n import t
 from .engine.settings import ATMO_KEYS, WAQI_KEYS, Settings, atmo_key
 from .engine.view import place_name
 
-SETTING_KEYS = frozenset({f.name for f in fields(Settings)} - {"atmo", "waqi"}) | frozenset(ATMO_KEYS) | frozenset(WAQI_KEYS) | {"families"}
+SETTING_KEYS = frozenset({f.name for f in fields(Settings)} - {"atmo", "waqi", "station_notes"}) | frozenset(ATMO_KEYS) | frozenset(WAQI_KEYS) | {"families"}
 # Air and pollen sensors have independent zones and can each be left out.
 AIR_KEYS = frozenset(atmo_key(m, later) for later in (False, True) for m in ("air", *atmo.POLLUTANT_METRICS))
 POLLEN_KEYS = frozenset(ATMO_KEYS) - AIR_KEYS

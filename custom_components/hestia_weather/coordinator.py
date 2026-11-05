@@ -23,7 +23,7 @@ from homeassistant.util import dt as dt_util
 from zoneinfo import ZoneInfo
 from .engine import legacy
 from .const import AIR_INTERVAL, DEBOUNCE_SECONDS, DOMAIN, FORECAST_INTERVAL, HISTORY_INTERVAL, LOGGER, RAIN_INTERVAL, TICK, WEEK_INTERVAL
-from .engine import lightning, open_meteo, open_meteo_forecast, waqi
+from .engine import lightning, open_meteo, open_meteo_forecast, station_place, waqi
 from .engine.i18n import DICTIONARIES, localized
 from .engine.brief import Brief
 from .engine.catalogue import Item
@@ -138,6 +138,11 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         self.shade_hours = 0
         self._shade_store = None
         self._shade_cells: frozenset[str] | None = None
+        self.place_learned: dict[str, Any] = {}
+        """How far the station's temperature, wind and rain can be trusted, learned at night (engine/station_place.py)."""
+        self._place_store = None
+        self.retained: dict[str, dict[str, Any]] = {}
+        """What was retained at the last calculation when it is not the station's own reading (api.py `station_trust`)."""
 
     async def async_start(self) -> None:
         """First fetches, then listen to the sensors and keep each source fresh."""
@@ -223,7 +228,8 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         now = dt_util.now()
         zone = ZoneInfo(hass.config.time_zone)
         # WAQI's station today and Open-Meteo tomorrow stand where Atmo France's air sensors would be.
-        settings, get = waqi.overlay(self.settings, hass.states.get, self.air_forecast, now, zone)
+        settings, get = self._station_overlay(*waqi.overlay(self.settings, hass.states.get, self.air_forecast, now, zone), now, zone)
+        self.retained = self._retained(settings, get)
         strikes = None
         if settings.lightning_entity:
             sensor = hass.states.get(settings.lightning_entity)
@@ -249,6 +255,25 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         ahead = rain_ahead(radar.attributes if radar else None, self.hours, now)
         return Snapshot(result.local, result.brief, result.derived, to_json(result.view), result.catalogue, self.watch.states(), now, ahead)
 
+    def _station_overlay(self, settings: Settings, get: Callable[[str], Any], now: datetime, zone: ZoneInfo) -> tuple[Settings, Callable[[str], Any]]:
+        """The station's temperature and wind where they cannot be trusted now (docs/STATION-EMPLACEMENT.md)."""
+        if not (settings.temperature_entity or settings.wind_speed_entity or settings.wind_gust_entity):
+            return settings, get
+        config = self.hass.config
+        # The shade only matters to a station declared against a wall or on the roof, before the nights have learned it.
+        shade = self.shade_now() if settings.station_side else {}
+        return station_place.overlay(settings, get, self.place_learned, self.hours, now, zone, config.latitude, config.longitude, shade)
+
+    @staticmethod
+    def _retained(settings: Settings, get: Callable[[str], Any]) -> dict[str, dict[str, Any]]:
+        out: dict[str, dict[str, Any]] = {}
+        for key, entity_id in (("temperature", settings.temperature_entity), ("wind", settings.wind_gust_entity or settings.wind_speed_entity)):
+            note = settings.station_notes.get(key)
+            state = get(entity_id) if entity_id and note is not None else None
+            if note is not None:
+                out[key] = {"now": note.how, "why": note.text(), "value": station_place.finite(state.state) if state is not None else None}
+        return out
+
     def view_for(self, language: str | None) -> dict[str, Any] | None:
         """Return the current card view in one dashboard user's language.
 
@@ -270,7 +295,8 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         if cached is not None and cached[0] == snapshot.computed:
             return cached[1]
         zone = ZoneInfo(self.hass.config.time_zone)
-        settings, get = waqi.overlay(self.settings, self.hass.states.get, self.air_forecast, snapshot.computed, zone)
+        settings, get = self._station_overlay(*waqi.overlay(self.settings, self.hass.states.get, self.air_forecast, snapshot.computed, zone),
+                                              snapshot.computed, zone)
         strikes = None
         if settings.lightning_entity:
             sensor = self.hass.states.get(settings.lightning_entity)
