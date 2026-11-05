@@ -14,6 +14,7 @@ import { forecastStyles } from './views/forecasts';
 import { airStyles } from './views/air';
 import { lightningStyles } from './views/lightning';
 import { traitStyles } from './ui/trait';
+import { marqueeStyles } from './ui/marquee';
 import { watchOffscreen } from './ui/offscreen';
 import './ui/weather-sky';
 import './editor/hestia-weather-card-editor';
@@ -340,7 +341,7 @@ export class HestiaWeatherCard extends LitElement {
     e.preventDefault(); this.openEntity(e);
   };
 
-  static styles = [tokens, shared, pieces, bubbles, tileStyles, compactStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, singleStyles, lightningStyles, traitStyles, css`
+  static styles = [tokens, shared, marqueeStyles, pieces, bubbles, tileStyles, compactStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, singleStyles, lightningStyles, traitStyles, css`
     :host { display:block; }
     :host([hidden]) { display:none; }
     /* Animations switched off: the alert halo stays still too, in the tile, the window and the scrolling bubble. */

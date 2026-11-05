@@ -5,6 +5,8 @@ import { colon, t } from '../i18n';
 import { property, state } from 'lit/decorators.js';
 import { define } from './define';
 import { shared } from './charter';
+import { scrolling } from './parts';
+import { marqueeStyles, roundOf } from './marquee';
 import { buildFrise, type Frise, type FriseGroup, type FriseItem } from '../frise';
 import type { AlertPoint, Slot, TickerPoint } from '../view';
 
@@ -40,6 +42,9 @@ export class HestiaFrise extends LitElement {
   private due = 0;
   private left = STEP;
   private resize?: ResizeObserver;
+  /** The sentence on show has gone round once (ui/marquee.ts); `waiting`: its step came before, the point moves on at the end of the round. */
+  private roundDone = false;
+  private waiting = false;
 
   connectedCallback() {
     super.connectedCallback();
@@ -76,15 +81,29 @@ export class HestiaFrise extends LitElement {
     if (Date.now() / 1000 - this.built >= STALE) this.requestUpdate();
     const count = this.frise.items.length;
     if (count < 2 || document.hidden) { this.schedule(STEP); return; }
+    // A long sentence is read to its end: the point waits for the end of its round.
+    if (roundOf(this.line(this.index)) && !this.roundDone) { this.waiting = true; return; }
     this.show((this.index + 1) % count, STEP);
   }
   private show(n: number, delay: number) {
+    this.waiting = false;
     if (n !== this.index) {
-      this.leaving = this.index; this.index = n;
+      this.leaving = this.index; this.index = n; this.roundDone = false;
       clearTimeout(this.leave); this.leave = setTimeout(() => { this.leaving = undefined; }, 460);
     }
     this.schedule(delay);
+    // Its bar fills in the time of one round of its sentence, when that is longer.
+    this.step = Math.max(delay, roundOf(this.line(n)));
   }
+  /** The scrolling line of a point. */
+  private line(n: number) { return this.renderRoot.querySelectorAll('.say .item')[n]?.querySelector('hestia-weather-marquee'); }
+  /** A line of the point on show starts scrolling, or the end of one of its rounds: the bar follows, the point moves on if its step has passed. */
+  private measured = (e: Event) => { if ((e.target as Element).closest('.item.on')) this.step = Math.max(this.step, (e as CustomEvent<number>).detail); };
+  private lap = (e: AnimationEvent) => {
+    if (e.animationName !== 'nw-run' || (e.target as Element).previousElementSibling || !(e.target as Element).closest('.item.on')) return;
+    this.roundDone = true;
+    if (this.waiting && !this.paused) this.next();
+  };
   /** A tap on a label shows its first point; another tap goes to the next point of the same label. */
   private pick(g: FriseGroup) {
     const k = g.items.indexOf(this.index);
@@ -135,9 +154,9 @@ export class HestiaFrise extends LitElement {
     const when = (i: FriseItem) => i.now || !i.clock ? i.label : `${i.label} · ${i.clock}`;
     return html`<div class=${`panel nw-glass${this.paused ? ' paused' : ''}`} @pointerenter=${this.pause} @pointerleave=${this.resume} @focusin=${this.pause} @focusout=${this.resume}>
       ${items.length ? html`<div class="head" aria-hidden="true">
-        <div class="say">${items.map((i, n) => html`<div class=${`item${n === this.index ? ' on' : n === this.leaving ? ' off' : ''}${i.alert ? ' al' : ''}`}
+        <div class="say" @nw-marquee=${this.measured} @animationiteration=${this.lap}>${items.map((i, n) => html`<div class=${`item${n === this.index ? ' on' : n === this.leaving ? ' off' : ''}${i.alert ? ' al' : ''}`}
           style=${`${tone(i)}${i.alert ? `;--al:var(--nw-level${i.alert})` : ''}`}>
-          <span class="badge"><ha-icon icon=${i.icon}></ha-icon></span><div><div class="when">${when(i)}</div><div class="x" title=${i.text}>${i.text}</div></div></div>`)}</div>
+          <span class="badge"><ha-icon icon=${i.icon}></ha-icon></span><div><div class="when">${when(i)}</div><div class="x">${scrolling(i.text)}</div></div></div>`)}</div>
         ${items.length > 1 ? html`<div class="progress" style=${`--step:${this.step}ms`}>${items.map((_, n) => html`<i class=${n === this.index ? 'on' : n < this.index ? 'done' : ''}></i>`)}</div>` : nothing}
       </div>` : nothing}
       <div class=${`track${groups.length ? '' : ' bare'}`}>
@@ -165,7 +184,7 @@ export class HestiaFrise extends LitElement {
     </div>`;
   }
 
-  static styles = [shared, css`
+  static styles = [shared, marqueeStyles, css`
     :host { display:block; min-width:0; color:var(--nw-fg); }
     ha-icon { display:flex; line-height:0; }
     button { font:inherit; color:inherit; }
@@ -186,7 +205,9 @@ export class HestiaFrise extends LitElement {
     .item > div { min-width:0; }
     /* The point on show (2 November): a large tinted icon, the time in small grey capitals, the sentence in bold. */
     .when { font-size:var(--nw-fs-label); line-height:14px; letter-spacing:.08em; text-transform:uppercase; font-weight:650; white-space:nowrap; color:var(--nw-fg2); }
-    .x { font-size:var(--nw-fs-text); line-height:20px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .x { font-size:var(--nw-fs-text); line-height:20px; font-weight:600; min-width:0; }
+    /* Only the sentence on show scrolls, from its start each time it comes back. */
+    .item:not(.on) hestia-weather-marquee .run { animation:none; }
     .badge { display:grid; place-items:center; width:36px; height:36px; flex:none; border-radius:11px; background:color-mix(in oklab, var(--tone) 34%, transparent); }
     .badge ha-icon { --mdc-icon-size:18px; color:color-mix(in oklab, var(--tone) 40%, var(--nw-fg)); }
     .item.al .badge { background:color-mix(in oklab, var(--al) 40%, transparent); }

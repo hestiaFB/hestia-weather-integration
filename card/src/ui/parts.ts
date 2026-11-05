@@ -5,6 +5,10 @@ import { numberFormat } from '../intl-cache';
 import { currentLocale, t } from '../i18n';
 import './marquee';
 
+/** A sentence that scrolls in a loop when it does not fit its line (ui/marquee.ts); its second copy is only there for the loop. */
+export const scrolling = (words: unknown): TemplateResult =>
+  html`<hestia-weather-marquee><span class="run">${words}</span><span class="run" aria-hidden="true">${words}</span></hestia-weather-marquee>`;
+
 /** A number in the user's language, at most `digits` decimals (exactly `digits` when `fixed`). */
 export const nf = (v: number, digits = 1, fixed = false) => numberFormat(currentLocale(), { maximumFractionDigits: digits, minimumFractionDigits: fixed ? digits : 0 }).format(v);
 /** A number stays with its unit at the end of a line: « (6 °C) » is never cut after the 6. */
@@ -33,15 +37,14 @@ export function bubble(p: TickerPoint, extraClass = ''): TemplateResult {
 /** An alert bubble: the same shape, tinted by its level, with its halo. */
 export function alertBubble(a: AlertPoint, extraClass = ''): TemplateResult {
   return html`<p class=${`nw-bubble nw-bubble--alert nw-level${a.level} ${extraClass}`} role="status">
-    <ha-icon icon=${a.icon}></ha-icon>${a.label ? html`<span class="nw-label">${a.label}</span>` : nothing}<b title=${a.text}>${a.text}</b></p>`;
+    <ha-icon icon=${a.icon}></ha-icon>${a.label ? html`<span class="nw-label">${a.label}</span>` : nothing}<b>${scrolling(a.text)}</b></p>`;
 }
 
 /** The official vigilance in the banner: « Vigilance orange · Orages », as a pill with its halo, the whole width of its line.
- *  A text too long for it scrolls in a loop (ui/marquee.ts); its second copy is only there for the loop, screen readers skip it. */
+ *  A text too long for it scrolls in a loop. */
 export function alertPill(a: AlertPoint): TemplateResult {
-  const words = html`${a.label ? html`<b>${a.label}<span class="sep"> · </span></b>` : nothing}${a.text}`;
   return html`<p class=${`nw-alert nw-level${a.level}`} role="status" title=${a.source} data-entity=${entity(a.entity)}>
-    <span class="dot"><ha-icon icon=${a.icon}></ha-icon></span><hestia-weather-marquee><span class="run">${words}</span><span class="run" aria-hidden="true">${words}</span></hestia-weather-marquee></p>`;
+    <span class="dot"><ha-icon icon=${a.icon}></ha-icon></span>${scrolling(html`${a.label ? html`<b>${a.label}<span class="sep"> · </span></b>` : nothing}${a.text}`)}</p>`;
 }
 
 /** The sixteen points of the compass, in the user's language (« SO » in French, « SW » in English). */

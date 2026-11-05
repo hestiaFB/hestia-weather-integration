@@ -5,6 +5,8 @@ import type { AlertPoint, TickerPoint } from '../view';
 import { keyed } from 'lit/directives/keyed.js';
 import { colon } from '../i18n';
 import { shared } from './charter';
+import { scrolling } from './parts';
+import { marqueeStyles, roundOf } from './marquee';
 
 /** A point of the scrolling bubble: a brief point, or an alert that had no room of its own. */
 export type TickerItem = TickerPoint | (AlertPoint & { alert: true });
@@ -18,12 +20,18 @@ const tone = (p: TickerItem) => `--tone:var(--nw-${'official' in p || ('alert' i
  * Shows the points one at a time, every 5 s, as the timeline's sentence (3 November, as the maquette's folded tile):
  * a large tinted icon, the label in small grey capitals, the sentence in bold, one bar per point; no halo. Hovering or focusing the card pauses it.
  * When the list changes (the tile unfolds), the bubble on screen stays if it is still in the list: nothing moves.
+ * A sentence too long for its line scrolls (ui/marquee.ts): its point stays until it has gone round once, and its bar fills in that time.
  */
 @define('hestia-ticker')
 export class HestiaTicker extends LitElement {
   @property({ attribute: false }) points: TickerItem[] = [];
   @state() private index = 0;
   @state() private leaving = false;
+  /** One round of each sentence that scrolls, in ms, by its text. */
+  private rounds = new Map<string, number>();
+  /** The sentence on show has gone round once; `waiting`: the step came before, the point moves on at the end of the round. */
+  private roundDone = false;
+  private waiting = false;
   private timer?: ReturnType<typeof setInterval>;
   private swap?: ReturnType<typeof setTimeout>;
   private shown?: string;
@@ -31,8 +39,9 @@ export class HestiaTicker extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     // Home Assistant may move the card mid-fade: a cancelled swap must not leave the bubble transparent.
-    this.leaving = false; this.timer = setInterval(() => this.next(), STEP);
+    this.leaving = false; this.start();
   }
+  private start() { clearInterval(this.timer); this.timer = setInterval(() => this.next(), STEP); }
   disconnectedCallback() { super.disconnectedCallback(); clearInterval(this.timer); clearTimeout(this.swap); }
 
   protected willUpdate(changed: Map<PropertyKey, unknown>) {
@@ -48,23 +57,34 @@ export class HestiaTicker extends LitElement {
   private next() {
     const card = (this.getRootNode() as ShadowRoot).host;
     if (this.points.length < 2 || document.hidden || card?.matches(':hover, :focus-within')) return;
+    // A long sentence is read to its end: the point waits for the end of its round.
+    if (roundOf(this.renderRoot.querySelector('hestia-weather-marquee')) && !this.roundDone) { this.waiting = true; return; }
+    this.waiting = false;
     const advance = () => { this.index = (this.index + 1) % this.points.length; this.leaving = false; };
     if (this.reduced) { advance(); return; }
     this.leaving = true; this.swap = setTimeout(advance, 350);
   }
   protected render() {
     const point = this.points[this.index % Math.max(1, this.points.length)];
+    if (point?.text !== this.shown) this.roundDone = false;
     this.shown = point?.text;
     if (!point) return nothing;
     const n = this.index % this.points.length;
-    return html`<div class="say nw-glass" aria-hidden="true" style=${tone(point)}>
+    return html`<div class="say nw-glass" aria-hidden="true" style=${tone(point)} @nw-marquee=${this.measured} @animationiteration=${this.lap}>
       ${keyed(n, html`<div class=${`item${this.leaving ? ' out' : ''}`}><span class="badge"><ha-icon icon=${point.icon}></ha-icon></span>
-        <div class="txt">${point.label ? html`<div class="when">${point.label}</div>` : nothing}<div class="x" title=${point.text}>${point.text}</div></div></div>`)}
-      ${this.points.length > 1 ? html`<span class="progress" style=${`--step:${STEP}ms`}>${this.points.map((_, i) => i === n
+        <div class="txt">${point.label ? html`<div class="when">${point.label}</div>` : nothing}<div class="x">${scrolling(point.text)}</div></div></div>`)}
+      ${this.points.length > 1 ? html`<span class="progress" style=${`--step:${Math.max(STEP, this.rounds.get(point.text) ?? 0)}ms`}>${this.points.map((_, i) => i === n
         ? keyed(`on-${n}`, html`<i class="on"></i>`) : html`<i class=${i < n ? 'done' : ''}></i>`)}</span>` : nothing}</div>
       <ul class="sr">${this.points.map(p => html`<li>${p.label ? colon(p.label, p.text) : p.text}</li>`)}</ul>`;
   }
-  static styles = [shared, css`
+  private measured = (e: Event) => { if (this.shown !== undefined) { this.rounds.set(this.shown, (e as CustomEvent<number>).detail); this.requestUpdate(); } };
+  /** The end of a round of the sentence on show: if its step has passed, the next point comes now, and the next step starts from here. */
+  private lap = (e: AnimationEvent) => {
+    if (e.animationName !== 'nw-run' || (e.target as Element).previousElementSibling) return;
+    this.roundDone = true;
+    if (this.waiting) { this.next(); this.start(); }
+  };
+  static styles = [shared, marqueeStyles, css`
     :host { display:block; min-width:0; color:var(--nw-fg); }
     ha-icon { display:flex; line-height:0; }
     /* The timeline's frame is the charter's glass (.nw-glass): no shadow nor halo. */
@@ -76,7 +96,7 @@ export class HestiaTicker extends LitElement {
     .badge ha-icon { --mdc-icon-size:18px; color:color-mix(in oklab, var(--tone) 40%, var(--nw-fg)); }
     .txt { min-width:0; }
     .when { font-size:var(--nw-fs-label); line-height:14px; letter-spacing:.08em; text-transform:uppercase; font-weight:650; white-space:nowrap; color:var(--nw-fg2); }
-    .x { font-size:var(--nw-fs-text); line-height:20px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .x { font-size:var(--nw-fs-text); line-height:20px; font-weight:600; min-width:0; }
     /* One bar per point, narrower when there are many: on a phone, eight points never push the tile past its frame. */
     .progress { display:flex; gap:4px; flex:0 1 auto; min-width:0; align-self:flex-start; margin-top:6px; }
     .progress i { position:relative; flex:0 1 16px; min-width:6px; height:3px; border-radius:2px; background:var(--nw-line); overflow:hidden; }
