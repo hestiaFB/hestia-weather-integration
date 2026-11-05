@@ -37,7 +37,9 @@ def french_texts(source: str) -> set[str]:
     return found
 
 
-TEXTS = set().union(*(french_texts(p.read_text(encoding="utf-8")) for p in ROOT.rglob("*.py") if not p.name.startswith("i18n")))
+# next_version/ is Hestia Weather 3, carried for the bridge: it has its own translations.
+TEXTS = set().union(*(french_texts(p.read_text(encoding="utf-8")) for p in ROOT.rglob("*.py")
+                     if not p.name.startswith("i18n") and "next_version" not in p.parts))
 
 
 @pytest.fixture(autouse=True)

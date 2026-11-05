@@ -65,8 +65,9 @@ class PanelTests(unittest.IsolatedAsyncioTestCase):
         f = facts(self.hass, entry)
         self.assertEqual((f.forecast_hours, f.forecast_days, f.history_sources), (3, 2, 2))
         overview, _ = place(self.hass, entry)
-        self.assertEqual(len(overview["extensions"]), 9)
-        self.assertFalse(any(e["configured"] for e in overview["extensions"]))  # saved choices only
+        self.assertEqual(len(overview["extensions"]), 10)  # Open-Meteo too, since 2.9.8
+        # Saved choices only; Open-Meteo, an online service on by default, is the one exception.
+        self.assertFalse(any(e["configured"] for e in overview["extensions"] if e["id"] != "open_meteo"))
         self.assertEqual(overview["health"]["technical"]["forecast"]["received"], "il y a 4 min")
         coordinator.forecast_at = None
         pending = facts(self.hass, entry)

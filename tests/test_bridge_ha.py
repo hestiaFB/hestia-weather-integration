@@ -6,7 +6,8 @@ import sys
 import tempfile
 import unittest
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
+import shutil
 
 try:
     from homeassistant import loader
@@ -65,6 +66,50 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         repository.update_repository.assert_awaited_once_with(ignore_issues=True, force=True)
         repository.content.path.remote = f"custom_components/{bridge.NEW}"  # HACS found the new folder: left alone
         self.assertFalse(await bridge.async_refresh_hacs(self.hass))
+
+    def carried(self, version="3.1.0"):
+        """The new version as this one carries it (next_version/)."""
+        folder = self.config / "carried"
+        shutil.rmtree(folder, ignore_errors=True)
+        folder.mkdir()
+        (folder / "manifest.json").write_text(json.dumps({"domain": bridge.NEW, "name": "Hestia", "codeowners": [], "version": version,
+                                                          "dependencies": []}))
+        (folder / "__init__.py").write_text("async def async_setup(hass, config):\n    hass.data['new started'] = True\n    return True\n")
+        (folder / "__pycache__").mkdir()
+        return patch.object(bridge, "CARRIED", folder)
+
+    def written(self):
+        manifest = self.config / "custom_components" / bridge.NEW / "manifest.json"
+        return json.loads(manifest.read_text())["version"] if manifest.exists() else None
+
+    async def test_the_carried_version_is_written_then_started_without_the_marketplace(self):
+        (self.config / "custom_components").mkdir()
+        await loader.async_get_custom_components(self.hass)  # listed at start, without the new version
+        with self.carried():
+            self.assertTrue(await bridge.async_write_new(self.hass))
+        self.assertEqual(self.written(), "3.1.0")
+        self.assertFalse((self.config / "custom_components" / bridge.NEW / "__pycache__").exists())
+        self.assertEqual(sorted(p.name for p in (self.config / "custom_components").iterdir()), [bridge.NEW])  # nothing left aside
+        self.assertTrue(await bridge.async_start_new(self.hass))
+        self.assertTrue(self.hass.data.get("new started"))
+        with self.carried():
+            self.assertFalse(await bridge.async_write_new(self.hass))  # started: never rewritten under it
+
+    async def test_an_older_new_version_is_replaced_a_newer_one_kept(self):
+        self.install_new_version()  # 9.0.0, newer: kept
+        with self.carried():
+            self.assertFalse(await bridge.async_write_new(self.hass))
+        self.assertEqual(self.written(), "9.0.0")
+        manifest = self.config / "custom_components" / bridge.NEW / "manifest.json"
+        manifest.write_text(manifest.read_text().replace("9.0.0", "3.1.0b8"))  # a beta tester's: replaced by the stable
+        with self.carried():
+            self.assertTrue(await bridge.async_write_new(self.hass))
+        self.assertEqual(self.written(), "3.1.0")
+
+    async def test_nothing_carried_nothing_written(self):
+        with patch.object(bridge, "CARRIED", self.config / "absent"):
+            self.assertFalse(await bridge.async_write_new(self.hass))
+        self.assertIsNone(self.written())
 
     async def test_without_hacs_or_with_another_hacs_nothing_breaks(self):
         self.assertFalse(await bridge.async_refresh_hacs(self.hass))
