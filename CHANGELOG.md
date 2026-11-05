@@ -4,7 +4,7 @@
 
 - Vous êtes en 2.9.x : installez d’abord la **2.9.9**. Elle fait passer toute votre maison au nom Hestia, sans rien perdre. Redémarrez quand Home Assistant le demande.
 - Home Assistant 2026.11 : une réparation « Reprendre les mises à jour » apparaît ensuite. Appuyez sur Réparer.
-- Le Marketplace affiche « changed its domain… uninstall it and install it again » ? Vous n’êtes pas passé par la 2.9.9. Dans le Marketplace, désinstallez Hestia Weather, téléchargez-la, redémarrez, puis **Paramètres → Appareils et services → Ajouter une intégration → Hestia Weather** : votre maison est reprise, rien n’est créé en double.
+- Le Marketplace affiche « changed its domain… uninstall it and install it again » ? Vous n’êtes pas passé par la 2.9.9 : ne désinstallez rien. Dans le Marketplace, ouvrez Hestia Weather, téléchargez la version **2.9.9**, redémarrez, puis suivez les étapes ci-dessus.
 - Hestia Confort 1.7.30 reste relié à cette version. Hestia Confort 2 suivra.
 - Si une réparation liste des lignes YAML écrites à la main, remplacez-y l’ancien nom.
 

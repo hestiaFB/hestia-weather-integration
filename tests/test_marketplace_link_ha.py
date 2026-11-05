@@ -30,6 +30,9 @@ class FakeRepository:
         self.data = SimpleNamespace(installed=installed, last_version=last_version, domain=domain)
         self.fails, self.downloads, self.removed = fails, 0, 0
 
+    async def update_repository(self, ignore_issues: bool = False, force: bool = False) -> None:
+        self.read_again = getattr(self, "read_again", 0) + 1
+
     async def uninstall(self) -> None:
         self.removed += 1
         self.data.installed = False
@@ -73,7 +76,7 @@ class MarketplaceLinkTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(issue.is_fixable)
         self.assertEqual(issue.translation_placeholders, {"version": "3.1.0"})
         self.assertTrue(await marketplace_link.async_track_again(self.hass))
-        self.assertEqual(repository.downloads, 1)
+        self.assertEqual((repository.read_again, repository.downloads), (1, 1))  # read again, then downloaded
         self.assertIsNone(self.issue())
 
     async def test_a_former_version_offered_is_never_downloaded(self):
