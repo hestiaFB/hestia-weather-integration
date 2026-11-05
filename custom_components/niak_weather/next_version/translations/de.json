@@ -1,0 +1,688 @@
+{
+  "config": {
+    "abort": {
+      "no_weather": "Keine Wetterquelle gefunden. Fügen Sie zuerst eine Wetter-Integration hinzu (zum Beispiel Météo-France).",
+      "migrated": "Ihre Installation wurde unter dem neuen Namen übernommen. Die nächsten Schritte finden Sie unter Hestia → Start."
+    },
+    "step": {
+      "user": {
+        "title": "Willkommen bei Hestia Weather",
+        "description": "Hestia Weather ist das Wettergehirn bei Ihnen zu Hause: Es liest Ihre Vorhersage, Ihre Wetterstation und die Luftqualität und berechnet, was sie bedeuten.\n\nVier Schritte, jeder schon mit dem ausgefüllt, was Home Assistant kennt:\n1. **Wetter**: die Vorhersagequelle.\n2. **Wetterstation**: Ihre Sensoren, falls vorhanden.\n3. **Luft und Pollen**: optional.\n4. **Sensoren**: was Sie für Ihre Automatisierungen möchten.\n\nAlles lässt sich später unter **Konfigurieren** ändern.",
+        "menu_options": {
+          "import_card": "Mit den Einstellungen einer Hestia-Weather-Karte beginnen",
+          "weather": "Starten"
+        }
+      },
+      "import_card": {
+        "title": "Mit einer Karte beginnen",
+        "description": "Wählen Sie die Karte. Ihre Einstellungen werden in jedem Schritt angezeigt, damit Sie sie prüfen können.",
+        "data": {
+          "card": "Karte"
+        }
+      },
+      "weather": {
+        "title": "Schritt 1 von 4 · Wetter",
+        "description": "Die Vorhersagequelle und der Name des Ortes.",
+        "data": {
+          "weather_entity": "Wettervorhersage",
+          "location": "Ortsname",
+          "vigilance_entity": "Amtliche Wetterwarnungen",
+          "season_entity": "Jahreszeit",
+          "water_restriction_entity": "Wassereinschränkungen (Vigieau)",
+          "lightning_entity": "Blitze (Blitzortung)"
+        },
+        "data_description": {
+          "weather_entity": "Météo-France, MeteoSwiss oder ein anderer Anbieter.",
+          "location": "Wird oben auf der Karte angezeigt.",
+          "vigilance_entity": "Optional: Météo-France oder MeteoSwiss (Sensor mit den gesammelten Warnungen).",
+          "season_entity": "Optional. Ohne Sensor richtet sich die Jahreszeit nach dem Datum.",
+          "water_restriction_entity": "Optional: die Warnstufe der Integration Vigieau, Trinkwasserzone (AEP).",
+          "lightning_entity": "Optional: der Entfernungssensor der Integration Blitzortung. Innerhalb von 30 km schaltet sich der Gewitter-Sensor ein."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Erweiterte Einstellungen",
+            "data": {
+              "sun_entity": "Sonne",
+              "sun_elevation_entity": "Sonnenhöhe",
+              "forecast_source": "Name der Vorhersagequelle"
+            }
+          }
+        }
+      },
+      "station": {
+        "title": "Schritt 2 von 4 · Wetterstation",
+        "description": "Erkannte Station: {profile}. Gefundene Sensoren: {recognized}.",
+        "data": {
+          "station_model": "Modell",
+          "station_device_id": "Gerät",
+          "station_history": "Aus dem Verlauf berechnen"
+        },
+        "data_description": {
+          "station_history": "Regensummen, Temperaturtrend und stärkste Böe des Tages, wenn die Station sie nicht liefert."
+        }
+      },
+      "station_sensors": {
+        "title": "Schritt 2 von 4 · Stationssensoren",
+        "description": "Prüfen Sie jeden Sensor. Lassen Sie leer, was die Station nicht misst.",
+        "sections": {
+          "station_temperature": {
+            "name": "Temperatur und Luftfeuchtigkeit",
+            "data": {
+              "temperature_entity": "Außentemperatur",
+              "humidity_entity": "Außenluftfeuchtigkeit"
+            }
+          },
+          "station_rain": {
+            "name": "Regen",
+            "data": {
+              "rain_rate_entity": "Regenrate",
+              "rain_total_entity": "Gesamt-Regenzähler",
+              "daily_rain_entity": "Regen seit Mitternacht",
+              "rain_24h_entity": "Regen in 24 Std.",
+              "weekly_rain_entity": "Regen diese Woche",
+              "monthly_rain_entity": "Regen diesen Monat",
+              "yearly_rain_entity": "Regen dieses Jahr",
+              "event_rain_entity": "Regen dieses Ereignisses"
+            }
+          },
+          "station_wind": {
+            "name": "Wind",
+            "data": {
+              "wind_speed_entity": "Mittlerer Wind",
+              "wind_gust_entity": "Böen",
+              "wind_bearing_entity": "Windrichtung",
+              "max_daily_gust_entity": "Stärkste Böe heute"
+            }
+          },
+          "station_sun": {
+            "name": "Sonne",
+            "data": {
+              "illuminance_entity": "Beleuchtungsstärke",
+              "uv_index_entity": "UV-Index",
+              "solar_radiation_entity": "Sonneneinstrahlung"
+            }
+          },
+          "station_specific": {
+            "name": "Weitere Messwerte",
+            "data": {
+              "pressure_entity": "Luftdruck",
+              "dew_point_entity": "Taupunkt",
+              "temperature_trend_entity": "Temperaturtrend"
+            }
+          }
+        }
+      },
+      "pollen_sensors": {
+        "title": "Schritt 3 von 4 · Sensoren von {source}",
+        "description": "Die zu verfolgenden Arten (und, bei Polleninformation, das allgemeine Allergierisiko), von Hestia vorgeschlagen: prüfen, hinzufügen oder entfernen. Ohne allgemeines Risiko verwendet Hestia die Art mit dem höchsten Wert.",
+        "data": {
+          "pollens": "Arten",
+          "pollen_risk_entity": "Allgemeines Allergierisiko"
+        },
+        "data_description": {
+          "pollen_risk_entity": "Optional. Ohne diese Angabe verwendet Hestia die Art mit dem höchsten Wert."
+        }
+      },
+      "families": {
+        "title": "Schritt 4 von 4 · Sensoren und Automatisierungen",
+        "description": "Wählen Sie aus, was Sie nutzen möchten. Die Entitäten dieser Gruppen werden aktiviert, sobald ihre Quelle vorhanden ist. Jede Gruppe lässt sich später unter **Konfigurieren** ändern.",
+        "data": {
+          "families": "Gruppen"
+        }
+      },
+      "summary": {
+        "title": "Zusammenfassung",
+        "description": "**Wetter**: {weather}\n**Wetterstation**: {station}\n**Luftqualität**: {air}\n**Pollen**: {pollen}\n**Sensorgruppen**: {families}\n\nZu beachten:\n{missing}\n\nBestätigen Sie, um den Ort anzulegen. Alles lässt sich später unter **Konfigurieren** ändern."
+      },
+      "air_quality": {
+        "title": "Schritt 3 von 4 · Luftqualität",
+        "description": "Der Luftindex von 1 bis 6 und seine Schadstoffe.\n\n- **Atmo France**: die Vorhersage für Ihre Stadt.\n- **WAQI**: der Messwert der gewählten Station; der morgige Wert stammt aus der Open-Meteo-Vorhersage (Copernicus) an der Position Ihres Zuhauses.\n\n„Keine“: keine Luftqualität.{hint}",
+        "data": {
+          "atmo_area": "Quelle"
+        }
+      },
+      "pollen": {
+        "title": "Schritt 3 von 4 · Pollen",
+        "description": "Wählen Sie eine Quelle für die Länder, die sie abdeckt. Atmo France verwendet einen Index von 1 bis 6; Polleninformation, IRM KMI und Swiss Pollen verwenden Stufen von 0 bis 4; Kleenex / Scottex verwendet Stufen von 1 bis 4. Bei Swiss Pollen oder Kleenex / Scottex wählen Sie eine Station oder einen Ort und dann die zu verfolgenden Arten oder Gruppen.",
+        "data": {
+          "pollen_source": "Pollenquelle"
+        }
+      },
+      "pollen_area": {
+        "title": "Schritt 3 von 4 · Atmo-Zone für Pollen",
+        "description": "Die Atmo-France-Zone, deren Pollen Hestia liest. Sie kann von der Zone der Luftqualität abweichen.",
+        "data": {
+          "atmo_area": "Atmo-France-Zone"
+        }
+      },
+      "pollen_station": {
+        "title": "Pollen-Standort",
+        "description": "Wählen Sie eine Station oder einen Ort für die zu verfolgenden Arten und Gruppen.",
+        "data": {
+          "pollen_station": "Station oder Ort"
+        }
+      }
+    },
+    "error": {
+      "atmo_missing": "Atmo France ist nicht installiert. Installieren Sie die Integration Atmo France (github.com/sebcaps/atmofrance) und kommen Sie dann zurück.",
+      "polleninformation_missing": "Polleninformation ist nicht installiert. Installieren Sie die Integration Polleninformation EU (github.com/krissen/polleninformation) und kommen Sie dann zurück.",
+      "irm_kmi_missing": "IRM KMI ist nicht installiert oder liefert keine Pollen. Installieren Sie die Integration IRM KMI über HACS (github.com/jdejaegh/irm-kmi-ha) und kommen Sie dann zurück.",
+      "swiss_pollen_missing": "Swiss Pollen ist nicht installiert oder liefert keine Stufen-Sensoren. Installieren Sie frimtec/hass-swiss-pollen über HACS und kehren Sie dann hierher zurück.",
+      "swiss_station_missing": "Wählen Sie eine verfügbare Station oder einen verfügbaren Ort für diese Pollenquelle.",
+      "kleenex_pollenradar_missing": "Kleenex / Scottex ist nicht installiert oder liefert keine Pollen-Sensoren. Installieren Sie Kleenex Pollen Radar über HACS und kehren Sie dann hierher zurück."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Hestia Weather",
+        "description": "Die Einstellungen von Hestia Weather befinden sich im Reiter „Météo“ des Hestia-Panels.\n\n[Einstellungen von Hestia Weather öffnen]({link})",
+        "submit": "Schließen"
+      },
+      "weather": {
+        "title": "Wetter",
+        "description": "Die Vorhersagequelle und der Name des Ortes.",
+        "data": {
+          "weather_entity": "Wettervorhersage",
+          "location": "Ortsname",
+          "vigilance_entity": "Amtliche Wetterwarnungen",
+          "season_entity": "Jahreszeit",
+          "water_restriction_entity": "Wassereinschränkungen (Vigieau)",
+          "lightning_entity": "Blitze (Blitzortung)"
+        },
+        "data_description": {
+          "weather_entity": "Météo-France, MeteoSwiss oder ein anderer Anbieter.",
+          "location": "Wird oben auf der Karte angezeigt.",
+          "vigilance_entity": "Optional: Météo-France oder MeteoSwiss (Sensor mit den gesammelten Warnungen).",
+          "season_entity": "Optional. Ohne Sensor richtet sich die Jahreszeit nach dem Datum.",
+          "water_restriction_entity": "Optional: die Warnstufe der Integration Vigieau, Trinkwasserzone (AEP).",
+          "lightning_entity": "Optional: der Entfernungssensor der Integration Blitzortung. Innerhalb von 30 km schaltet sich der Gewitter-Sensor ein."
+        },
+        "sections": {
+          "advanced": {
+            "name": "Erweiterte Einstellungen",
+            "data": {
+              "sun_entity": "Sonne",
+              "sun_elevation_entity": "Sonnenhöhe",
+              "forecast_source": "Name der Vorhersagequelle"
+            }
+          }
+        }
+      },
+      "station": {
+        "title": "Wetterstation",
+        "description": "Erkannte Station: {profile}. Gefundene Sensoren: {recognized}.",
+        "data": {
+          "station_model": "Modell",
+          "station_device_id": "Gerät",
+          "station_history": "Aus dem Verlauf berechnen"
+        },
+        "data_description": {
+          "station_history": "Regensummen, Temperaturtrend und stärkste Böe des Tages, wenn die Station sie nicht liefert."
+        }
+      },
+      "station_sensors": {
+        "title": "Stationssensoren",
+        "description": "Prüfen Sie jeden Sensor. Lassen Sie leer, was die Station nicht misst.",
+        "sections": {
+          "station_temperature": {
+            "name": "Temperatur und Luftfeuchtigkeit",
+            "data": {
+              "temperature_entity": "Außentemperatur",
+              "humidity_entity": "Außenluftfeuchtigkeit"
+            }
+          },
+          "station_rain": {
+            "name": "Regen",
+            "data": {
+              "rain_rate_entity": "Regenrate",
+              "rain_total_entity": "Gesamt-Regenzähler",
+              "daily_rain_entity": "Regen seit Mitternacht",
+              "rain_24h_entity": "Regen in 24 Std.",
+              "weekly_rain_entity": "Regen diese Woche",
+              "monthly_rain_entity": "Regen diesen Monat",
+              "yearly_rain_entity": "Regen dieses Jahr",
+              "event_rain_entity": "Regen dieses Ereignisses"
+            }
+          },
+          "station_wind": {
+            "name": "Wind",
+            "data": {
+              "wind_speed_entity": "Mittlerer Wind",
+              "wind_gust_entity": "Böen",
+              "wind_bearing_entity": "Windrichtung",
+              "max_daily_gust_entity": "Stärkste Böe heute"
+            }
+          },
+          "station_sun": {
+            "name": "Sonne",
+            "data": {
+              "illuminance_entity": "Beleuchtungsstärke",
+              "uv_index_entity": "UV-Index",
+              "solar_radiation_entity": "Sonneneinstrahlung"
+            }
+          },
+          "station_specific": {
+            "name": "Weitere Messwerte",
+            "data": {
+              "pressure_entity": "Luftdruck",
+              "dew_point_entity": "Taupunkt",
+              "temperature_trend_entity": "Temperaturtrend"
+            }
+          }
+        }
+      },
+      "air": {
+        "title": "Luftqualität und Pollen",
+        "description": "**Luftqualität**: {air}\n**Pollen**: {pollen}",
+        "menu_options": {
+          "air_quality": "Luftqualität",
+          "pollen": "Pollen",
+          "init": "Zurück zum Menü"
+        }
+      },
+      "pollen_sensors": {
+        "title": "Sensoren von {source}",
+        "description": "Die zu verfolgenden Arten (und, bei Polleninformation, das allgemeine Allergierisiko), von Hestia vorgeschlagen: prüfen, hinzufügen oder entfernen. Ohne allgemeines Risiko verwendet Hestia die Art mit dem höchsten Wert.",
+        "data": {
+          "pollens": "Arten",
+          "pollen_risk_entity": "Allgemeines Allergierisiko"
+        },
+        "data_description": {
+          "pollen_risk_entity": "Optional. Ohne diese Angabe verwendet Hestia die Art mit dem höchsten Wert."
+        }
+      },
+      "entities": {
+        "title": "Sensoren und Automatisierungen",
+        "description": "Wählen Sie die zu aktivierenden Entitäten nach Gruppen aus. Eine abgewählte Entität verschwindet aus Home Assistant; die Karte braucht sie nicht.\n\nZu beachten:\n{needs}",
+        "data": {
+          "maintenant": "Jetzt",
+          "alertes": "Warnungen",
+          "prochaines_heures": "Nächste Stunden",
+          "jardin": "Garten",
+          "batiment": "Gebäude",
+          "energie": "Energie",
+          "vie_pratique": "Alltag",
+          "meteo": "Wetter-Entität"
+        }
+      },
+      "air_quality": {
+        "title": "Luftqualität",
+        "description": "Der Luftindex von 1 bis 6 und seine Schadstoffe.\n\n- **Atmo France**: die Vorhersage für Ihre Stadt.\n- **WAQI**: der Messwert der gewählten Station; der morgige Wert stammt aus der Open-Meteo-Vorhersage (Copernicus) an der Position Ihres Zuhauses.\n\n„Keine“: keine Luftqualität.{hint}",
+        "data": {
+          "atmo_area": "Quelle"
+        }
+      },
+      "pollen": {
+        "title": "Pollen",
+        "description": "Wählen Sie eine Quelle für die Länder, die sie abdeckt. Atmo France verwendet einen Index von 1 bis 6; Polleninformation, IRM KMI und Swiss Pollen verwenden Stufen von 0 bis 4; Kleenex / Scottex verwendet Stufen von 1 bis 4. Bei Swiss Pollen oder Kleenex / Scottex wählen Sie eine Station oder einen Ort und dann die zu verfolgenden Arten oder Gruppen.",
+        "data": {
+          "pollen_source": "Pollenquelle"
+        }
+      },
+      "pollen_area": {
+        "title": "Atmo-Zone für Pollen",
+        "description": "Die Atmo-France-Zone, deren Pollen Hestia liest. Sie kann von der Zone der Luftqualität abweichen.",
+        "data": {
+          "atmo_area": "Atmo-France-Zone"
+        }
+      },
+      "ecosystem": {
+        "title": "Hestia-Ökosystem",
+        "description": "Hestia Weather teilt sein Wetter mit den anderen Hestia-Bausteinen. Jeder Baustein verknüpft sich in seinen eigenen Einstellungen mit diesem Ort; Hestia Weather ändert die anderen nie.\n\n{links}\n\nBestätigen Sie, um zum Menü zurückzukehren."
+      },
+      "pollen_station": {
+        "title": "Pollen-Standort",
+        "description": "Wählen Sie eine Station oder einen Ort für die zu verfolgenden Arten und Gruppen.",
+        "data": {
+          "pollen_station": "Station oder Ort"
+        }
+      }
+    },
+    "error": {
+      "atmo_missing": "Atmo France ist nicht installiert. Installieren Sie die Integration Atmo France (github.com/sebcaps/atmofrance) und kommen Sie dann zurück.",
+      "polleninformation_missing": "Polleninformation ist nicht installiert. Installieren Sie die Integration Polleninformation EU (github.com/krissen/polleninformation) und kommen Sie dann zurück.",
+      "irm_kmi_missing": "IRM KMI ist nicht installiert oder liefert keine Pollen. Installieren Sie die Integration IRM KMI über HACS (github.com/jdejaegh/irm-kmi-ha) und kommen Sie dann zurück.",
+      "swiss_pollen_missing": "Swiss Pollen ist nicht installiert oder liefert keine Stufen-Sensoren. Installieren Sie frimtec/hass-swiss-pollen über HACS und kehren Sie dann hierher zurück.",
+      "swiss_station_missing": "Wählen Sie eine verfügbare Station oder einen verfügbaren Ort für diese Pollenquelle.",
+      "kleenex_pollenradar_missing": "Kleenex / Scottex ist nicht installiert oder liefert keine Pollen-Sensoren. Installieren Sie Kleenex Pollen Radar über HACS und kehren Sie dann hierher zurück."
+    }
+  },
+  "selector": {
+    "station_model": {
+      "options": {
+        "gw2000a": "Ecowitt GW2000A",
+        "ws90": "Shelly / Ecowitt WS90 (Zigbee2MQTT)",
+        "netatmo": "Netatmo",
+        "manual": "Andere Station",
+        "none": "Keine Station"
+      }
+    },
+    "pollen_source": {
+      "options": {
+        "atmo": "Atmo France",
+        "legacy": "Polleninformation",
+        "none": "Keine Pollen"
+      }
+    },
+    "family": {
+      "options": {
+        "maintenant": "Jetzt — gefühlte Temperatur, beobachtetes Wetter, Regen jetzt",
+        "alertes": "Warnungen — amtliche Warnung, Gewitter, Wind, Frost, Hitze",
+        "prochaines_heures": "Nächste Stunden — Regen, Tiefst-, Höchstwert",
+        "jardin": "Garten — Regen der letzten 7 Tage, Wassereinschränkungen",
+        "batiment": "Gebäude — Heiz- und Kühlgradtage",
+        "energie": "Energie — Sonnenschein morgen",
+        "vie_pratique": "Alltag — Wäsche, Frost, Luft, Pollen",
+        "meteo": "Wetter-Entität — für Wetterkarten und Sprachsteuerung"
+      }
+    },
+    "entity": {
+      "options": {
+        "feels_like": "Gefühlte Temperatur — und warum",
+        "temps_observe": "Beobachtetes Wetter — gemessener Regen hat Vorrang vor der Vorhersage",
+        "pluie_en_cours": "Es regnet gerade — ja/nein",
+        "brouillard": "Nebel wahrscheinlich — ja/nein",
+        "dew_point": "Taupunkt",
+        "frost_point": "Frostpunkt",
+        "humidex": "Humidex",
+        "pressure_trend": "Luftdrucktrend — über 3 Std.",
+        "temperature_trend": "Temperaturtrend — °C pro Stunde",
+        "rain_24h": "Regen in 24 Std. — gefallen",
+        "max_gust_today": "Stärkste Böe heute",
+        "vigilance": "Amtliche Warnungen — Météo-France oder MeteoSwiss",
+        "alert": "Stationswarnung — in einem Wort",
+        "brief": "Kurzüberblick — Zusammenfassung und Tagesbericht",
+        "orage": "Gewitter in der Nähe — ja/nein",
+        "vent_fort": "Starker Wind — ja/nein",
+        "pluie_forte": "Starkregen — ja/nein",
+        "gel": "Frost — ja/nein",
+        "canicule": "Hitzewelle — ja/nein",
+        "uv_fort": "Hohe UV-Strahlung — ja/nein",
+        "bulletin": "Tagesbericht — der Vorhersagetext, zum Vorlesen oder Versenden",
+        "next_rain": "Regen in — Stunden bis zum nächsten Regen",
+        "pluie_heure": "Regen innerhalb einer Stunde — mm",
+        "pluie_6h": "Regen in 6 Std. — mm",
+        "pluie_24h_prevue": "Regen in 24 Std. — mm",
+        "minimale_nuit": "Tiefstwert heute Nacht",
+        "maximale_demain": "Höchstwert morgen",
+        "rafales_6h": "Stärkste Böen in 6 Std.",
+        "pluie_7j": "Regen der letzten 7 Tage — fürs Gießen",
+        "restrictions_eau": "Wassereinschränkungen — die Dürreverordnung Ihrer Gemeinde, über Vigieau",
+        "degres_jours_chauffe": "Heizgradtage",
+        "degres_jours_clim": "Kühlgradtage",
+        "ensoleillement_demain": "Sonnenschein morgen — %",
+        "sechage_linge": "Wäsche trocknen — ein guter Zeitpunkt?",
+        "givre_pare_brise": "Frost an der Windschutzscheibe — ja/nein",
+        "qualite_air": "Luftqualität — Atmo-Index",
+        "pollens": "Pollen — Index von heute",
+        "weather": "Wetter-Entität von Hestia Weather — für Wetterkarten und Sprachsteuerung"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "feels_like": {
+        "name": "Gefühlte Temperatur"
+      },
+      "dew_point": {
+        "name": "Taupunkt"
+      },
+      "frost_point": {
+        "name": "Frostpunkt"
+      },
+      "humidex": {
+        "name": "Humidex"
+      },
+      "alert": {
+        "name": "Stationswarnung",
+        "state": {
+          "none": "Keine",
+          "thunderstorm": "Gewitter",
+          "downpour": "Wolkenbruch",
+          "gusts": "Böen",
+          "heatwave": "Hitzewelle",
+          "frost": "Frost",
+          "heat": "Hitze",
+          "cold": "Kälte",
+          "uv": "UV"
+        }
+      },
+      "brief": {
+        "name": "Kurz gesagt"
+      },
+      "bulletin": {
+        "name": "Tagesbericht"
+      },
+      "next_rain": {
+        "name": "Regen in"
+      },
+      "pressure_trend": {
+        "name": "Drucktrend"
+      },
+      "rain_24h": {
+        "name": "Regen in 24 Std."
+      },
+      "max_gust_today": {
+        "name": "Stärkste Böe heute"
+      },
+      "temperature_trend": {
+        "name": "Temperaturtrend"
+      },
+      "temps_observe": {
+        "name": "Beobachtetes Wetter",
+        "state": {
+          "clear-night": "Klare Nacht",
+          "cloudy": "Bewölkt",
+          "exceptional": "Außergewöhnlich",
+          "fog": "Nebel",
+          "hail": "Hagel",
+          "lightning": "Gewitter",
+          "lightning-rainy": "Gewitter, Regen",
+          "partlycloudy": "Teilweise bewölkt",
+          "pouring": "Starkregen",
+          "rainy": "Regnerisch",
+          "snowy": "Schnee",
+          "snowy-rainy": "Schneeregen",
+          "sunny": "Sonnig",
+          "windy": "Windig",
+          "windy-variant": "Windig, bewölkt"
+        }
+      },
+      "vigilance": {
+        "name": "Amtliche Wetterwarnungen",
+        "state": {
+          "verte": "Grün",
+          "jaune": "Gelb",
+          "orange": "Orange",
+          "rouge": "Rot"
+        }
+      },
+      "pluie_heure": {
+        "name": "Regen in der nächsten Stunde"
+      },
+      "pluie_6h": {
+        "name": "Regenvorhersage für 6 Std."
+      },
+      "pluie_24h_prevue": {
+        "name": "Regenvorhersage für 24 Std."
+      },
+      "minimale_nuit": {
+        "name": "Tiefstwert heute Nacht"
+      },
+      "maximale_demain": {
+        "name": "Höchstwert morgen"
+      },
+      "rafales_6h": {
+        "name": "Stärkste Böen in 6 Std."
+      },
+      "pluie_7j": {
+        "name": "Regen der letzten 7 Tage"
+      },
+      "degres_jours_chauffe": {
+        "name": "Heizgradtage"
+      },
+      "degres_jours_clim": {
+        "name": "Kühlgradtage"
+      },
+      "ensoleillement_demain": {
+        "name": "Sonnenschein morgen"
+      },
+      "sechage_linge": {
+        "name": "Wäsche draußen trocknen",
+        "state": {
+          "excellent": "Ausgezeichnet",
+          "bon": "Gut",
+          "moyen": "Mittel",
+          "mauvais": "Schlecht",
+          "impossible": "Unmöglich"
+        }
+      },
+      "qualite_air": {
+        "name": "Luftqualität"
+      },
+      "pollens": {
+        "name": "Pollen"
+      },
+      "restrictions_eau": {
+        "name": "Wasserbeschränkungen",
+        "state": {
+          "aucune": "Keine Beschränkung",
+          "vigilance": "Wachsamkeit",
+          "alerte": "Warnung",
+          "alerte_renforcee": "Erhöhte Warnung",
+          "crise": "Krise"
+        }
+      }
+    },
+    "binary_sensor": {
+      "pluie_en_cours": {
+        "name": "Regnet gerade",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      },
+      "brouillard": {
+        "name": "Nebel wahrscheinlich",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      },
+      "orage": {
+        "name": "Gewitter in der Nähe",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      },
+      "vent_fort": {
+        "name": "Starker Wind",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      },
+      "pluie_forte": {
+        "name": "Starkregen",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      },
+      "gel": {
+        "name": "Frost",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      },
+      "canicule": {
+        "name": "Hitzewelle",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      },
+      "uv_fort": {
+        "name": "Starke UV-Strahlung",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      },
+      "givre_pare_brise": {
+        "name": "Reif auf der Windschutzscheibe",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "unknown_place": {
+      "message": "Ort von Hestia Weather nicht gefunden."
+    },
+    "choose_place": {
+      "message": "Mehrere Orte von Hestia Weather: Bitte „lieu“ angeben."
+    },
+    "end_before_start": {
+      "message": "Das Ende muss nach dem Beginn liegen."
+    },
+    "no_forecast": {
+      "message": "Keine Vorhersage deckt dieses Zeitfenster ab."
+    }
+  },
+  "services": {
+    "prevision": {
+      "name": "Vorhersage für ein Zeitfenster",
+      "description": "Das Wetter zwischen zwei Zeitpunkten: Regen, Himmel, Temperatur, gefühlte Temperatur, Wind und ein versandfertiger Satz.",
+      "fields": {
+        "debut": {
+          "name": "Beginn",
+          "description": "Eine Uhrzeit (16:15) oder ein Datum mit Uhrzeit."
+        },
+        "fin": {
+          "name": "Ende",
+          "description": "Eine Uhrzeit (17:00) oder ein Datum mit Uhrzeit. Ein Ende vor dem Beginn bedeutet den nächsten Tag."
+        },
+        "lieu": {
+          "name": "Ort",
+          "description": "Nur wenn Sie mehrere Orte von Hestia Weather haben."
+        }
+      }
+    }
+  },
+  "issues": {
+    "migration_manual": {
+      "title": "Hestia Weather: ein paar Zeilen von Hand ändern",
+      "description": "Der technische Name von Hestia Weather ist jetzt „hestia_weather“. Ihre Orte, Einstellungen, Verläufe und Statistiken wurden behalten, und was in der Oberfläche erstellt wurde, wurde angepasst.\n\nDiese von Hand geschriebenen Dateien verwenden noch den früheren Namen (Zeilennummern in Klammern). Ersetzen Sie ihn dort durch „hestia_weather“ (oder „hestia-weather“ für die Karte):\n\n{items}"
+    },
+    "migration_restart": {
+      "title": "Hestia Weather: Home Assistant neu starten",
+      "description": "Der Wechsel zum Namen „hestia_weather“ ist erledigt. Die frühere Kopie der Integration wurde entfernt: Starten Sie Home Assistant einmal neu, um abzuschließen."
+    },
+    "migration_failed": {
+      "title": "Hestia Weather: Der Wechsel zum neuen Namen ist nicht abgeschlossen",
+      "description": "Nichts ist verloren. Er startet beim nächsten Neustart von Home Assistant erneut. Erscheint diese Meldung wieder, eröffnen Sie ein Issue mit dem Protokoll von Home Assistant."
+    },
+    "marketplace_untracked": {
+      "title": "Hestia Weather: wieder Updates erhalten",
+      "description": "Seit dem Wechsel zum Namen Hestia verfolgt der Marketplace Hestia Weather nicht mehr: Er bietet keine Updates mehr an.\n\nTippen Sie auf Reparieren: Er lädt dieselbe Version ({version}) erneut herunter. In Ihrem Zuhause ändert sich nichts.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Wieder Updates für Hestia Weather erhalten",
+            "description": "Der Marketplace lädt Hestia Weather {version} erneut herunter, die Version, die Sie bereits haben. Ihre Einstellungen, Ihre Sensoren und deren Verlauf ändern sich nicht.\n\nHome Assistant bittet Sie danach eventuell um einen Neustart."
+          }
+        },
+        "abort": {
+          "download_failed": "Der Marketplace konnte Hestia Weather nicht herunterladen. Öffnen Sie Einstellungen › Marketplace › Hestia Weather und tippen Sie auf Herunterladen."
+        }
+      }
+    }
+  }
+}

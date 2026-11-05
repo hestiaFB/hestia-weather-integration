@@ -1,0 +1,14 @@
+{
+  "domain": "hestia_weather",
+  "name": "Hestia Weather",
+  "after_dependencies": ["lovelace"],
+  "codeowners": ["@hestiaFB"],
+  "config_flow": true,
+  "dependencies": ["frontend", "http", "recorder", "websocket_api"],
+  "documentation": "https://github.com/hestiaFB/hestia-weather-integration",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/hestiaFB/hestia-weather-integration/issues",
+  "requirements": [],
+  "version": "3.1.0"
+}

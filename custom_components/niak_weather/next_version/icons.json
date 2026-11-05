@@ -1,0 +1,144 @@
+{
+  "entity": {
+    "sensor": {
+      "temps_observe": {
+        "default": "mdi:weather-partly-cloudy",
+        "state": {
+          "clear-night": "mdi:weather-night",
+          "cloudy": "mdi:weather-cloudy",
+          "fog": "mdi:weather-fog",
+          "hail": "mdi:weather-hail",
+          "lightning": "mdi:weather-lightning",
+          "lightning-rainy": "mdi:weather-lightning-rainy",
+          "pouring": "mdi:weather-pouring",
+          "rainy": "mdi:weather-rainy",
+          "snowy": "mdi:weather-snowy",
+          "snowy-rainy": "mdi:weather-snowy-rainy",
+          "sunny": "mdi:weather-sunny",
+          "windy": "mdi:weather-windy",
+          "windy-variant": "mdi:weather-windy-variant",
+          "exceptional": "mdi:alert-circle-outline"
+        }
+      },
+      "vigilance": {
+        "default": "mdi:alert-octagon-outline"
+      },
+      "pluie_heure": {
+        "default": "mdi:weather-rainy"
+      },
+      "pluie_6h": {
+        "default": "mdi:weather-pouring"
+      },
+      "pluie_24h_prevue": {
+        "default": "mdi:calendar-clock"
+      },
+      "minimale_nuit": {
+        "default": "mdi:thermometer-low"
+      },
+      "maximale_demain": {
+        "default": "mdi:thermometer-high"
+      },
+      "rafales_6h": {
+        "default": "mdi:weather-windy-variant"
+      },
+      "pluie_7j": {
+        "default": "mdi:calendar-week"
+      },
+      "degres_jours_chauffe": {
+        "default": "mdi:radiator"
+      },
+      "degres_jours_clim": {
+        "default": "mdi:snowflake"
+      },
+      "ensoleillement_demain": {
+        "default": "mdi:weather-sunny"
+      },
+      "sechage_linge": {
+        "default": "mdi:tshirt-crew-outline",
+        "state": {
+          "impossible": "mdi:weather-rainy",
+          "mauvais": "mdi:tshirt-crew"
+        }
+      },
+      "qualite_air": {
+        "default": "mdi:air-filter"
+      },
+      "pollens": {
+        "default": "mdi:flower-pollen-outline"
+      },
+      "bulletin": {
+        "default": "mdi:text-box-outline"
+      },
+      "restrictions_eau": {
+        "default": "mdi:water-check",
+        "state": {
+          "vigilance": "mdi:water-minus",
+          "alerte": "mdi:water-alert",
+          "alerte_renforcee": "mdi:water-remove",
+          "crise": "mdi:water-off"
+        }
+      }
+    },
+    "binary_sensor": {
+      "pluie_en_cours": {
+        "default": "mdi:weather-cloudy",
+        "state": {
+          "on": "mdi:weather-rainy"
+        }
+      },
+      "brouillard": {
+        "default": "mdi:weather-cloudy",
+        "state": {
+          "on": "mdi:weather-fog"
+        }
+      },
+      "orage": {
+        "default": "mdi:weather-cloudy",
+        "state": {
+          "on": "mdi:weather-lightning"
+        }
+      },
+      "vent_fort": {
+        "default": "mdi:weather-windy-variant",
+        "state": {
+          "on": "mdi:weather-windy"
+        }
+      },
+      "pluie_forte": {
+        "default": "mdi:weather-rainy",
+        "state": {
+          "on": "mdi:weather-pouring"
+        }
+      },
+      "gel": {
+        "default": "mdi:snowflake-off",
+        "state": {
+          "on": "mdi:snowflake-alert"
+        }
+      },
+      "canicule": {
+        "default": "mdi:thermometer",
+        "state": {
+          "on": "mdi:thermometer-high"
+        }
+      },
+      "uv_fort": {
+        "default": "mdi:weather-sunny",
+        "state": {
+          "on": "mdi:weather-sunny-alert"
+        }
+      },
+      "givre_pare_brise": {
+        "default": "mdi:car-windshield-outline",
+        "state": {
+          "on": "mdi:car-windshield"
+        }
+      }
+    }
+  },
+  "services": {
+    "prevision": {
+      "service": "mdi:clock-outline"
+    }
+  }
+}

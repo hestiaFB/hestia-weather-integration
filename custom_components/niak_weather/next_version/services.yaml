@@ -1,0 +1,17 @@
+prevision:
+  fields:
+    debut:
+      required: true
+      example: "16:15"
+      selector:
+        text:
+    fin:
+      required: true
+      example: "17:00"
+      selector:
+        text:
+    lieu:
+      required: false
+      selector:
+        config_entry:
+          integration: hestia_weather

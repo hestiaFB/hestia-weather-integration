@@ -1,3 +1,19 @@
+## 2.9.9 — Le passage à Hestia Weather 3
+
+### Avant de mettre à jour
+
+- Mettez aussi Hestia Confort à jour en 1.7.30, si vous l’avez.
+
+### Nouveautés
+
+- Cette version installe Hestia Weather 3.1 à côté d’elle, puis y fait passer toute votre maison : lieux, réglages, entités, historiques, statistiques, tableaux de bord et automatisations. Rien n’est perdu.
+- Après le redémarrage, une réparation demande un second redémarrage : faites-le.
+- Home Assistant 2026.11 : quand Hestia Weather 3.1.0 sortira, une réparation « Reprendre les mises à jour » vous demandera un appui pour que le Marketplace la suive.
+
+### À savoir
+
+- Hestia Weather 3.1 est livrée avec cette version : son installation ne passe ni par le réseau ni par le Marketplace.
+
 ## 2.9.8 — Le vent, la pression et l’orage à venir
 
 **En bref**
