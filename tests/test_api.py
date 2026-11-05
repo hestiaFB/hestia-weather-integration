@@ -172,3 +172,12 @@ def test_water_restrictions_are_published_with_watering():
                                                      "order": None, "at": "2026-08-12T08:00:00+00:00"}
     e.runtime_data.data = SimpleNamespace(catalogue={"restrictions_eau": Item(None, "Vigieau indisponible", "vigieau")}, computed=at)
     assert HestiaWeatherApi(hass_with(e)).water()["level"] is None  # the source does not answer
+
+
+def test_station_shade_is_shared_only_with_a_sun_sensor():
+    without = entry("a", "Maison", Settings.from_options({"weather_entity": "weather.home"}))
+    assert HestiaWeatherApi(hass_with(without)).station_shade() is None
+    view = {"cells": {"170/25": 0.4}, "learned": 1, "reachable": 161}
+    with_sun = entry("b", "Maison", Settings.from_options({"weather_entity": "weather.home", "solar_radiation_entity": "sensor.sun"}))
+    with_sun.runtime_data.shade_view = lambda: view
+    assert HestiaWeatherApi(hass_with(with_sun)).station_shade() == view

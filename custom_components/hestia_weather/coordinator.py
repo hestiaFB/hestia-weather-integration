@@ -39,6 +39,7 @@ from .engine.watch import AlertState, AlertWatch
 from .place.shared import FORECAST_KINDS, RAIN_UNITS, _ready, _seconds, blitzortung_counter  # noqa: F401 - also read by the tests
 from .place.recorder import RecorderMixin
 from .place.forecasts import ForecastsMixin
+from .place.shade import ShadeMixin
 
 ALERT_EVENT = f"{DOMAIN}_alerte"
 
@@ -94,7 +95,7 @@ def alert_store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
 
 
 
-class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, DataUpdateCoordinator[Snapshot]):
+class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUpdateCoordinator[Snapshot]):
     config_entry: HestiaWeatherConfigEntry
 
     def __init__(self, hass: HomeAssistant, entry: HestiaWeatherConfigEntry) -> None:
@@ -131,6 +132,12 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, DataUpdateCoordina
         self._unlisten_started: Callable[[], None] | None = None
         self._localized_views: dict[str, tuple[datetime, dict[str, Any]]] = {}
         self._statistics_warned = False
+        self.shade: dict[str, float] = {}
+        """The station's shade by the sun's position, learned at night (place/shade.py)."""
+        self.shade_learned_at: datetime | None = None
+        self.shade_hours = 0
+        self._shade_store = None
+        self._shade_cells: frozenset[str] | None = None
 
     async def async_start(self) -> None:
         """First fetches, then listen to the sensors and keep each source fresh."""
@@ -144,8 +151,11 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, DataUpdateCoordina
         await asyncio.gather(self._load_forecasts(), self._load_history(), self._load_rain(), self._load_week(), self._load_air_forecast(),
                              self._load_strikes(), self._load_lightning_month())
         for interval, load in ((FORECAST_INTERVAL, self._load_forecasts), (HISTORY_INTERVAL, self._load_history), (RAIN_INTERVAL, self._load_rain),
-                               (WEEK_INTERVAL, self._load_week), (AIR_INTERVAL, self._load_air_forecast), (AIR_INTERVAL, self._load_pressure_forecast), (RAIN_INTERVAL, self._load_lightning_month)):
+                               (WEEK_INTERVAL, self._load_week), (AIR_INTERVAL, self._load_air_forecast), (AIR_INTERVAL, self._load_pressure_forecast), (RAIN_INTERVAL, self._load_lightning_month),
+                               (WEEK_INTERVAL, self._load_shade)):
             entry.async_on_unload(async_track_time_interval(self.hass, self._in_background(load), interval))
+        # The station's shade: what was kept now, learned again in the background (92 days of statistics, Open-Meteo).
+        self._in_background(self._load_shade)(dt_util.utcnow())
         entry.async_on_unload(self._cancel_forecast_retry)
         entry.async_on_unload(self._stopped)
         if self.hass.state is not CoreState.running:

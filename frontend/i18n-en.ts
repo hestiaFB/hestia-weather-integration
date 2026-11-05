@@ -61,7 +61,7 @@ export const PANEL_EN:Record<string,string>={
  "Nom de la source des prévisions":"Name of the forecast source","Votre station":"Your station","Reconnue : {name}":"Recognised: {name}",
  "Appareil":"Device","Appareil de la station":"Station device","Limite les capteurs proposés à cet appareil.":"Limits the sensors suggested to this device.",
  "Sans station, Hestia Weather s’appuie sur le service météo seul : pas de pluie mesurée, pas d’alerte de la station.":"Without a station, Hestia Weather relies on the weather service alone: no measured rain, no station alert.",
- "{n} sur {total}":"{n} of {total}","Historique de la station":"Station history","Calculer depuis l’historique":"Compute from the history",
+ "{n} sur {total}":"{n} of {total}","Historique de la station":"Station history","Station à l’ombre":"Station in the shade","Pour aller plus loin":"To go further","Calculer depuis l’historique":"Compute from the history",
  "Rechercher à nouveau les capteurs":"Search for sensors again",
  "Zone Atmo France":"Atmo France zone","Station WAQI":"WAQI station","Zone Atmo France des pollens":"Atmo France pollen zone","Station Swiss Pollen":"Swiss Pollen station",
  "Choisir une station…":"Choose a station…",

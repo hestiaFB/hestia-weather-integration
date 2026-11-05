@@ -28,7 +28,7 @@ AIR_SOURCES = ("atmo", "waqi", NONE)
 POLLEN_SOURCES = ("atmo", *polleninfo.PROVIDERS, NONE)
 SIMPLE = frozenset({"weather_entity", "location", "vigilance_entity", "season_entity", "sun_entity", "sun_elevation_entity",
                     "water_restriction_entity", "lightning_entity",
-                    "forecast_source", "station_history", "open_meteo_pressure", "pollen_risk_entity", *detection.STATION_FIELDS})
+                    "forecast_source", "station_history", "station_shade", "open_meteo_pressure", "pollen_risk_entity", *detection.STATION_FIELDS})
 RECOMMENDED = frozenset({"temperature_entity", "humidity_entity", "rain_rate_entity", "wind_gust_entity", "wind_bearing_entity"})
 HELP = {
     "weather_entity": N_("Les prévisions heure par heure et jour par jour, par exemple Météo-France ou MétéoSuisse. Une station facultative ajoute les mesures chez vous."),
@@ -41,7 +41,10 @@ HELP = {
     "wind_gust_entity": N_("Les pointes de vent : elles déclenchent l’alerte de vent fort."),
     "wind_bearing_entity": N_("D’où vient le vent, en degrés."),
     "station_history": N_("Cumuls de pluie, tendance de la température et rafale du jour, quand la station ne les donne pas."),
+    "station_shade": N_("Une maison ou un arbre cache parfois le soleil au capteur de la station. Hestia l’apprend chaque nuit ; dites-le ici pour qu’il s’en serve dès maintenant."),
 }
+# When the station is in the shade, as the household says (engine/station_shade.py DECLARED).
+SHADES = (("", N_("Je ne sais pas")), ("never", N_("Jamais")), ("morning", N_("Le matin")), ("afternoon", N_("L’après-midi")))
 MODELS = (("gw2000a", "Ecowitt GW2000A", N_("Passerelle Ecowitt et ses capteurs")),
           ("ws90", "Ecowitt WS90", N_("Capteur tout-en-un, souvent via Zigbee2MQTT")),
           (detection.NETATMO, "Netatmo", N_("Station Netatmo et ses modules : extérieur, pluviomètre, anémomètre")),
@@ -354,7 +357,19 @@ class Draft(_SourceSteps):
                 "devices": [{"value": NONE, "label": t("Aucun appareil — capteurs séparés")},
                             *(self._netatmo_devices(devices) if netatmo else detection.source_devices(states, registry, devices))],
                 "profile": t(detection.station_profile(states, registry, devices, s.get("station_device_id"))),
-                "history": bool(s.get("station_history", True)), "history_help": t(HELP["station_history"]), "groups": groups}
+                "history": bool(s.get("station_history", True)), "history_help": t(HELP["station_history"]), "groups": groups,
+                "shade": s.get("station_shade") or "", "shades": [{"value": v, "label": t(label)} for v, label in SHADES],
+                "shade_help": t(HELP["station_shade"]), "shade_learned": self._shade_learned()}
+
+    def _shade_learned(self) -> str:
+        """How much of the station's shade the nights have learned, for the line under the choice."""
+        coordinator = getattr(self.entry, "runtime_data", None) if self.entry else None
+        if coordinator is None or not hasattr(coordinator, "shade_view") or not coordinator.settings.solar_radiation_entity:
+            return ""
+        view = coordinator.shade_view()
+        if not view["learned"]:
+            return t("Pas encore apprise : il faut quelques heures de ciel clair.")
+        return t("{n} positions du soleil apprises sur {total}.", n=view["learned"], total=view["reachable"])
 
     @staticmethod
     def _netatmo_devices(devices: dict[str, dict[str, Any]]) -> list[dict[str, str]]:

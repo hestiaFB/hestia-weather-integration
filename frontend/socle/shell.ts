@@ -273,7 +273,7 @@ export class HestiaShell extends LitElement {
  @media(max-width:760px) and (prefers-reduced-motion:reduce){aside,aside.open{transform:none;transition-property:opacity,visibility}aside{opacity:0}aside.open{opacity:1}}
  .nav-fold{display:flex;align-items:center;justify-content:space-between;width:calc(100% - 12px);min-height:44px;margin:0 0 0 12px;padding:0;border:0;border-radius:0;background:none;font:inherit;font-size:var(--nw-fs-label,11px);font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--nk-muted);cursor:pointer}
  .nav-fold svg{width:16px;height:16px;transition:transform var(--h-base) var(--h-ease-out)}.nav-fold[aria-expanded=false] svg{transform:rotate(-90deg)}nav:has(.nav-fold[aria-expanded=false]){margin-bottom:8px}
- @media(hover:hover) and (pointer:fine){.nav-fold:hover{color:var(--primary-text-color)}}
+ @media(hover:hover) and (pointer:fine){.nav-fold:hover{background:none;color:var(--primary-text-color)}}
  :host{-webkit-tap-highlight-color:transparent}@media(pointer:coarse){select{font-size:16px}}
  `,motion];
 }

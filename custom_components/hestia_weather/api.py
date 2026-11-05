@@ -51,6 +51,19 @@ class HestiaWeatherApi:
         sensors = {role: getattr(settings, name) for role, name in STATION.items() if getattr(settings, name, None)}
         return {"entry_id": entry.entry_id, "title": entry.title, "sensors": sensors}
 
+    def station_shade(self, entry_id: str | None = None) -> dict[str, Any] | None:
+        """The station's shade by the sun's position, learned at night from its statistics (place/shade.py).
+
+        `cells`: {"170/25": 0.38, …} — the share of a clear sky's sun the station receives with the sun in that cell
+        (10° of azimuth × 5° of elevation, `steps`), for every cell the sun crosses here, filled from the learned
+        neighbours and the household's declaration; a cell left out is unknown. `learned` of `reachable` cells are
+        learned, from `hours` of statistics. `declared`: « never », « morning », « afternoon » or None.
+        None without a place or without a sun sensor."""
+        entry = self._entry(entry_id)
+        if entry is None or not entry.runtime_data.settings.solar_radiation_entity:
+            return None
+        return entry.runtime_data.shade_view()
+
     def hourly(self, entry_id: str | None = None) -> list[dict[str, Any]]:
         """The hourly forecast as Hestia Weather reads it: °C, %, mm, km/h and degrees, ISO times; `cloud_coverage` in %
         when the weather service gives it (Hestia Confort estimates with it the sun its station cannot see)."""

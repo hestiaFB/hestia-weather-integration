@@ -10,7 +10,7 @@ export {t,fr,setLanguage,addDictionary,currentLanguage,currentLocale} from './i1
 
 // This copy's socle: the same version as socle.py, and the build copier.sh writes when the socle changes.
 export const SOCLE:readonly [number,number]=[1,22];
-export const SOCLE_BUILD='20261103.1646';
+export const SOCLE_BUILD='20261105.1407';
 // Newer or equal: the version first, then the build. Another major version is never mixed in.
 export const sameOrNewer=(a:{SOCLE:readonly number[];SOCLE_BUILD:string},b:{SOCLE:readonly number[];SOCLE_BUILD:string})=>
  a.SOCLE[0]===b.SOCLE[0]&&(a.SOCLE[1]!==b.SOCLE[1]?a.SOCLE[1]>b.SOCLE[1]:a.SOCLE_BUILD>=b.SOCLE_BUILD);
@@ -40,7 +40,9 @@ class HestiaHelp extends LitElement {
  }
  private close(){clearTimeout(this.timer);this.pinned=false;this.opened=false;const pop=this.renderRoot.querySelector<HTMLElement>('[popover]');if(pop?.matches(':popover-open'))pop.hidePopover();}
  private leave(){if(!this.pinned)this.timer=setTimeout(()=>this.close(),160);}
- protected updated(changed:PropertyValues){if(changed.has('content')&&this.opened)this.close();}
+ // The page draws its help again at each Home Assistant update, a new content each time: an open help stays open and is
+ // only placed again (Frank, 5 November: every help of the hub closed at once, on hover as on a click).
+ protected updated(changed:PropertyValues){if(changed.has('content')&&this.opened)this.place();}
  protected render(){return html`<button class="help-button" type="button" aria-label=${t('Aide : {label}',{label:this.label})} aria-expanded=${String(this.opened)} aria-controls="help-content" aria-describedby=${this.opened?'help-content':nothing}
   @pointerenter=${(e:PointerEvent)=>{if(e.pointerType==='mouse')void this.show();}} @pointerleave=${()=>this.leave()}
   @click=${()=>{if(this.pinned)this.close();else{this.pinned=true;void this.show();}}}

@@ -239,6 +239,8 @@ export class WeatherSetup extends LitElement {
    ${folded.length?listSection(t('Autres mesures'),folded.map(g=>moreRow(g.title,filled(g),g.fields.map(f=>this.field(f))))):nothing}
    ${listSection(t('Historique de la station'),[listRow({name:t('Calculer depuis l’historique'),label:html`${t('Calculer depuis l’historique')}${helpTip(t('Calculer depuis l’historique'),s.history_help,'')}`,
     value:toggle(t('Calculer depuis l’historique'),s.history,on=>this.set('station_history',on),this.busy)})])}
+   ${s.shades?.length?listSection('',[moreRow(t('Pour aller plus loin'),t('{n} sur {total}',{n:s.shade?1:0,total:1}),[
+    this.zoneRow(t('Station à l’ombre'),s.shades,s.shade,x=>this.set('station_shade',x),[s.shade_help,s.shade_learned].filter(Boolean).join(' '))])]):nothing}
    <button class="link" ?disabled=${this.busy} @click=${()=>void this.change({op:'redetect',value:'station'})}>${t('Rechercher à nouveau les capteurs')}</button>${this.bottom()}`;
  }
  private air(v:View){const a=v.air;

@@ -83,6 +83,9 @@ class Settings:
     event_rain_entity: str | None = None
     pressure_entity: str | None = None
     solar_radiation_entity: str | None = None
+    station_shade: str | None = None
+    """When the station is in the shade, as the household says (« never », « morning », « afternoon »): the start of its
+    shade, until the nights have learned it (engine/station_shade.py)."""
     uv_index_entity: str | None = None
     illuminance_entity: str | None = None
     # Air and pollens
