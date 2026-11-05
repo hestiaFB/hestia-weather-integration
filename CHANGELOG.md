@@ -1,3 +1,41 @@
+## 3.1.0 — Le nom Hestia, une nouvelle carte, et l’allemand
+
+### Avant de mettre à jour
+
+- Vous êtes en 2.9.x : installez d’abord la **2.9.9**. Elle fait passer toute votre maison au nom Hestia, sans rien perdre. Redémarrez quand Home Assistant le demande.
+- Home Assistant 2026.11 : une réparation « Reprendre les mises à jour » apparaît ensuite. Appuyez sur Réparer.
+- Le Marketplace affiche « changed its domain… uninstall it and install it again » ? Vous n’êtes pas passé par la 2.9.9. Dans le Marketplace, désinstallez Hestia Weather, téléchargez-la, redémarrez, puis **Paramètres → Appareils et services → Ajouter une intégration → Hestia Weather** : votre maison est reprise, rien n’est créé en double.
+- Hestia Confort 1.7.30 reste relié à cette version. Hestia Confort 2 suivra.
+- Si une réparation liste des lignes YAML écrites à la main, remplacez-y l’ancien nom.
+
+### Nouveautés
+
+- Le nom technique devient `hestia_weather`. Vos lieux, réglages, alertes, historiques et statistiques sont gardés, comme le nom, la pièce et l’icône de vos entités.
+- Automatisations, scripts, scènes, tableaux de bord et blueprints faits dans l’interface suivent tout seuls.
+- Hestia Weather parle allemand : carte, bulletin du jour, panneau et hub Hestia.
+- Une nouvelle carte : la frise du temps prévu avec ses évènements, la vigilance dans le bandeau et sur la frise.
+- Ressenti : la valeur, un mot, l’échelle de la saison et ce qui joue (vent, humidité, soleil, rosée).
+- Air extérieur et pollens : aujourd’hui et demain.
+- Un « i » à côté de chaque bloc dit d’où viennent ses données.
+- Les pollens du jour sont partagés avec Hestia Confort 2.
+- Les extensions trouvées chez vous se demandent en un clic.
+- Le panneau a une page « À propos ».
+
+### Améliorations
+
+- Sur téléphone, le bandeau ressemble à la tuile, et le ciel reste bien visible.
+- Un texte trop long (vigilance, évènements, alertes de la station) défile au lieu d’être coupé.
+- La carte prend la police, les pièces et les tailles de texte communes à toutes les briques Hestia.
+- Les animations s’arrêtent quand la carte n’est pas à l’écran.
+- L’onglet Station s’ouvre bien plus vite.
+
+### Corrections
+
+- Le panneau Hestia ne reste plus vide quand une brique garde un fichier d’une autre version (issue #48).
+- Thème sombre : bulletin, frise et échelle plus lisibles.
+- La tuile ne dépasse plus de l’écran d’un téléphone.
+- Deux cartes sur une même page ne mélangent plus leurs graphiques.
+
 ## 3.1.0b9 — Bêta : les textes longs défilent
 
 ### Avant de mettre à jour
