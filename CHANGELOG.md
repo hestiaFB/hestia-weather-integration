@@ -1,3 +1,19 @@
+## 3.1.0b9 — Bêta : les textes longs défilent
+
+### Avant de mettre à jour
+
+- Gardez Hestia Confort 2.1.0b8, si vous l’avez.
+
+### Améliorations
+
+- Vigilance : un message trop long défile lentement au lieu d’être coupé. La pastille prend toute la largeur.
+- Événements et alertes de la station : une phrase trop longue défile, et reste affichée le temps d’être lue en entier.
+- Hestia Confort 1.7, pas encore mis à jour, reste relié à Hestia Weather.
+
+### Corrections
+
+- Home Assistant 2026.11 : quand le Marketplace ne suit plus Hestia Weather après le passage au nom Hestia, une réparation « Reprendre les mises à jour » le règle en un appui.
+
 ## 3.1.0b8 — Bêta : le cadre du moment collé en haut
 
 ### Avant de mettre à jour

@@ -36,7 +36,9 @@ Tout est calculé une fois, dans Home Assistant : la carte affiche, vos automati
 
 ## Installation
 
-1. Dans HACS, ⋮ → **Dépôts personnalisés** : ajoutez `https://github.com/hestiaFB/hestia-weather-integration`, catégorie **Intégration**.
+1. Ajoutez le dépôt personnalisé `https://github.com/hestiaFB/hestia-weather-integration`, catégorie **Intégration** :
+   - Home Assistant 2026.11 ou plus récent : dans le **Marketplace** (Paramètres → Marketplace). Il demande d’abord de relier un compte GitHub.
+   - Avant 2026.11 : dans HACS, ⋮ → **Dépôts personnalisés**.
 2. Installez **Hestia Weather**, puis redémarrez Home Assistant.
 3. **Paramètres → Appareils et services → Ajouter une intégration → Hestia Weather.**
 4. Sur un tableau de bord : **Ajouter une carte → Hestia Weather**. La carte est fournie par l’intégration (depuis la 2.3) : rien d’autre à installer.
