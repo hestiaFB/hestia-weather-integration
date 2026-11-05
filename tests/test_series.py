@@ -172,7 +172,8 @@ def test_draws_a_week_of_pressure_from_hourly_means_then_the_detailed_six_hours(
     rows = joined(hourly_changes(hours), recent)
     week = pressure_chart_series(rows, "hPa", NOW, 1021, "7d")
     assert len(week) == 57 and week[-1].value == 1021
-    assert week[0].value == pytest.approx(1000.1, abs=0.01)
+    # The first three hours sit on the clock's grid (15-18 h UTC): two of them are known, 1000.0 and 1000.1.
+    assert week[0].value == pytest.approx(1000.05, abs=0.06)
     assert all(p.value is not None for p in week)
     # The hours under the detailed history are left out: no double reading at the join.
     assert max(c.time for c in rows if c.state != "1020" and c.state != "1021") < end - 6 * 3600
@@ -225,3 +226,59 @@ def test_carries_the_rain_bars_to_now_across_a_daily_counter_reset() -> None:
     # 1 mm in the 16 h statistics, then the half millimetre read since the reset, in the 17 h bar.
     assert day.total == 1.5 and [d.value for d in day.days[-3:-1]] == [1, 0.5]
     assert _rain_periods({}, (None, "sensor.daily"), lambda _: 0.5, NOW, PARIS) == ()
+
+
+def test_a_minute_later_without_new_readings_the_curve_is_the_same() -> None:
+    # Buckets on the clock's grid: the view only changes when a reading does (docs/PLAN-OPTIMISATION.md, point 2).
+    from datetime import timedelta
+    rows = [p("2026-10-05T10:00:00Z", "10.04"), p("2026-10-05T12:00:00Z", "20.06"), p("2026-10-05T15:30:00Z", "14")]
+    for period in ("6h", "1d", "2d", "7d"):
+        at = NOW + timedelta(minutes=7)
+        a = wind_chart_series(rows, "km/h", at, 14, "mean", period)
+        b = wind_chart_series(rows, "km/h", at + timedelta(minutes=1), 14, "mean", period)
+        assert a[:-1] == b[:-1], period
+        span = {"6h": 6, "1d": 24, "2d": 48, "7d": 168}[period] * 3600
+        assert all(isinstance(q.time, int) and at.timestamp() - span <= q.time <= at.timestamp() for q in a), period
+        assert all(q.value is None or q.value == round(q.value, 1) for q in a), period
+
+
+def test_a_history_is_converted_once_whatever_the_number_of_calculations(monkeypatch) -> None:
+    # Guard against a slower engine (docs/PLAN-OPTIMISATION.md, point 17): a calculation every minute draws twelve curves
+    # from the same histories, which only change every few minutes. Each reading is converted once.
+    from engine import series
+    from engine.series import joined
+    calls = 0
+    convert = series.measurement
+
+    def counting(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return convert(*args, **kwargs)
+    monkeypatch.setattr(series, "measurement", counting)
+    end = NOW.timestamp()
+    week = [Change(end - 7 * 86400 + i * 3600, "10") for i in range(7 * 24 - 6)]
+    recent = [Change(end - 6 * 3600 + i * 60, "12") for i in range(360)]
+    for minute in range(3):
+        at = NOW.replace(minute=minute)
+        rows = joined(week, recent)
+        for period in ("6h", "1d", "2d", "7d"):
+            wind_chart_series(recent if period == "6h" else rows, "km/h", at, 14, "mean", period)
+            wind_chart_series(recent if period == "6h" else rows, "km/h", at, 30, "peak", period)
+    assert calls == len(recent) + len(rows)
+
+
+def test_what_is_kept_between_calculations_never_changes_a_curve() -> None:
+    # The buckets already over are kept with their history (docs/PLAN-OPTIMISATION.md, point 5): the curves drawn from them
+    # minutes later must be those drawn from scratch, gaps, restarts and readings dated ahead included.
+    import random
+    from datetime import timedelta
+    from engine.series import PERIODS
+    random.seed(7)
+    for _ in range(300):
+        at = NOW + timedelta(seconds=random.randint(0, 86400))
+        times = sorted(at.timestamp() - random.uniform(-600, 8 * 86400) for _ in range(random.randint(0, 200)))
+        rows = [Change(t, random.choice(["unavailable", "-1", str(round(random.uniform(0, 60), 2))])) for t in times]
+        period, mode = random.choice(list(PERIODS)), random.choice(["mean", "peak"])
+        for later in (0, 60, 600, 4000):
+            moment = at + timedelta(seconds=later)
+            assert wind_chart_series(rows, "km/h", moment, 3, mode, period) == wind_chart_series(list(rows), "km/h", moment, 3, mode, period)

@@ -18,7 +18,8 @@ import { marqueeStyles } from './ui/marquee';
 import { watchOffscreen } from './ui/offscreen';
 import './ui/weather-sky';
 import './editor/hestia-weather-card-editor';
-import { VIEW_VERSION, type ViewMessage, type WeatherView } from './view';
+import { VIEW_VERSION, type WeatherView } from './view';
+import { follow, type StreamError, type StreamMessage } from './stream';
 import type { HomeAssistant, PressAction, WeatherCardConfig } from './types';
 import { fr, guessLanguage, setLanguage, t } from './i18n';
 
@@ -30,12 +31,13 @@ let instances = 0;
 // its light weights, for the large thin figures, from the variable font.
 if (!document.getElementById('hestia-hub-fonts')) {
   const style = document.createElement('style'); style.id = 'hestia-hub-fonts';
-  style.textContent = [400, 500, 600, 700].map((w) => `@font-face{font-family:Manrope;src:url('/hestia_weather-assets/manrope-${w}.ttf');font-weight:${w};font-display:swap}`).join('');
+  // woff2 limited to the Latin letters (16 ko a weight instead of 95), the full TrueType for a browser without woff2.
+  style.textContent = [400, 500, 600, 700].map((w) => `@font-face{font-family:Manrope;src:url('/hestia_weather-assets/manrope-${w}.woff2') format('woff2'),url('/hestia_weather-assets/manrope-${w}.ttf') format('truetype');font-weight:${w};font-display:swap}`).join('');
   document.head.append(style);
 }
 if (!document.getElementById('hestia-light-fonts')) {
   const style = document.createElement('style'); style.id = 'hestia-light-fonts';
-  style.textContent = "@font-face{font-family:Manrope;src:url('/hestia_weather-assets/manrope-variable.ttf') format('truetype');font-weight:200 300;font-display:swap}";
+  style.textContent = "@font-face{font-family:Manrope;src:url('/hestia_weather-assets/manrope-variable.woff2') format('woff2'),url('/hestia_weather-assets/manrope-variable.ttf') format('truetype');font-weight:200 300;font-display:swap}";
   document.head.append(style);
 }
 
@@ -79,7 +81,11 @@ export class HestiaWeatherCard extends LitElement {
   /** The air and pollens panels show tomorrow (a tap on their tab). */
   @state() private airTomorrow: Record<'air' | 'pollen', boolean> = { air: false, pollen: false };
   private readonly uid = `nw${++instances}`;
-  private subscription?: Promise<() => Promise<void>>;
+  /** Stops following the view of this card's place (shared with the other cards of the page, stream.ts). */
+  private subscription?: () => void;
+  /** What the last drawing read of the view, and the view it drew: a new view whose parts read are the same objects needs no drawing. */
+  private readParts?: Set<string>;
+  private drawnView?: WeatherView;
   private subscribedTo?: string;
   private retry?: ReturnType<typeof setTimeout>;
   private press?: { x: number; y: number; long: boolean; timer: ReturnType<typeof setTimeout>; frame: number };
@@ -93,7 +99,7 @@ export class HestiaWeatherCard extends LitElement {
     if (!old || old.format !== next.format || old.entry_id !== next.entry_id) this.open = this.remembered(next);
     if (!old || old.forecast_tab !== next.forecast_tab || old.entry_id !== next.entry_id) this.tab = this.rememberedTab(next);
     // Another place: its own view, from a new subscription.
-    if (old && old.entry_id !== next.entry_id) { this.unsubscribe(); this.view = undefined; this.problem = undefined; }
+    if (old && old.entry_id !== next.entry_id) { this.unsubscribe(); this.view = undefined; this.problem = undefined; this.drawnView = undefined; }
   }
   public static getStubConfig(): WeatherCardConfig { return { type: 'custom:hestia-weather-card' }; }
   public static getConfigElement(): HTMLElement { return document.createElement('hestia-weather-card-editor'); }
@@ -156,8 +162,13 @@ export class HestiaWeatherCard extends LitElement {
     if (changed.has('hass') || changed.has('config')) this.subscribe();
     const language = this.hass && `${this.hass.language}|${this.hass.locale?.language ?? ''}`;
     if (language && language !== this.language) { this.language = language; setLanguage(this.hass!.language, this.hass!.locale?.language); return true; }
-    // Home Assistant pushes every state change: the card only redraws when the integration sends a new view.
-    return !(changed.size === 1 && changed.has('hass'));
+    // Home Assistant pushes every state change: the card only redraws when the integration sends a new view,
+    // and only when a part it draws changed (the wind card does not redraw for the air).
+    if ([...changed.keys()].every(k => k === 'hass')) return false;
+    const view = this.view, drawn = this.drawnView, read = this.readParts;
+    if ([...changed.keys()].every(k => k === 'hass' || k === 'view') && view && drawn && read
+      && [...read].every(k => (view as unknown as Record<string, unknown>)[k] === (drawn as unknown as Record<string, unknown>)[k])) return false;
+    return true;
   }
   protected updated(): void {
     // The alert card takes no room while all is calm, except while the dashboard is being edited.
@@ -177,11 +188,8 @@ export class HestiaWeatherCard extends LitElement {
     if (this.subscription && this.subscribedTo === place) return;
     this.unsubscribe();
     this.subscribedTo = place;
-    const subscription = connection.subscribeMessage<ViewMessage | { version: number; reload: true }>(m => this.receive(m),
-      { type: 'hestia_weather/subscribe', language: this.hass?.language, ...(config.entry_id ? { entry_id: config.entry_id } : {}) });
-    this.subscription = subscription;
-    subscription.catch((error: { code?: string; message?: string }) => {
-      if (this.subscription !== subscription) return;
+    const stop = follow(connection, config.entry_id, this.hass?.language, m => this.receive(m), (error: StreamError) => {
+      if (this.subscription !== stop) return;
       this.subscription = undefined;
       const code = error?.code;
       // Only an unknown command means the integration is not running; any other answer is an error of its own.
@@ -190,8 +198,9 @@ export class HestiaWeatherCard extends LitElement {
       // Home Assistant may still be starting, or the place being set up: try again, less often when nothing answers.
       if (code !== 'choose_entry') this.retryLater(code === 'unknown_command' ? 30_000 : 5_000);
     });
+    this.subscription = stop;
   }
-  private receive(message: ViewMessage | { version: number; reload: true }): void {
+  private receive(message: StreamMessage): void {
     if ('reload' in message) { this.unsubscribe(); this.retryLater(2_000); return; }
     if (message.version !== VIEW_VERSION) { this.problem = 'version'; return; }
     this.problem = undefined;
@@ -199,9 +208,9 @@ export class HestiaWeatherCard extends LitElement {
   }
   private unsubscribe(): void {
     clearTimeout(this.retry);
-    const subscription = this.subscription;
+    const stop = this.subscription;
     this.subscription = undefined; this.subscribedTo = undefined;
-    void subscription?.then(stop => stop()).catch(() => { /* already closed */ });
+    stop?.();
   }
   private retryLater(delay: number): void {
     clearTimeout(this.retry);
@@ -214,7 +223,11 @@ export class HestiaWeatherCard extends LitElement {
     // While the integration answers: the outline of a card, with a light sweeping over it.
     if (!this.view) return html`<ha-card><div class=${`nw-wait${this.config.format === 'mini' ? ' line' : ''}`} role="status" aria-label=${t('Chargement de la météo')}>
       <i class="dot"></i><i></i><i></i><i></i></div></ha-card>`;
-    const config = this.config, view = displayed(this.view, config, this.tile);
+    // What this drawing reads of the view is noted (shouldUpdate). The displayed view keeps the view's part names.
+    const read = new Set<string>(), drawnView = this.view;
+    this.readParts = read; this.drawnView = drawnView;
+    const config = this.config, view = new Proxy(displayed(drawnView, config, this.tile), {
+      get(target, key, receiver) { if (typeof key === 'string') read.add(key); return Reflect.get(target, key, receiver); } });
     // Gusts for the sky: the station's last measure, else the forecast for this hour.
     const measured = view.wind?.gust.at(-1)?.[1];
     const gust = measured ?? view.hours[0]?.gust ?? 0;

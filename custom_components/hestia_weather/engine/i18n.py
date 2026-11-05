@@ -19,13 +19,20 @@ _language = "fr"
 # One panel request's language (speaking()), over the card's (localized()): two people reading the panel in two
 # languages at once never mix their words, and a request never changes the card's.
 _REQUEST: ContextVar[str | None] = ContextVar("hestia_weather_language", default=None)
+# One calculation's language (localized()): each calculation sets its own, so a calculation running in a worker thread
+# never lends its language to another, nor to the event loop (docs/PLAN-OPTIMISATION.md, point 6).
+_RENDER: ContextVar[str | None] = ContextVar("hestia_weather_render_language", default=None)
+
+
+def _code(language: str | None) -> str:
+    code = (language or "").lower().replace("_", "-").split("-")[0]
+    return "fr" if code == "fr" or not code else code if code in DICTIONARIES else "en"
 
 
 def set_language(language: str | None) -> None:
     """Home Assistant's language: French in French, its own dictionary when there is one, English otherwise."""
     global _language
-    code = (language or "").lower().replace("_", "-").split("-")[0]
-    _language = "fr" if code == "fr" or not code else code if code in DICTIONARIES else "en"
+    _language = _code(language)
 
 
 @contextmanager
@@ -33,23 +40,20 @@ def localized(language: str | None) -> Iterator[None]:
     """Temporarily render one view in `language`.
 
     A coordinator is shared by every dashboard user, while a card's language is
-    a user preference.  Rendering is synchronous, so restoring the previous
-    language here keeps one subscriber from leaking its language to another.
+    a user preference. The language belongs to the calculation's own context (its thread): two calculations at once,
+    or a calculation and the event loop, never mix their words.
     """
-    global _language
-    previous = _language
-    set_language(language)
+    token = _RENDER.set(_code(language))
     try:
         yield
     finally:
-        _language = previous
+        _RENDER.reset(token)
 
 
 @contextmanager
 def speaking(language: str | None) -> Iterator[None]:
     """The words of one panel request in `language`, put back as they were afterwards."""
-    code = (language or "").lower().replace("_", "-").split("-")[0]
-    token = _REQUEST.set("fr" if code == "fr" or not code else code if code in DICTIONARIES else "en")
+    token = _REQUEST.set(_code(language))
     try:
         yield
     finally:
@@ -57,7 +61,7 @@ def speaking(language: str | None) -> Iterator[None]:
 
 
 def language() -> str:
-    return _REQUEST.get() or _language
+    return _REQUEST.get() or _RENDER.get() or _language
 
 
 def decimal_comma() -> bool:

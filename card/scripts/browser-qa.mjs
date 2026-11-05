@@ -18,7 +18,7 @@ const server = createServer((req, res) => {
   if (path === '/demo/view') return serveDemoView(req, res);
   if (path === '/icons.json') { res.setHeader('Content-Type', 'application/json'); res.end(icons); }
   // The panel's fonts, served by the integration under /hestia_weather-assets/ in Home Assistant.
-  else if (/^\/hestia_weather-assets\/manrope-[\w-]+\.ttf$/.test(path)) { res.setHeader('Content-Type', 'font/ttf'); res.end(readFileSync(`../custom_components/hestia_weather/frontend/${path.split('/').pop()}`)); }
+  else if (/^\/hestia_weather-assets\/manrope-[\w-]+\.(ttf|woff2)$/.test(path)) { res.setHeader('Content-Type', path.endsWith('.woff2') ? 'font/woff2' : 'font/ttf'); res.end(readFileSync(`../custom_components/hestia_weather/frontend/${path.split('/').pop()}`)); }
   else if (file) { res.setHeader('Content-Type', file[0]); res.end(readFileSync(file[1])); }
   else { res.writeHead(404); res.end(); }
 });

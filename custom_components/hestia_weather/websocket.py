@@ -36,7 +36,7 @@ def ws_entries(hass: HomeAssistant, connection: websocket_api.ActiveConnection, 
 
 
 @websocket_api.websocket_command({vol.Required("type"): "hestia_weather/subscribe", vol.Optional("entry_id"): str,
-                                  vol.Optional("language"): str})
+                                  vol.Optional("language"): str, vol.Optional("changes"): bool})
 @callback
 def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     """The view of one place, now and after every change. Without `entry_id`, the only configured place."""
@@ -52,6 +52,9 @@ def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection
     coordinator = entry.runtime_data
     sent: dict[str, Any] = {}
     language = msg.get("language")
+    # A card that asks for it receives the whole view once, then only its parts that changed (docs/PLAN-OPTIMISATION.md,
+    # point 8). A card that does not (an older one, kept by the mobile app) receives the whole view each time.
+    changes_only = msg.get("changes", False)
 
     @callback
     def send() -> None:
@@ -60,21 +63,30 @@ def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection
         # The view only travels when it changed: a recomputation that changes nothing costs the card nothing.
         if snapshot is None or view is None or sent.get("view") == view:
             return
+        before: dict[str, Any] | None = sent.get("view")
         sent["view"] = view
-        connection.send_message(websocket_api.event_message(msg["id"], {"version": VIEW_VERSION, "integration": hass.data.get(VERSION_KEY, ""),
-                                                                        "entryId": entry.entry_id, "title": entry.title, "view": view}))
+        head = {"version": VIEW_VERSION, "integration": hass.data.get(VERSION_KEY, ""), "entryId": entry.entry_id, "title": entry.title}
+        if changes_only and before is not None:
+            changed = {key: value for key, value in view.items() if before.get(key) != value}
+            removed = [key for key in before if key not in view]
+            connection.send_message(websocket_api.event_message(msg["id"], {**head, "changes": changed, "removed": removed}))
+        else:
+            connection.send_message(websocket_api.event_message(msg["id"], {**head, "view": view}))
 
     @callback
     def stopped() -> None:
         # The place restarts with new settings: the card subscribes again a moment later.
         connection.send_message(websocket_api.event_message(msg["id"], {"version": VIEW_VERSION, "reload": True}))
 
+    # Another language than French: its view is computed with each calculation while this card follows it.
+    remove_language = coordinator.async_want_language(language)
     remove_view, remove_stop = coordinator.async_add_listener(send), coordinator.async_add_stop_listener(stopped)
 
     @callback
     def unsubscribe() -> None:
         remove_view()
         remove_stop()
+        remove_language()
 
     connection.subscriptions[msg["id"]] = unsubscribe
     connection.send_result(msg["id"])

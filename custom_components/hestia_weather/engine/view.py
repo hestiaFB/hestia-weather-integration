@@ -678,10 +678,23 @@ def _camel(name: str) -> str:
     return head + "".join(part.capitalize() for part in rest)
 
 
+_FIELDS: dict[type, tuple[tuple[str, str], ...]] = {}
+"""Each dataclass's fields and their camelCase names, looked up once: the view has some 25 000 values to write."""
+
+
 def to_json(value: Any) -> Any:
     """The view as plain JSON for the card: camelCase keys, unknown values left out (they read as undefined), points as [seconds, value]."""
-    if is_dataclass(value) and not isinstance(value, type):
-        return {_camel(f.name): to_json(v) for f in fields(value) if (v := getattr(value, f.name)) is not None}
+    kind = type(value)
+    # The plain values first, by their exact type (an Enum deriving from str still goes below).
+    if value is None or kind is str or kind is int or kind is bool:
+        return value
+    if kind is float:
+        return value if math.isfinite(value) else None
+    names = _FIELDS.get(kind)
+    if names is None and is_dataclass(value) and not isinstance(value, type):
+        names = _FIELDS[kind] = tuple((f.name, _camel(f.name)) for f in fields(value))
+    if names is not None:
+        return {camel: to_json(v) for name, camel in names if (v := getattr(value, name)) is not None}
     if isinstance(value, Enum):
         return value.value
     if isinstance(value, Mapping):

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Any
 
@@ -27,7 +27,7 @@ from .engine import lightning, open_meteo, open_meteo_forecast, station_place, w
 from .engine.i18n import DICTIONARIES, localized
 from .engine.brief import Brief
 from .engine.catalogue import Item
-from .engine.compute import compute
+from .engine.compute import Result, compute
 from .engine.forecast import Day, Hour
 from .engine.local import LocalWeather
 from .engine.nowcast import rain_ahead
@@ -83,6 +83,94 @@ class Snapshot:
     computed: datetime = field(compare=False)
     rain_ahead: dict[str, Any] = field(default_factory=dict)
     """When the next rain starts, to the minute from Météo-France's radar when it is there."""
+    views: dict[str, dict[str, Any]] = field(default_factory=dict)
+    """The card's view in the other languages its cards are shown in (English, German), computed with the French one."""
+
+
+def language_code(language: str | None) -> str:
+    """Only the languages Hestia Weather speaks, English for any other: a client cannot ask for others."""
+    code = (language or "").lower().replace("_", "-").split("-")[0] or "fr"
+    return code if code == "fr" or code in DICTIONARIES else "en"
+
+
+@dataclass(frozen=True)
+class Inputs:
+    """What one calculation reads, gathered on the event loop: the calculation itself then runs in a worker thread
+    (docs/PLAN-OPTIMISATION.md, point 6), never touching the coordinator nor Home Assistant's registries."""
+
+    states: dict[str, Any]
+    """The configured sensors' states at the start; any other one is read from the state machine."""
+    read: Callable[[str], Any]
+    settings: Settings
+    hours: list[Hour]
+    days: list[Day]
+    history: dict[str, list[Change]]
+    rain_history: dict[str, list[Change]]
+    statistics: list[Statistic]
+    statistics_unit: str | None
+    now: datetime
+    zone: ZoneInfo
+    latitude: float
+    longitude: float
+    elevation: float
+    platforms: dict[str, str]
+    original_condition: str | None
+    radar_entity: str | None
+    strikes: lightning.Lightning | None
+    air_forecast: open_meteo.Data | None
+    pressure_forecast: open_meteo_forecast.Data | None
+    place_learned: dict[str, Any]
+    shade: dict[str, float]
+
+    def get(self, entity_id: str) -> Any:
+        state = self.states.get(entity_id)
+        return state if state is not None else self.read(entity_id)
+
+
+@dataclass(frozen=True)
+class Calculation:
+    result: Result
+    view: dict[str, Any]
+    retained: dict[str, dict[str, Any]]
+    rain_ahead: dict[str, Any]
+
+
+def station_overlay(i: Inputs, settings: Settings, get: Callable[[str], Any]) -> tuple[Settings, Callable[[str], Any]]:
+    """The station's temperature and wind where they cannot be trusted now (docs/STATION-EMPLACEMENT.md)."""
+    if not (settings.temperature_entity or settings.wind_speed_entity or settings.wind_gust_entity):
+        return settings, get
+    return station_place.overlay(settings, get, i.place_learned, i.hours, i.now, i.zone, i.latitude, i.longitude, i.shade)
+
+
+def retained_now(settings: Settings, get: Callable[[str], Any]) -> dict[str, dict[str, Any]]:
+    """What is retained when it is not the station's own reading (api.py `station_trust`)."""
+    out: dict[str, dict[str, Any]] = {}
+    for key, entity_id in (("temperature", settings.temperature_entity), ("wind", settings.wind_gust_entity or settings.wind_speed_entity)):
+        note = settings.station_notes.get(key)
+        state = get(entity_id) if entity_id and note is not None else None
+        if note is not None:
+            out[key] = {"now": note.how, "why": note.text(), "value": station_place.finite(state.state) if state is not None else None}
+    return out
+
+
+def calculate(i: Inputs, language: str) -> Calculation:
+    """One calculation in one language, from the inputs alone: the only way a view is computed. Runs in a worker thread;
+    its language belongs to the thread (engine/i18n.py), so a calculation in English never lends its words to another."""
+    with localized(language):
+        # WAQI's station today and Open-Meteo tomorrow stand where Atmo France's air sensors would be.
+        settings, get = station_overlay(i, *waqi.overlay(i.settings, i.get, i.air_forecast, i.now, i.zone))
+        result = compute(get, settings, open_meteo_forecast.fill(i.hours, i.pressure_forecast), i.days, i.history, i.rain_history,
+                         i.statistics, i.statistics_unit, i.now, i.zone, i.latitude, i.elevation, i.platforms, i.original_condition, i.strikes)
+        view = to_json(result.view)
+        retained = retained_now(settings, get)
+    radar = i.get(i.radar_entity) if i.radar_entity else None
+    return Calculation(result, view, retained, rain_ahead(radar.attributes if radar else None, i.hours, i.now))
+
+
+def calculate_all(i: Inputs, languages: list[str]) -> tuple[Calculation, dict[str, dict[str, Any]]]:
+    """The French calculation (sensors, events, French cards), then the view in each other language a card is shown in."""
+    french = calculate(i, "fr")
+    return french, {code: calculate(i, code).view for code in languages if code != "fr"}
 
 
 type HestiaWeatherConfigEntry = ConfigEntry[HestiaWeatherCoordinator]
@@ -100,7 +188,9 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
 
     def __init__(self, hass: HomeAssistant, entry: HestiaWeatherConfigEntry) -> None:
         super().__init__(hass, LOGGER, config_entry=entry, name=f"{DOMAIN} {entry.title}", update_interval=TICK, always_update=False,
-                         request_refresh_debouncer=Debouncer(hass, LOGGER, cooldown=DEBOUNCE_SECONDS, immediate=True))
+                         # A station sends its sensors one after another: the calculation waits for the whole batch and runs once
+                         # (docs/PLAN-OPTIMISATION.md, point 3), instead of once for the first sensor and again for the others.
+                         request_refresh_debouncer=Debouncer(hass, LOGGER, cooldown=DEBOUNCE_SECONDS, immediate=False))
         self.settings = Settings.from_options(entry.options)
         self.hours: list[Hour] = []
         self.days: list[Day] = []
@@ -130,7 +220,11 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         self._stop_listeners: set[Callable[[], None]] = set()
         self._retries = 0
         self._unlisten_started: Callable[[], None] | None = None
-        self._localized_views: dict[str, tuple[datetime, dict[str, Any]]] = {}
+        self._languages: dict[str, int] = {}
+        """How many cards follow this place in each language other than French (websocket.py)."""
+        self._inputs: Inputs | None = None
+        self._meteo_france: tuple[str | None, str | None] | None = None
+        """Météo-France's description and radar sensors beside the weather entity, looked up once per registry change."""
         self._statistics_warned = False
         self.shade: dict[str, float] = {}
         """The station's shade by the sun's position, learned at night (place/shade.py)."""
@@ -153,6 +247,7 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         self.watch = AlertWatch(await self._store.async_load())
         # Listen first: a weather service that starts while the first fetches run is caught at once.
         entry.async_on_unload(async_track_state_change_event(self.hass, sorted(ids), self._on_state_change))
+        entry.async_on_unload(self.hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, self._registry_changed))
         await asyncio.gather(self._load_forecasts(), self._load_history(), self._load_rain(), self._load_week(), self._load_air_forecast(),
                              self._load_strikes(), self._load_lightning_month())
         for interval, load in ((FORECAST_INTERVAL, self._load_forecasts), (HISTORY_INTERVAL, self._load_history), (RAIN_INTERVAL, self._load_rain),
@@ -221,28 +316,40 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         await self.async_request_refresh()
 
     async def _async_update_data(self) -> Snapshot:
-        return self._compute()
+        inputs = self._gather()
+        languages = sorted(code for code, count in self._languages.items() if count > 0)
+        # The calculation leaves the event loop: Home Assistant answers on while it runs (point 6 of the plan).
+        french, views = await self.hass.async_add_executor_job(calculate_all, inputs, languages)
+        return self._publish(inputs, french, views)
 
-    def _compute(self) -> Snapshot:
+    def _gather(self) -> Inputs:
+        """What the calculation reads, taken now on the event loop."""
         hass = self.hass
         now = dt_util.now()
-        zone = ZoneInfo(hass.config.time_zone)
-        # WAQI's station today and Open-Meteo tomorrow stand where Atmo France's air sensors would be.
-        settings, get = self._station_overlay(*waqi.overlay(self.settings, hass.states.get, self.air_forecast, now, zone), now, zone)
-        self.retained = self._retained(settings, get)
+        settings = self.settings
         strikes = None
         if settings.lightning_entity:
             sensor = hass.states.get(settings.lightning_entity)
             self.strikes = lightning.keep(self.strikes, now.timestamp())
             strikes = lightning.read(self.strikes, now.timestamp(), sensor is not None and sensor.state != STATE_UNAVAILABLE, self.lightning_month)
-        # Sensors and events keep their established French values. A card is
-        # rendered separately in its dashboard user's language by view_for().
-        with localized("fr"):
-            result = compute(get, settings, open_meteo_forecast.fill(self.hours, self.pressure_forecast), self.days, self.history, self.rain_history, self.statistics, self.statistics_unit,
-                             now, zone, hass.config.latitude, hass.config.elevation or 0, self.platforms,
-                             original_condition(er.async_get(hass), settings.weather_entity), strikes)
-        self._localized_views.clear()
-        events = self.watch.update(result.catalogue, now)
+        description, radar = self._meteo_france_sensors()
+        states = {entity_id: hass.states.get(entity_id) for entity_id in (*settings.entity_ids(), description, radar) if entity_id}
+        config = hass.config
+        self._inputs = Inputs(
+            states=states, read=hass.states.get, settings=settings, hours=self.hours, days=self.days, history=self.history,
+            rain_history=self.rain_history, statistics=self.statistics, statistics_unit=self.statistics_unit, now=now,
+            zone=ZoneInfo(config.time_zone), latitude=config.latitude, longitude=config.longitude, elevation=config.elevation or 0,
+            platforms=self.platforms, original_condition=description, radar_entity=radar, strikes=strikes,
+            air_forecast=self.air_forecast, pressure_forecast=self.pressure_forecast, place_learned=self.place_learned,
+            # The shade only matters to a station declared against a wall or on the roof, before the nights have learned it.
+            shade=self.shade_now() if settings.station_side else {})
+        return self._inputs
+
+    def _publish(self, inputs: Inputs, french: Calculation, views: dict[str, dict[str, Any]]) -> Snapshot:
+        """Back on the event loop: the alerts' events, then the snapshot the sensors and the cards read."""
+        hass, now = self.hass, inputs.now
+        self.retained = french.retained
+        events = self.watch.update(french.result.catalogue, now)
         if events:
             self._store.async_delay_save(self.watch.as_dict, 10)
         for event in events:
@@ -251,64 +358,53 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
             hass.bus.async_fire(ALERT_EVENT, payload)
             # The former name keeps firing, so that an automation written by hand keeps working.
             hass.bus.async_fire(legacy.ALERT_EVENT, payload)
-        radar = hass.states.get(radar_rain(er.async_get(hass), settings.weather_entity) or "")
-        ahead = rain_ahead(radar.attributes if radar else None, self.hours, now)
-        return Snapshot(result.local, result.brief, result.derived, to_json(result.view), result.catalogue, self.watch.states(), now, ahead)
+        result = french.result
+        return Snapshot(result.local, result.brief, result.derived, french.view, result.catalogue, self.watch.states(), now,
+                        french.rain_ahead, views)
 
-    def _station_overlay(self, settings: Settings, get: Callable[[str], Any], now: datetime, zone: ZoneInfo) -> tuple[Settings, Callable[[str], Any]]:
-        """The station's temperature and wind where they cannot be trusted now (docs/STATION-EMPLACEMENT.md)."""
-        if not (settings.temperature_entity or settings.wind_speed_entity or settings.wind_gust_entity):
-            return settings, get
-        config = self.hass.config
-        # The shade only matters to a station declared against a wall or on the roof, before the nights have learned it.
-        shade = self.shade_now() if settings.station_side else {}
-        return station_place.overlay(settings, get, self.place_learned, self.hours, now, zone, config.latitude, config.longitude, shade)
+    def _meteo_france_sensors(self) -> tuple[str | None, str | None]:
+        if self._meteo_france is None:
+            registry, weather = er.async_get(self.hass), self.settings.weather_entity
+            self._meteo_france = (original_condition(registry, weather), radar_rain(registry, weather))
+        return self._meteo_france
 
-    @staticmethod
-    def _retained(settings: Settings, get: Callable[[str], Any]) -> dict[str, dict[str, Any]]:
-        out: dict[str, dict[str, Any]] = {}
-        for key, entity_id in (("temperature", settings.temperature_entity), ("wind", settings.wind_gust_entity or settings.wind_speed_entity)):
-            note = settings.station_notes.get(key)
-            state = get(entity_id) if entity_id and note is not None else None
-            if note is not None:
-                out[key] = {"now": note.how, "why": note.text(), "value": station_place.finite(state.state) if state is not None else None}
-        return out
+    @callback
+    def _registry_changed(self, _: Event) -> None:
+        # A sensor enabled or removed beside the weather entity: looked up again at the next calculation.
+        self._meteo_france = None
+
+    @callback
+    def async_want_language(self, language: str | None) -> Callable[[], None]:
+        """A card follows this place in `language`: its view is computed with each calculation while the card is there.
+        Returns what to call when the card leaves."""
+        code = language_code(language)
+        if code == "fr":
+            return lambda: None
+        self._languages[code] = self._languages.get(code, 0) + 1
+        if self.data is not None and code not in self.data.views and self._inputs is not None:
+            # The first card in this language: its view now, without waiting for the next calculation.
+            self.config_entry.async_create_background_task(self.hass, self._add_language(code, self._inputs), f"{DOMAIN} {code}")
+
+        def leave() -> None:
+            self._languages[code] = max(0, self._languages.get(code, 0) - 1)
+        return leave
+
+    async def _add_language(self, code: str, inputs: Inputs) -> None:
+        view = (await self.hass.async_add_executor_job(calculate, inputs, code)).view
+        snapshot = self.data
+        # A calculation that came in between already has it, from newer inputs.
+        if snapshot is not None and inputs is self._inputs and code not in snapshot.views:
+            self.data = replace(snapshot, views={**snapshot.views, code: view})
+            self.async_update_listeners()
 
     def view_for(self, language: str | None) -> dict[str, Any] | None:
-        """Return the current card view in one dashboard user's language.
-
-        The coordinator is shared by every dashboard user, but each browser may
-        have its own language. This recomputes only the display projection; it
-        never changes alerts, sensors, stored state, or automation values.
-        """
+        """The current card view in one dashboard user's language, or None while it is being computed (async_want_language).
+        Each language is computed with the French one, in the worker thread: never here, on the event loop."""
         snapshot = self.data
         if snapshot is None:
             return None
-        code = (language or "").lower().replace("_", "-").split("-")[0] or "fr"
-        # Only the languages Hestia Weather speaks, English for any other: a client cannot fill the cache with others.
-        if code != "fr" and code not in DICTIONARIES:
-            code = "en"
-        # French is the view computed with the sensors: nothing to compute again.
-        if code == "fr":
-            return snapshot.view
-        cached = self._localized_views.get(code)
-        if cached is not None and cached[0] == snapshot.computed:
-            return cached[1]
-        zone = ZoneInfo(self.hass.config.time_zone)
-        settings, get = self._station_overlay(*waqi.overlay(self.settings, self.hass.states.get, self.air_forecast, snapshot.computed, zone),
-                                              snapshot.computed, zone)
-        strikes = None
-        if settings.lightning_entity:
-            sensor = self.hass.states.get(settings.lightning_entity)
-            strikes = lightning.read(self.strikes, snapshot.computed.timestamp(), sensor is not None and sensor.state != STATE_UNAVAILABLE,
-                                     self.lightning_month)
-        with localized(code):
-            result = compute(get, settings, open_meteo_forecast.fill(self.hours, self.pressure_forecast), self.days, self.history, self.rain_history, self.statistics, self.statistics_unit,
-                             snapshot.computed, zone, self.hass.config.latitude, self.hass.config.elevation or 0, self.platforms,
-                             original_condition(er.async_get(self.hass), settings.weather_entity), strikes)
-            view = to_json(result.view)
-        self._localized_views[code] = (snapshot.computed, view)
-        return view
+        code = language_code(language)
+        return snapshot.view if code == "fr" else snapshot.views.get(code)
 
     # ---- Sources ----
 

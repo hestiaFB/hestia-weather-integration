@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any, Literal, NamedTuple, Sequence
@@ -80,12 +81,33 @@ def hourly_changes(rows: Sequence[tuple[float, float, float | None]]) -> list[Ch
     return out
 
 
+# The history only changes when it is read again from the Recorder (every 5 minutes to every hour), while a calculation runs
+# every minute: what is drawn from one history is kept with it, by identity, and never computed twice
+# (docs/PLAN-OPTIMISATION.md, points 5 and 14). Each entry holds its source, so an identity is never reused while kept.
+_KEPT = 32
+_joined: dict[tuple[int, int], tuple[Sequence[Change], Sequence[Change], list[Change]]] = {}
+_converted: dict[tuple[int, str | None, Kind], tuple[Sequence[Change], list[Point], list[float]]] = {}
+
+
+def _keep(cache: dict[Any, Any], key: Any, value: Any) -> None:
+    if len(cache) >= _KEPT:
+        cache.clear()
+    cache[key] = value
+
+
 def joined(week: Sequence[Change], recent: Sequence[Change]) -> list[Change]:
-    """The week's hours up to where the detailed history starts, then the detailed history."""
+    """The week's hours up to where the detailed history starts, then the detailed history. The same list for the same
+    two histories: never changed by its readers."""
+    hit = _joined.get((id(week), id(recent)))
+    if hit is not None and hit[0] is week and hit[1] is recent:
+        return hit[2]
     if not recent:
-        return list(week)
-    start = min(c.time for c in recent)
-    return [*(c for c in week if c.time < start), *recent]
+        rows = list(week)
+    else:
+        start = min(c.time for c in recent)
+        rows = [*(c for c in week if c.time < start), *recent]
+    _keep(_joined, (id(week), id(recent)), (week, recent, rows))
+    return rows
 
 
 def weather_history_key(entity_id: str, attribute: str) -> str:
@@ -121,13 +143,31 @@ class Point(NamedTuple):
     """None where the station did not report: a gap, never joined across."""
 
 
-def _points(rows: Sequence[Change], unit: str | None, kind: Kind, now: float) -> list[Point]:
-    return sorted((p for c in rows if 0 < (p := Point(c.time, measurement(c.state, unit, kind))).time <= now), key=lambda p: p.time)
+def _all_points(rows: Sequence[Change], unit: str | None, kind: Kind) -> tuple[list[Point], list[float]]:
+    """Every reading of a history in the engine's unit, by time, and their times: converted once per history."""
+    key = (id(rows), unit, kind)
+    hit = _converted.get(key)
+    if hit is not None and hit[0] is rows:
+        return hit[1], hit[2]
+    points = sorted((p for c in rows if 0 < (p := Point(c.time, measurement(c.state, unit, kind))).time), key=lambda p: p.time)
+    times = [p.time for p in points]
+    _keep(_converted, key, (rows, points, times))
+    return points, times
+
+
+def _points(rows: Sequence[Change], unit: str | None, kind: Kind, now: float, since: float | None = None, keep: bool = True) -> list[Point]:
+    """The readings up to `now`; from the one under way at `since` when it is given. `keep=False` for a list made for one
+    calculation only: nothing to keep it for, and it would only push the histories out."""
+    if not keep:
+        return sorted((p for c in rows if 0 < (p := Point(c.time, measurement(c.state, unit, kind))).time <= now), key=lambda p: p.time)
+    points, times = _all_points(rows, unit, kind)
+    first = max(0, bisect_right(times, since) - 1) if since is not None else 0
+    return points[first:bisect_right(times, now)]
 
 
 def rain_days(rows: Sequence[Change], unit: str | None, now: datetime, zone: ZoneInfo) -> tuple[RainDay, ...]:
     """Daily maxima of a daily rain sensor, never differences of rolling 24 h, weekly or monthly totals."""
-    series = [(p, datetime.fromtimestamp(p.time, zone).date()) for p in _points(rows, unit, Kind.RAIN, now.timestamp())]
+    series = [(p, datetime.fromtimestamp(p.time, zone).date()) for p in _points(rows, unit, Kind.RAIN, now.timestamp(), keep=False)]
     today = now.astimezone(zone).date()
     days = []
     for i in range(7):
@@ -161,40 +201,88 @@ def pressure_chart_series(rows: Sequence[Change], unit: str | None, now: datetim
     return _chart_series(rows, unit, now, current, "mean", Kind.PRESSURE, span, step)
 
 
-@dataclass
-class _Bucket:
-    sum: float = 0
-    duration: float = 0
-    peak: float = 0
-    missing: bool = False
+class _Buckets(NamedTuple):
+    sums: list[float]
+    durations: list[float]
+    peaks: list[float]
+    missing: list[bool]
+
+    def add(self, start: float, step: int, at: float, until: float, value: float | None, gap: float) -> None:
+        """One reading, held from `at` until `until` (the next reading, or now), spread over the buckets it covers."""
+        # A sensor unavailable for a moment (Home Assistant restarting) is no gap.
+        if value is None and gap < BRIEF_OUTAGE:
+            return
+        a, count = max(start, at), len(self.sums)
+        j = max(0, math.floor((a - start) / step))
+        while until > a and j < count and start + j * step < until:
+            duration = min(until, start + (j + 1) * step) - max(a, start + j * step)
+            if value is None:
+                self.missing[j] = True
+            else:
+                self.sums[j] += value * duration
+                self.durations[j] += duration
+                self.peaks[j] = max(self.peaks[j], value)
+            j += 1
+
+
+def _plain(value: float | None) -> float | None:
+    return value if value is not None and value >= 0 else None
+
+
+_held: dict[tuple[Any, ...], tuple[Sequence[Change], _Buckets]] = {}
+
+
+def _held_buckets(rows: Sequence[Change], unit: str | None, kind: Kind, start: float, step: int, count: int,
+                  window: list[Point], first: int, last: int) -> _Buckets:
+    """Every reading of the window but the last, which runs until now: they never change while the history stays the
+    same, so they are spread once per history and grid step, not each minute (docs/PLAN-OPTIMISATION.md, point 5)."""
+    key = (id(rows), unit, kind, start, step, count, first, last)
+    hit = _held.get(key)
+    if hit is not None and hit[0] is rows:
+        return hit[1]
+    buckets = _Buckets([0.0] * count, [0.0] * count, [0.0] * count, [False] * count)
+    for event, after in zip(window, window[1:]):
+        buckets.add(start, step, event.time, after.time, _plain(event.value), after.time - event.time)
+    _keep(_held, key, (rows, buckets))
+    return buckets
+
+
+def _rounded(value: float | None) -> float | None:
+    """A tenth is all a small chart shows: the view stays light, and the same readings give the same view."""
+    return None if value is None else round(value, 1)
 
 
 def _chart_series(rows: Sequence[Change], unit: str | None, now: datetime, current: float | None, mode: str, kind: Kind,
                   span: int = SPAN, step: int = STEP) -> tuple[Point, ...]:
+    """Buckets on a fixed grid (every ten minutes, hour or three hours of the clock), the last one under way: a bucket
+    already over never changes again, so a calculation that brings no new reading brings no new curve."""
     end = now.timestamp()
-    start = end - span
-    buckets_count, known = span // step, step / 2
-    events = [Point(p.time, p.value if p.value is not None and p.value >= 0 else None) for p in _points(rows, unit, kind, end)]
-    if not events:
+    # One bucket more than the span holds: the window rarely starts on the grid. Only the middles inside it are drawn.
+    buckets_count, known = span // step + 1, step / 2
+    start = math.floor((end - span) / step) * step
+    # Only the readings of the window, and the one under way at its start.
+    points, times = _all_points(rows, unit, kind)
+    last = bisect_right(times, end)
+    first = max(0, bisect_right(times, start) - 1)
+    window = points[first:last]
+    if not window:
         return ()
-    buckets = [_Bucket() for _ in range(buckets_count)]
-    for i, event in enumerate(events):
-        a, b = max(start, event.time), min(end, events[i + 1].time if i + 1 < len(events) else end)
-        if event.value is None and (events[i + 1].time if i + 1 < len(events) else end) - event.time < BRIEF_OUTAGE:
+    held = _held_buckets(rows, unit, kind, start, step, buckets_count, window, first, last)
+    buckets = _Buckets(list(held.sums), list(held.durations), list(held.peaks), list(held.missing))
+    # The last reading runs until now.
+    tail = window[-1]
+    buckets.add(start, step, tail.time, end, _plain(tail.value), end - tail.time)
+    out = []
+    for i in range(buckets_count):
+        middle = start + i * step + step // 2
+        if middle < end - span:
             continue
-        j = max(0, math.floor((a - start) / step))
-        while b > a and j < buckets_count and start + j * step < b:
-            bucket, duration = buckets[j], min(b, start + (j + 1) * step) - max(a, start + j * step)
-            if event.value is None:
-                bucket.missing = True
-            else:
-                bucket.sum += event.value * duration
-                bucket.duration += duration
-                bucket.peak = max(bucket.peak, event.value)
-            j += 1
-    full = [not b.missing and b.duration >= known for b in buckets]
-    return (*(Point(start + (i + 0.5) * step, (b.sum / b.duration if mode == "mean" else b.peak) if full[i] else None) for i, b in enumerate(buckets)),
-            Point(end, current))
+        # The bucket under way counts once half of it is known, which is never before its middle.
+        if middle >= end:
+            break
+        full = not buckets.missing[i] and buckets.durations[i] >= known
+        out.append(Point(middle, _rounded((buckets.sums[i] / buckets.durations[i] if mode == "mean" else buckets.peaks[i]) if full else None)))
+    return (*out, Point(round(end), _rounded(current)))
 
 
 @dataclass(frozen=True)

@@ -110,3 +110,24 @@ def test_a_view_in_german_leaves_french_untouched():
     with i18n.localized("fr"):
         assert i18n.t("Pluie") == "Pluie"
     assert i18n.t("Pluie") == "Regen"
+
+
+def test_two_calculations_at_once_never_mix_their_words() -> None:
+    # The calculation runs in worker threads (docs/PLAN-OPTIMISATION.md, point 6): its language belongs to its thread.
+    import threading
+    words: dict[str, set[str]] = {"fr": set(), "en": set()}
+    ready = threading.Barrier(2)
+
+    def render(language: str) -> None:
+        with i18n.localized(language):
+            ready.wait()
+            for _ in range(2000):
+                words[language].add(i18n.t("Pluie"))
+    threads = [threading.Thread(target=render, args=(code,)) for code in ("fr", "en")]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert words == {"fr": {"Pluie"}, "en": {EN["Pluie"]}}
+    # The event loop's language is left as it was.
+    assert i18n.t("Pluie") == "Pluie"

@@ -3,6 +3,7 @@ the temperature trend, the strongest gust of the day. Missing data is never inve
 from __future__ import annotations
 
 import math
+from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any, Callable, Mapping, Sequence
@@ -118,10 +119,26 @@ def steady_sums(rows: Sequence[Statistic]) -> list[Statistic]:
     return out
 
 
+_sorted: dict[int, tuple[Sequence[tuple[float, float | None]], list[tuple[float, float | None]], list[float]]] = {}
+
+
+def _up_to(rows: Sequence[tuple[float, float | None]], end: float) -> list[tuple[float, float | None]]:
+    """The readings up to `end`, by time. One calculation asks this of the same counter some fifty times (days, weeks,
+    bars): it is sorted once, kept with the list it comes from (docs/PLAN-OPTIMISATION.md, point 5)."""
+    hit = _sorted.get(id(rows))
+    if hit is None or hit[0] is not rows:
+        ordered = sorted(rows, key=lambda p: p[0])
+        # Useful within one calculation only (the counter's list is made anew each time): a few are enough.
+        if len(_sorted) >= 8:
+            _sorted.clear()
+        hit = _sorted[id(rows)] = (rows, ordered, [p[0] for p in ordered])
+    return hit[1][:bisect_right(hit[2], end)]
+
+
 def counter_increase(rows: Sequence[tuple[float, float | None]], start: float, end: float) -> Total:
     """Rain fallen between two moments, from an ever-growing counter; a reset to zero is followed, a small dip is not,
     nor a brief drop the counter comes straight back from."""
-    points = _without_blips(sorted((p for p in rows if p[0] <= end), key=lambda p: p[0]))
+    points = _without_blips(_up_to(rows, end))
     prior = next((p for p in reversed(points) if p[0] <= start), None)
     first = prior if prior is not None and prior[1] is not None else next((p for p in points if p[0] >= start and p[1] is not None), None)
     if first is None:
