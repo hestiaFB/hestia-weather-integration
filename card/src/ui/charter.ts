@@ -179,7 +179,7 @@ export const bubbles = css`
   .nw-bubble--alert ha-icon { color:color-mix(in oklab, var(--al) 70%, var(--nw-fg)); }
   .nw-bubble--alert .nw-label { color:color-mix(in oklab, var(--al) var(--nw-ink), var(--nw-fg)); }
   /* Official vigilance in the banner: a compact pill, its icon in a disc of the level's colour, the same outline and halo as the alert bubble. */
-  .nw-alert { --al:var(--nw-level1); position:relative; display:inline-flex; align-items:center; gap:8px; max-width:100%; box-sizing:border-box; margin:0;
+  .nw-alert { --al:var(--nw-level1); position:relative; display:flex; align-items:center; gap:8px; width:100%; max-width:100%; box-sizing:border-box; margin:0;
     padding:3px 14px 3px 3px; border-radius:var(--nw-radius-pill); font-size:var(--nw-fs-text); line-height:18px; color:var(--nw-fg);
     background:color-mix(in srgb, var(--al) 30%, color-mix(in srgb, var(--nw-bg) 55%, transparent)); border:1px solid color-mix(in oklab, var(--al) 60%, transparent);
     backdrop-filter:var(--nw-blur); box-shadow:0 0 6px 0 color-mix(in oklab, var(--al) 32%, transparent), 0 4px 18px -10px color-mix(in oklab, var(--al) 65%, transparent); }
@@ -187,12 +187,24 @@ export const bubbles = css`
     opacity:0; animation:nw-glow 5.2s ease-in-out infinite; animation-play-state:var(--nw-motion, running); pointer-events:none; }
   .nw-alert .dot { display:grid; place-items:center; width:24px; height:24px; flex:none; border-radius:50%; background:var(--al); color:#2b2620; }
   .nw-alert .dot ha-icon { --mdc-icon-size:14px; display:flex; line-height:0; }
-  .nw-alert > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* Its words keep one line: when they do not fit they scroll in a loop (ui/marquee.ts), still at the start of each round, faded at the edges,
+     paused under the finger. The second copy follows the first only while it moves. */
+  .nw-alert hestia-weather-marquee { display:block; flex:1; min-width:0; overflow:hidden; white-space:nowrap; }
+  .nw-alert .run { display:inline-block; }
+  .nw-alert .run + .run { display:none; }
+  .nw-alert hestia-weather-marquee[moving] { mask-image:linear-gradient(90deg, transparent, #000 6px, #000 calc(100% - 18px), transparent); }
+  .nw-alert hestia-weather-marquee[moving] .run { padding-right:40px; animation:nw-run var(--nw-run-time, 12s) linear infinite; animation-play-state:var(--nw-motion, running); }
+  .nw-alert hestia-weather-marquee[moving] .run + .run { display:inline-block; }
+  @media (hover:hover) { .nw-alert:hover hestia-weather-marquee[moving] .run { animation-play-state:paused; } }
+  @keyframes nw-run { 0%, 20% { transform:translateX(0); } 100% { transform:translateX(calc(-1 * var(--nw-run, 0px))); } }
   .nw-alert b { font-weight:650; }
-  /* On a narrow card the phenomenon is enough: the disc's colour and the halo give the level, screen readers still read it. */
-  @container (max-width:400px) { .nw-alert b { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; } }
   /* The level's colour, after the pieces that set the yellow of level 1. */
   .nw-level2 { --al:var(--nw-level2); } .nw-level3 { --al:var(--nw-level3); }
   @keyframes nw-glow { 50% { opacity:1; } }
   @media (prefers-reduced-motion:reduce) { .nw-bubble { transition:none; } .nw-bubble--alert::after, .nw-alert::after { animation:none; } }
+  /* Without motion the vigilance never scrolls: it takes two lines at most. */
+  @media (prefers-reduced-motion:reduce) {
+    .nw-alert hestia-weather-marquee, .nw-alert hestia-weather-marquee[moving] { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; white-space:normal; mask-image:none; }
+    .nw-alert hestia-weather-marquee .run, .nw-alert hestia-weather-marquee[moving] .run { display:inline; padding:0; animation:none; }
+    .nw-alert hestia-weather-marquee .run + .run, .nw-alert hestia-weather-marquee[moving] .run + .run { display:none; } }
 `;

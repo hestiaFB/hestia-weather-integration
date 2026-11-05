@@ -130,9 +130,9 @@ export const compactStyles = css`
   .mini-text { display:flex; flex-direction:column; min-width:0; flex:1; line-height:1.3; }
   .mini-text b { font-size:var(--nw-fs-text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .mini-text span { font-size:var(--nw-fs-small); color:var(--nw-fg2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .nw-mini .nw-alert { flex:none; max-width:46%; }
+  .nw-mini .nw-alert { flex:none; width:46%; }
   /* Narrow: the sky, the temperature and the vigilance; the words give way. */
-  @container (max-width:300px) { .mini-text { display:none; } .nw-mini .nw-alert { max-width:none; margin-left:auto; } }
+  @container (max-width:300px) { .mini-text { display:none; } .nw-mini .nw-alert { flex:1; width:auto; min-width:0; } }
 
   .nw-alertcard { display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:12px 14px; cursor:pointer; color:var(--nw-fg); }
   .nw-alertcard .place { font-size:var(--nw-fs-small); color:var(--nw-fg2); }

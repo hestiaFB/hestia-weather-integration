@@ -3,6 +3,7 @@ import { html, nothing, svg, type TemplateResult } from 'lit';
 import type { AlertPoint, Chip, TickerPoint } from '../view';
 import { numberFormat } from '../intl-cache';
 import { currentLocale, t } from '../i18n';
+import './marquee';
 
 /** A number in the user's language, at most `digits` decimals (exactly `digits` when `fixed`). */
 export const nf = (v: number, digits = 1, fixed = false) => numberFormat(currentLocale(), { maximumFractionDigits: digits, minimumFractionDigits: fixed ? digits : 0 }).format(v);
@@ -35,10 +36,12 @@ export function alertBubble(a: AlertPoint, extraClass = ''): TemplateResult {
     <ha-icon icon=${a.icon}></ha-icon>${a.label ? html`<span class="nw-label">${a.label}</span>` : nothing}<b title=${a.text}>${a.text}</b></p>`;
 }
 
-/** The official vigilance in the banner: « Vigilance orange · Orages », as a compact pill with its halo. */
+/** The official vigilance in the banner: « Vigilance orange · Orages », as a pill with its halo, the whole width of its line.
+ *  A text too long for it scrolls in a loop (ui/marquee.ts); its second copy is only there for the loop, screen readers skip it. */
 export function alertPill(a: AlertPoint): TemplateResult {
+  const words = html`${a.label ? html`<b>${a.label}<span class="sep"> · </span></b>` : nothing}${a.text}`;
   return html`<p class=${`nw-alert nw-level${a.level}`} role="status" title=${a.source} data-entity=${entity(a.entity)}>
-    <span class="dot"><ha-icon icon=${a.icon}></ha-icon></span><span>${a.label ? html`<b>${a.label}<span class="sep"> · </span></b>` : nothing}${a.text}</span></p>`;
+    <span class="dot"><ha-icon icon=${a.icon}></ha-icon></span><hestia-weather-marquee><span class="run">${words}</span><span class="run" aria-hidden="true">${words}</span></hestia-weather-marquee></p>`;
 }
 
 /** The sixteen points of the compass, in the user's language (« SO » in French, « SW » in English). */
