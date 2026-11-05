@@ -1,4 +1,4 @@
-"""The « Écosystème Hestia » screen: each brick linked to this place, installed, missing or to come; nothing guessed."""
+"""The « Écosystème Hestia-FB » screen: each brick linked to this place, installed, missing or to come; nothing guessed."""
 from engine.ecosystem import BRICKS, links, summary
 
 

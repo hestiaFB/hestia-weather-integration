@@ -11,10 +11,10 @@ const {provenance,grouped,enabledKeys,entityLine,sameSet,extensionGroups,extensi
 after(()=>rm(temp,{recursive:true,force:true}));
 const sensor=(id,state='1')=>({id,name:id,state,available:true,missing:false});
 
-test('what Hestia proposes on top of the saved settings shows as proposed, until it is touched',()=>{
+test('what Hestia-FB proposes on top of the saved settings shows as proposed, until it is touched',()=>{
  const saved={temperature_entity:'sensor.a'};
  assert.equal(provenance('temperature_entity','sensor.a',saved,new Set()),'');
- assert.match(provenance('humidity_entity','sensor.h',saved,new Set()),/Proposé par Hestia/);
+ assert.match(provenance('humidity_entity','sensor.h',saved,new Set()),/Proposé par Hestia-FB/);
  assert.equal(provenance('humidity_entity','sensor.h',saved,new Set(['humidity_entity'])),'');
  assert.equal(provenance('humidity_entity','sensor.h',undefined,new Set()),'');  // a new place: everything is proposed
 });

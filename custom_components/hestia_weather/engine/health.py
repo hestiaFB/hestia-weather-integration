@@ -148,7 +148,7 @@ def report(f: Facts) -> dict:
     oldest = max((s.age for s in broken if s.age is not None), default=None)
     if f.sensors and len(broken) == len(f.sensors):
         todo.append(_line("bad", t("La station ne répond pas"),
-                          t("Aucun de ses {n} capteurs ne donne de valeur{since} : Hestia s’appuie sur le service météo.", n=len(f.sensors), since=_since(oldest)), 1))
+                          t("Aucun de ses {n} capteurs ne donne de valeur{since} : Hestia-FB s’appuie sur le service météo.", n=len(f.sensors), since=_since(oldest)), 1))
     elif broken:
         when = _since(oldest)
         todo.append(_line("bad", _count(len(broken), "{n} capteur de la station ne répond pas", "{n} capteurs de la station ne répondent pas"),
@@ -189,10 +189,10 @@ def report(f: Facts) -> dict:
                               t("Cumuls de pluie, tendance de la température et rafale du jour, quand la station ne les donne pas."), 1))
     if not f.vigilance and "vigilance" not in enabled:
         tips.append(_line("tip", t("Choisir la vigilance officielle"),
-                          t("Un capteur est disponible (« {name} ») : les alertes officielles s’ajoutent à celles de Hestia.", name=f.vigilance_found), 0)
+                          t("Un capteur est disponible (« {name} ») : les alertes officielles s’ajoutent à celles de Hestia-FB.", name=f.vigilance_found), 0)
                     if f.vigilance_found else
                     _line("tip", t("Ajouter la vigilance officielle"),
-                          t("Installez Météo-France ou MeteoSwiss pour votre région : les alertes officielles s’ajoutent à celles de Hestia."), 0))
+                          t("Installez Météo-France ou MeteoSwiss pour votre région : les alertes officielles s’ajoutent à celles de Hestia-FB."), 0))
     if not f.air:
         tips.append(_line("tip", t("Choisir une zone Atmo France"), t("Atmo France est installée : l’indice de l’air du jour et ses polluants."), 2)
                     if f.atmo_installed else
@@ -260,7 +260,7 @@ def report(f: Facts) -> dict:
     versions.append({"level": "bad" if f.card_twice else "ok", "text": t("Carte {version}", version=f.integration),
                      "why": t("installée deux fois : retirez celle de HACS") if f.card_twice else t("fournie par l’intégration")})
     versions += [{"level": "ok", "text": t("Relié à {name}", name=name), "why": ""} for name in f.links] or [
-        {"level": "none", "text": t("Aucune brique Hestia reliée"), "why": t("Hestia Confort peut reprendre la station, les alertes et les prévisions de ce lieu")}]
+        {"level": "none", "text": t("Aucune brique Hestia-FB reliée"), "why": t("Hestia Confort peut reprendre la station, les alertes et les prévisions de ce lieu")}]
 
     return {"title": f.title, "level": "action" if todo else "ok",
             "summary": _count(len(todo), "{n} point à régler", "{n} points à régler") if todo else t("Tout est suivi"),

@@ -30,7 +30,7 @@ Sources lues : `engine/station_shade.py`, `place/shade.py` (commit 22d2e3e), `dr
 
 ## 2. Le principe
 
-**Ce que vous dites sert tout de suite. Ce que Hestia apprend le remplace.**
+**Ce que vous dites sert tout de suite. Ce que Hestia-FB apprend le remplace.**
 
 1. **D'abord se méfier.** Une réponse ne change aucun chiffre. Elle dit **quand** une mesure peut être fausse (« par beau temps, de 13 h à 17 h ») : à ces moments, Weather prend la prévision et le dit.
 2. **Puis vérifier.** Chaque nuit, Weather compare la station à la prévision du même lieu sur les 92 derniers jours (statistiques à long terme de HA et Open-Meteo, le même appel que l'ombre). Il en tire l'écart propre à chaque situation.
@@ -177,7 +177,7 @@ Confort l'emploie si Weather le donne, sinon garde ses capteurs bruts (même rè
 - **Vue d'ensemble du hub › À améliorer** : « Emplacement de la station · 6 questions » tant qu'il en reste, gris. Et quand l'apprentissage trouve seul un écart non déclaré (pluviomètre qui recueille la moitié), la ligne le dit.
 - **Sur la carte** : la source sous la tuile (Température, Vent) dit quand la valeur n'est pas la mesure brute ; l'appui ouvre la bulle « i » des sources avec l'explication.
 
-**Couleurs** : bleu « Fiable » ; gris « Fiable, sauf… » (Hestia s'en charge, rien à faire) et « À vérifier » ; violet pointillé pour l'explication à lire (hub seulement). Ni orange ni vert : il n'y a pas de geste à faire, ni de bénéfice.
+**Couleurs** : bleu « Fiable » ; gris « Fiable, sauf… » (Hestia-FB s'en charge, rien à faire) et « À vérifier » ; violet pointillé pour l'explication à lire (hub seulement). Ni orange ni vert : il n'y a pas de geste à faire, ni de bénéfice.
 
 ---
 

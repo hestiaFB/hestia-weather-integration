@@ -1,4 +1,4 @@
-"""The shared « Hestia » panel copied into this brick hangs together (hestia-ecosysteme/socle, copied by copier.sh).
+"""The shared « Hestia-FB » panel copied into this brick hangs together (hestia-ecosysteme/socle, copied by copier.sh).
 
 The Python registers the panel under the shell's element name, which carries the socle's version; the compiled
 screen must define that very name, or the panel stays blank. Plain file reads: no Home Assistant needed.

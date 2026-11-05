@@ -32,7 +32,7 @@ Partez des fichiers anglais, un par partie · Start from the English files, one 
 | Fichier · File | Ce qu’il traduit · What it translates |
 | --- | --- |
 | `card/src/i18n/en.ts` | La carte · The card |
-| `frontend/i18n-en.ts` | Le panneau Hestia, onglet Météo · The Hestia panel, Weather tab |
+| `frontend/i18n-en.ts` | Le panneau Hestia-FB, onglet Météo · The Hestia-FB panel, Weather tab |
 | `custom_components/hestia_weather/engine/i18n_en.py` | Le bulletin, les événements, les mesures · Bulletin, events, measurements |
 | `custom_components/hestia_weather/translations/en.json` | L’installation, la configuration, les noms des entités · Setup, options, entity names |
 
@@ -43,5 +43,5 @@ You can simply send your sentences in a [“Translation” issue](https://github
 
 - Les valeurs des capteurs (bulletin, raisons, alertes) restent en français : vos automatisations ne changent pas avec la langue.
   Sensor values (bulletin, reasons, alerts) stay in French, so your automations do not change with the language.
-- En allemand, le menu et l’accueil du panneau Hestia s’affichent en anglais pour l’instant. L’onglet Météo est en allemand.
-  In German, the Hestia panel's menu and home page are shown in English for now. The Weather tab is in German.
+- En allemand, le menu et l’accueil du panneau Hestia-FB s’affichent en anglais pour l’instant. L’onglet Météo est en allemand.
+  In German, the Hestia-FB panel's menu and home page are shown in English for now. The Weather tab is in German.

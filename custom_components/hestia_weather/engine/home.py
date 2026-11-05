@@ -1,4 +1,4 @@
-"""What the « Hestia » home page says about Hestia Weather (socle v1, ECOSYSTEME.md § 8): one level, one sentence, a few details.
+"""What the « Hestia-FB » home page says about Hestia Weather (socle v1, ECOSYSTEME.md § 8): one level, one sentence, a few details.
 
 Blue (`ok`) when every place is computed with its station answering; orange (`action`) as soon as something needs the user.
 Grey (`unknown`) is left to the socle, for when this status cannot be computed at all.
@@ -25,7 +25,7 @@ class Place:
     down: Sequence[str] = ()
     """The chosen air and pollen sources that do not answer, as « Atmo France ne répond pas : pollens »."""
     links: Sequence[str] = ()
-    """The Hestia bricks listening to this place, by name."""
+    """The Hestia-FB bricks listening to this place, by name."""
 
 
 def _count(n: int, one: str, many: str) -> str:

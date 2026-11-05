@@ -1,4 +1,4 @@
-"""The feel and the observed condition: the rules first developed for the original Hestia dashboard.
+"""The feel and the observed condition: the rules first developed for the original Hestia-FB dashboard.
 
 Each effect is rounded on its own before being added, like the original template did.
 """

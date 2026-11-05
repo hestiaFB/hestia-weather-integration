@@ -111,7 +111,7 @@ export const EN: Record<string, string> = {
   'Météo à {place}': 'Weather in {place}',
   'Fermer': 'Close',
   // The « Add card » list
-  'Hestia - Météo': 'Hestia - Weather',
+  'Hestia-FB - Météo': 'Hestia-FB - Weather',
 
   // Hours, wind, help bubbles
   'Maintenant': 'Now',
@@ -267,8 +267,8 @@ export const EN: Record<string, string> = {
   'Type de carte': 'Card type',
   'Grandes cartes : la page météo et la tuile': 'Large cards: the weather page and the tile',
   'Petites cartes : une ligne ou une alerte': 'Small cards: one line or an alert',
-  'Hestia - À la pièce': 'Hestia - Single card',
-  'Hestia - Petite carte': 'Hestia - Small card',
+  'Hestia-FB - À la pièce': 'Hestia-FB - Single card',
+  'Hestia-FB - Petite carte': 'Hestia-FB - Small card',
   'La page météo complète ou la tuile qui se déplie. Le format se choisit dans les réglages.': 'The full weather page or the tile that unfolds. The format is chosen in the settings.',
   'Une seule ligne, ou une alerte visible seulement en cas de vigilance.': 'A single line, or an alert shown only during a warning.',
   'Cartes à la pièce : ressenti, pluie, vent, pression, éclairs, air, prévisions': 'Single cards: feels like, rain, wind, pressure, lightning, air, forecast',

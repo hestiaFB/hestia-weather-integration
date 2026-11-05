@@ -114,7 +114,7 @@ async def async_status(hass: HomeAssistant) -> dict[str, Any] | None:
 
 
 async def _start_siblings(hass: HomeAssistant) -> None:
-    """The other Hestia bricks still under their former name are started, when their new version is installed:
+    """The other Hestia-FB bricks still under their former name are started, when their new version is installed:
     each then carries itself over. One « Add an integration » or one bridge is enough for the whole home."""
     for domain, former in getattr(legacy, "SIBLINGS", {}).items():
         if domain in hass.config.components or not hass.config_entries.async_entries(former):
@@ -185,7 +185,7 @@ def rekey(value: str, ids: dict[str, str]) -> str:
 
 
 def lines_with(text: str) -> list[int]:
-    """The line numbers (from 1) where a former name is written: for the files Hestia leaves to the user."""
+    """The line numbers (from 1) where a former name is written: for the files Hestia-FB leaves to the user."""
     patterns = [re.compile(old) for old, _ in legacy.TEXT]
     return [n for n, line in enumerate(text.splitlines(), 1) if any(p.search(line) for p in patterns)]
 
@@ -240,7 +240,7 @@ def _load_raw(config_dir: str, key: str) -> dict[str, Any] | None:
 
 
 def _hand_written(config_dir: str) -> list[dict[str, Any]]:
-    """The YAML files that write a former name and that Hestia leaves to the user: the file and its lines."""
+    """The YAML files that write a former name and that Hestia-FB leaves to the user: the file and its lines."""
     found, ui = [], {name for name, _ in UI_FILES} | {"secrets.yaml"}
     for root, dirs, files in os.walk(config_dir):
         dirs[:] = sorted(d for d in dirs if d not in SKIPPED and not d.startswith("."))
@@ -288,7 +288,7 @@ async def _table(hass: HomeAssistant) -> tuple[Store[dict[str, Any]], dict[str, 
 
 
 async def async_entry_ids(hass: HomeAssistant) -> dict[str, str]:
-    """Every former entry id of every Hestia brick, with the new one: to mend what points to another brick's entry."""
+    """Every former entry id of every Hestia-FB brick, with the new one: to mend what points to another brick's entry."""
     return dict((await _table(hass))[1]["entries"])
 
 

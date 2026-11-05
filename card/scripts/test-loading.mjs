@@ -15,7 +15,7 @@ if (!bundles.length) {
 const polyfill = readFileSync(new URL('../node_modules/@webcomponents/scoped-custom-element-registry/scoped-custom-element-registry.min.js', import.meta.url));
 const server = createServer((req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
-  if (path === '/') { res.setHeader('Content-Type', 'text/html'); res.end('<!doctype html><title>Hestia loading regression</title><home-assistant></home-assistant>'); }
+  if (path === '/') { res.setHeader('Content-Type', 'text/html'); res.end('<!doctype html><title>Hestia-FB loading regression</title><home-assistant></home-assistant>'); }
   else if (path === '/polyfill.js') { res.setHeader('Content-Type', 'text/javascript'); res.end(polyfill); }
   else if (path === '/card.js') {
     res.setHeader('Content-Type', 'text/javascript');

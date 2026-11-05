@@ -2,7 +2,7 @@
   "config": {
     "abort": {
       "no_weather": "No weather source found. Add a weather integration first (Météo-France for instance).",
-      "migrated": "Your installation was resumed under the new name. Follow the next steps in Hestia → Home."
+      "migrated": "Your installation was resumed under the new name. Follow the next steps in Hestia-FB → Home."
     },
     "step": {
       "user": {
@@ -115,13 +115,13 @@
       },
       "pollen_sensors": {
         "title": "Step 3 of 4 · {source} sensors",
-        "description": "The species to follow (and, for Polleninformation, the overall allergy risk), proposed by Hestia: check, add or remove. Without an overall risk, Hestia keeps the highest species.",
+        "description": "The species to follow (and, for Polleninformation, the overall allergy risk), proposed by Hestia-FB: check, add or remove. Without an overall risk, Hestia-FB keeps the highest species.",
         "data": {
           "pollens": "Species",
           "pollen_risk_entity": "Overall allergy risk"
         },
         "data_description": {
-          "pollen_risk_entity": "Optional. Without it, Hestia uses the highest species."
+          "pollen_risk_entity": "Optional. Without it, Hestia-FB uses the highest species."
         }
       },
       "families": {
@@ -151,7 +151,7 @@
       },
       "pollen_area": {
         "title": "Step 3 of 4 · Atmo zone for pollen",
-        "description": "The Atmo France zone whose pollen Hestia reads. It can differ from the air quality zone.",
+        "description": "The Atmo France zone whose pollen Hestia-FB reads. It can differ from the air quality zone.",
         "data": {
           "atmo_area": "Atmo France zone"
         }
@@ -177,7 +177,7 @@
     "step": {
       "init": {
         "title": "Hestia Weather",
-        "description": "Hestia Weather's settings are in the Météo tab of the Hestia panel.\n\n[Open Hestia Weather settings]({link})",
+        "description": "Hestia Weather's settings are in the Météo tab of the Hestia-FB panel.\n\n[Open Hestia Weather settings]({link})",
         "submit": "Close"
       },
       "weather": {
@@ -284,13 +284,13 @@
       },
       "pollen_sensors": {
         "title": "{source} sensors",
-        "description": "The species to follow (and, for Polleninformation, the overall allergy risk), proposed by Hestia: check, add or remove. Without an overall risk, Hestia keeps the highest species.",
+        "description": "The species to follow (and, for Polleninformation, the overall allergy risk), proposed by Hestia-FB: check, add or remove. Without an overall risk, Hestia-FB keeps the highest species.",
         "data": {
           "pollens": "Species",
           "pollen_risk_entity": "Overall allergy risk"
         },
         "data_description": {
-          "pollen_risk_entity": "Optional. Without it, Hestia uses the highest species."
+          "pollen_risk_entity": "Optional. Without it, Hestia-FB uses the highest species."
         }
       },
       "entities": {
@@ -323,14 +323,14 @@
       },
       "pollen_area": {
         "title": "Atmo zone for pollen",
-        "description": "The Atmo France zone whose pollen Hestia reads. It can differ from the air quality zone.",
+        "description": "The Atmo France zone whose pollen Hestia-FB reads. It can differ from the air quality zone.",
         "data": {
           "atmo_area": "Atmo France zone"
         }
       },
       "ecosystem": {
-        "title": "Hestia ecosystem",
-        "description": "Hestia Weather shares its weather with the other Hestia bricks. Each brick links itself to this place in its own settings; Hestia Weather never changes the others.\n\n{links}\n\nSubmit to go back to the menu."
+        "title": "Hestia-FB ecosystem",
+        "description": "Hestia Weather shares its weather with the other Hestia-FB bricks. Each brick links itself to this place in its own settings; Hestia Weather never changes the others.\n\n{links}\n\nSubmit to go back to the menu."
       },
       "pollen_station": {
         "title": "Pollen location",

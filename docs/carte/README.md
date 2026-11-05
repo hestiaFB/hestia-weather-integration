@@ -8,7 +8,7 @@ La carte parle **français** et **anglais** : elle suit la langue de chaque pers
 
 Sans station (depuis la 2.3.1), les courbes de vent et de pression utilisent les attributs historiques du service météo sélectionné, si Home Assistant les a enregistrés. Elles conservent le nom du service météo et ne deviennent pas des mesures locales. Si cet historique est absent, exclu de Recorder ou trop court, la carte le précise ; elle n’invente pas de valeurs passées. Les cumuls de pluie mesurés restent un enrichissement facultatif fourni par un pluviomètre. Retirer la station ne crée plus d’alertes « À régler » pour les entités restées actives qui dépendent de ses capteurs.
 
-Vous aviez installé la carte depuis HACS ? Retirez-la (HACS → Hestia Weather → ⋮ → **Supprimer**), puis rechargez la page. Vos cartes restent en place et gardent leur `type:` : l’ancien comme le nouveau marchent. Tant qu’elle reste installée, l’accueil du panneau **Hestia** l’indique en orange.
+Vous aviez installé la carte depuis HACS ? Retirez-la (HACS → Hestia Weather → ⋮ → **Supprimer**), puis rechargez la page. Vos cartes restent en place et gardent leur `type:` : l’ancien comme le nouveau marchent. Tant qu’elle reste installée, l’accueil du panneau **Hestia-FB** l’indique en orange.
 
 Dans l’application Home Assistant, une carte reste invisible juste après une mise à jour ? Réinitialisez son cache : **Paramètres → Application compagnon → Dépannage → Réinitialiser le cache du frontend**.
 
@@ -16,7 +16,7 @@ Dans l’application Home Assistant, une carte reste invisible juste après une 
 
 ## Douze cartes à choisir
 
-Dans **Ajouter une carte**, cherchez « Hestia » : trois entrées, une par type de carte — **Hestia - Météo** (complète ou tuile), **Hestia - À la pièce** (ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions) et **Hestia - Petite carte** (mini ou alerte). Dans les réglages de la carte, choisissez d’abord le **type**, puis le **format**. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change.
+Dans **Ajouter une carte**, cherchez « Hestia-FB » : trois entrées, une par type de carte — **Hestia-FB - Météo** (complète ou tuile), **Hestia-FB - À la pièce** (ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions) et **Hestia-FB - Petite carte** (mini ou alerte). Dans les réglages de la carte, choisissez d’abord le **type**, puis le **format**. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change.
 
 | Carte | Pour quoi |
 | --- | --- |

@@ -146,7 +146,7 @@ def test_each_measure_says_how_far_it_can_be_trusted():
                  rain_rate_entity="sensor.r", rain_gauge_shelter="tree")
     trust = sp.describe(s, {}, {"cells": {"200/20": 0.3}, "learned": 40, "reachable": 120}, AFTERNOON, PARIS, LAT, LON)
     assert {k: v["level"] for k, v in trust.items()} == {"temperature": "handled", "wind": "handled", "rain": "handled", "sun": "handled"}
-    assert trust["temperature"]["line"] == "De 12 h 30 à 17 h 20 en ce moment, Hestia prend la prévision."
+    assert trust["temperature"]["line"] == "De 12 h 30 à 17 h 20 en ce moment, Hestia-FB prend la prévision."
     assert trust["wind"]["line"] == "Dégagée : N, NE, E, SE, S, SO, NO."
     plain = sp.describe(settings(), {}, None, AFTERNOON, PARIS, LAT, LON)
     assert {k: v["level"] for k, v in plain.items()} == {"temperature": "watch", "wind": "watch"}

@@ -1,6 +1,6 @@
 """The station's own shade, by the sun's position: what share of the forecast sun its sensor receives under a clear sky.
 
-A house or a tree hides the low sun from the station, so its measure cannot be read as the sky's. Other bricks (Hestia
+A house or a tree hides the low sun from the station, so its measure cannot be read as the sky's. Other bricks (Hestia-FB
 Comfort) use this shade to tell the clouds the forecast missed from the shade of the station. It is learned each night from
 the station's long-term hourly statistics against Open-Meteo's sun of the same hours (92 days at most), so that a station
 with a history knows its shade from the first night (CAHIER-MOTEUR.md § 7.4).

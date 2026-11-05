@@ -2,7 +2,7 @@
   "config": {
     "abort": {
       "no_weather": "Keine Wetterquelle gefunden. Fügen Sie zuerst eine Wetter-Integration hinzu (zum Beispiel Météo-France).",
-      "migrated": "Ihre Installation wurde unter dem neuen Namen übernommen. Die nächsten Schritte finden Sie unter Hestia → Start."
+      "migrated": "Ihre Installation wurde unter dem neuen Namen übernommen. Die nächsten Schritte finden Sie unter Hestia-FB → Start."
     },
     "step": {
       "user": {
@@ -115,13 +115,13 @@
       },
       "pollen_sensors": {
         "title": "Schritt 3 von 4 · Sensoren von {source}",
-        "description": "Die zu verfolgenden Arten (und, bei Polleninformation, das allgemeine Allergierisiko), von Hestia vorgeschlagen: prüfen, hinzufügen oder entfernen. Ohne allgemeines Risiko verwendet Hestia die Art mit dem höchsten Wert.",
+        "description": "Die zu verfolgenden Arten (und, bei Polleninformation, das allgemeine Allergierisiko), von Hestia-FB vorgeschlagen: prüfen, hinzufügen oder entfernen. Ohne allgemeines Risiko verwendet Hestia-FB die Art mit dem höchsten Wert.",
         "data": {
           "pollens": "Arten",
           "pollen_risk_entity": "Allgemeines Allergierisiko"
         },
         "data_description": {
-          "pollen_risk_entity": "Optional. Ohne diese Angabe verwendet Hestia die Art mit dem höchsten Wert."
+          "pollen_risk_entity": "Optional. Ohne diese Angabe verwendet Hestia-FB die Art mit dem höchsten Wert."
         }
       },
       "families": {
@@ -151,7 +151,7 @@
       },
       "pollen_area": {
         "title": "Schritt 3 von 4 · Atmo-Zone für Pollen",
-        "description": "Die Atmo-France-Zone, deren Pollen Hestia liest. Sie kann von der Zone der Luftqualität abweichen.",
+        "description": "Die Atmo-France-Zone, deren Pollen Hestia-FB liest. Sie kann von der Zone der Luftqualität abweichen.",
         "data": {
           "atmo_area": "Atmo-France-Zone"
         }
@@ -177,7 +177,7 @@
     "step": {
       "init": {
         "title": "Hestia Weather",
-        "description": "Die Einstellungen von Hestia Weather befinden sich im Reiter „Météo“ des Hestia-Panels.\n\n[Einstellungen von Hestia Weather öffnen]({link})",
+        "description": "Die Einstellungen von Hestia Weather befinden sich im Reiter „Météo“ des Hestia-FB-Panels.\n\n[Einstellungen von Hestia Weather öffnen]({link})",
         "submit": "Schließen"
       },
       "weather": {
@@ -284,13 +284,13 @@
       },
       "pollen_sensors": {
         "title": "Sensoren von {source}",
-        "description": "Die zu verfolgenden Arten (und, bei Polleninformation, das allgemeine Allergierisiko), von Hestia vorgeschlagen: prüfen, hinzufügen oder entfernen. Ohne allgemeines Risiko verwendet Hestia die Art mit dem höchsten Wert.",
+        "description": "Die zu verfolgenden Arten (und, bei Polleninformation, das allgemeine Allergierisiko), von Hestia-FB vorgeschlagen: prüfen, hinzufügen oder entfernen. Ohne allgemeines Risiko verwendet Hestia-FB die Art mit dem höchsten Wert.",
         "data": {
           "pollens": "Arten",
           "pollen_risk_entity": "Allgemeines Allergierisiko"
         },
         "data_description": {
-          "pollen_risk_entity": "Optional. Ohne diese Angabe verwendet Hestia die Art mit dem höchsten Wert."
+          "pollen_risk_entity": "Optional. Ohne diese Angabe verwendet Hestia-FB die Art mit dem höchsten Wert."
         }
       },
       "entities": {
@@ -323,14 +323,14 @@
       },
       "pollen_area": {
         "title": "Atmo-Zone für Pollen",
-        "description": "Die Atmo-France-Zone, deren Pollen Hestia liest. Sie kann von der Zone der Luftqualität abweichen.",
+        "description": "Die Atmo-France-Zone, deren Pollen Hestia-FB liest. Sie kann von der Zone der Luftqualität abweichen.",
         "data": {
           "atmo_area": "Atmo-France-Zone"
         }
       },
       "ecosystem": {
-        "title": "Hestia-Ökosystem",
-        "description": "Hestia Weather teilt sein Wetter mit den anderen Hestia-Bausteinen. Jeder Baustein verknüpft sich in seinen eigenen Einstellungen mit diesem Ort; Hestia Weather ändert die anderen nie.\n\n{links}\n\nBestätigen Sie, um zum Menü zurückzukehren."
+        "title": "Hestia-FB-Ökosystem",
+        "description": "Hestia Weather teilt sein Wetter mit den anderen Hestia-FB-Bausteinen. Jeder Baustein verknüpft sich in seinen eigenen Einstellungen mit diesem Ort; Hestia Weather ändert die anderen nie.\n\n{links}\n\nBestätigen Sie, um zum Menü zurückzukehren."
       },
       "pollen_station": {
         "title": "Pollen-Standort",

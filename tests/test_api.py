@@ -1,4 +1,4 @@
-"""The interface published for the other Hestia bricks: places, station by role, hourly forecast."""
+"""The interface published for the other Hestia-FB bricks: places, station by role, hourly forecast."""
 from datetime import datetime, timezone
 from pathlib import Path
 import sys

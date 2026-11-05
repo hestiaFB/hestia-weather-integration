@@ -52,7 +52,7 @@ La **vue** contient tout ce que la carte affiche, déjà calculé et rédigé en
 - elle est décrite par `engine/view.py`, et côté carte par `src/view.ts` ;
 - `version` monte seulement si une carte plus ancienne ne peut plus la lire : elle demande alors sa mise à jour.
 
-## L’interface pour les autres briques Hestia
+## L’interface pour les autres briques Hestia-FB
 
 Hestia Weather publie pour les autres briques (Hestia Confort, futur Hestia Chauffage…) un objet versionné, `hass.data["hestia_weather_api"]` (`api.py`, version 1). Les autres briques vérifient `version` et ne lisent jamais les réglages internes de Hestia Weather.
 
@@ -64,7 +64,7 @@ Hestia Weather publie pour les autres briques (Hestia Confort, futur Hestia Chau
 | `add_listener(entry_id, rappel, brick=None)` | Prévient quand le lieu est recalculé ; renvoie la fonction qui arrête l’écoute. `brick` : le domaine de la brique qui écoute (`hestia_comfort`), pour qu’elle apparaisse « reliée » dans les réglages de Hestia Weather. |
 | `linked(entry_id)` | Les briques qui écoutent ce lieu, par domaine. |
 
-Dans Hestia Weather, **Configurer → Écosystème Hestia** montre chaque brique : reliée à ce lieu, installée mais pas reliée, non installée, ou à venir.
+Dans Hestia Weather, **Configurer → Écosystème Hestia-FB** montre chaque brique : reliée à ce lieu, installée mais pas reliée, non installée, ou à venir.
 
 Sans `entry_id`, le seul lieu configuré est utilisé ; avec plusieurs lieux, la brique doit en choisir un. Les entités restent l’autre moyen de lecture : elles sont reconnues par leur identifiant interne `<entrée>_<clé>`.
 
@@ -93,7 +93,7 @@ Hestia Weather parle français, anglais et allemand. Le français est écrit dan
 | Fichier | Ce qu’il traduit |
 | --- | --- |
 | `card/src/i18n/en.ts` | La carte |
-| `frontend/i18n-en.ts` et `frontend/socle/i18n-en.ts` | Le panneau Hestia (en allemand, `frontend/i18n-de.ts` porte aussi les mots du socle, qui n’a pas encore d’allemand) |
+| `frontend/i18n-en.ts` et `frontend/socle/i18n-en.ts` | Le panneau Hestia-FB (en allemand, `frontend/i18n-de.ts` porte aussi les mots du socle, qui n’a pas encore d’allemand) |
 | `custom_components/hestia_weather/engine/i18n_en.py` | Les textes calculés pour la carte et le panneau |
 | `custom_components/hestia_weather/translations/en.json` | L’assistant de Paramètres et les noms des entités |
 

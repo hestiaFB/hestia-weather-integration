@@ -224,7 +224,7 @@ def first_enabled(coordinator: HestiaWeatherCoordinator, key: str, default: bool
 
 
 def device_info(coordinator: HestiaWeatherCoordinator, device: str) -> DeviceInfo:
-    return DeviceInfo(identifiers={(DOMAIN, coordinator.config_entry.entry_id)}, name=device, manufacturer="hestiaFB", model="Hestia Weather", configuration_url="homeassistant://hestia/meteo",
+    return DeviceInfo(identifiers={(DOMAIN, coordinator.config_entry.entry_id)}, name=device, manufacturer="Hestia-FB", model="Hestia Weather", configuration_url="homeassistant://hestia/meteo",
                       entry_type=DeviceEntryType.SERVICE)
 
 

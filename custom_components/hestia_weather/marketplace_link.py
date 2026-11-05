@@ -2,7 +2,7 @@
 
 The Marketplace (Home Assistant 2026.11, formerly HACS) knows an integration by the folder it installed it in, and refuses
 an update that would install it in another one. A home updated through the bridge (2.9.9) runs from
-custom_components/hestia_weather, a folder the Marketplace did not write: once the former folder is gone, it takes Hestia
+custom_components/hestia_weather, a folder the Marketplace did not write: once the former folder is gone, it takes Hestia-FB
 Weather as no longer installed and offers no update any more. A repair offers to download the same version again: the
 Marketplace then follows the new folder, and the updates come back.
 

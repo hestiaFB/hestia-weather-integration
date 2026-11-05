@@ -2,7 +2,7 @@
 
 Only when the user asks: the preview changes nothing. History and statistics follow the new ids (the recorder moves them).
 What uses the entities follows too: the automations, scripts and scenes the interface writes, the dashboards it keeps and the
-helpers' options. YAML written by hand is only shown, with its lines: Hestia never rewrites it.
+helpers' options. YAML written by hand is only shown, with its lines: Hestia-FB never rewrites it.
 """
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def _read(path: str) -> str | None:
 
 
 def _hand_written(config_dir: str, mapping: dict[str, str]) -> list[dict[str, Any]]:
-    """The YAML files that write an old id and that Hestia leaves to the user: the file and its lines."""
+    """The YAML files that write an old id and that Hestia-FB leaves to the user: the file and its lines."""
     found, ui = [], {name for name, _, _ in UI_FILES} | {"secrets.yaml"}
     for root, dirs, files in os.walk(config_dir):
         dirs[:] = sorted(d for d in dirs if d not in SKIPPED and not d.startswith("."))

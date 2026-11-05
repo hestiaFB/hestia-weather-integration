@@ -1,4 +1,4 @@
-"""The settings of a place in the « Météo » tab of the Hestia panel: a draft changed step by step, then saved at once.
+"""The settings of a place in the « Météo » tab of the Hestia-FB panel: a draft changed step by step, then saved at once.
 
 It follows the assistant of Paramètres (config_flow.py) step for step and reuses its detection, so that both give the same
 settings; that assistant stays available while the panel takes over. Nothing is saved before `save`.
@@ -32,7 +32,7 @@ SIMPLE = frozenset({"weather_entity", "location", "vigilance_entity", "season_en
 RECOMMENDED = frozenset({"temperature_entity", "humidity_entity", "rain_rate_entity", "wind_gust_entity", "wind_bearing_entity"})
 HELP = {
     "weather_entity": N_("Les prévisions heure par heure et jour par jour, par exemple Météo-France ou MétéoSuisse. Une station facultative ajoute les mesures chez vous."),
-    "vigilance_entity": N_("Les alertes officielles de Météo-France ou de MétéoSuisse s’ajoutent à celles que calcule Hestia."),
+    "vigilance_entity": N_("Les alertes officielles de Météo-France ou de MétéoSuisse s’ajoutent à celles que calcule Hestia-FB."),
     "season_entity": N_("Sans capteur, la saison suit la date."),
     "water_restriction_entity": N_("Les restrictions d’eau de votre commune, avec l’intégration Vigieau (HACS). Choisissez la zone de l’eau du robinet (AEP)."),
     "lightning_entity": N_("Les éclairs détectés autour de chez vous, avec l’intégration Blitzortung (HACS). À moins de 30 km, le capteur Orage s’allume."),
@@ -41,7 +41,7 @@ HELP = {
     "wind_gust_entity": N_("Les pointes de vent : elles déclenchent l’alerte de vent fort."),
     "wind_bearing_entity": N_("D’où vient le vent, en degrés."),
     "station_history": N_("Cumuls de pluie, tendance de la température et rafale du jour, quand la station ne les donne pas."),
-    "station_shade": N_("Une maison ou un arbre cache parfois le soleil au capteur de la station. Hestia l’apprend chaque nuit ; dites-le ici pour qu’il s’en serve dès maintenant."),
+    "station_shade": N_("Une maison ou un arbre cache parfois le soleil au capteur de la station. Hestia-FB l’apprend chaque nuit ; dites-le ici pour qu’il s’en serve dès maintenant."),
 }
 # When the station is in the shade, as the household says (engine/station_shade.py DECLARED).
 SHADES = (("", N_("Je ne sais pas")), ("never", N_("Plein soleil")), ("morning", N_("À l’ombre le matin")), ("afternoon", N_("À l’ombre l’après-midi")),

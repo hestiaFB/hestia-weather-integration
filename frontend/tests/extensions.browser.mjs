@@ -30,8 +30,8 @@ try{for(const width of requestedWidths){const page=await browser.newPage({viewpo
  const panel=page.locator('hestia-weather-setup'),shell=page.locator(SHELL);
  const noOverflow=async()=>{assert.equal(await panel.evaluate(e=>[...e.shadowRoot.querySelectorAll('main,section,nav:not(.nk-tabs)')].some(x=>x.scrollWidth>x.clientWidth+2)),false,'overflow at '+width);};
  const capture=async(name)=>{const height=await panel.evaluate(e=>e.scrollHeight);await page.setViewportSize({width,height:Math.max(1000,height+20)});await panel.screenshot({path:output+'/'+name+'-'+width+'.png'});await page.setViewportSize({width,height:1000});};
- // The Hestia menu: on a phone it opens from the bar's title (socle 1.21).
- const go=async(label)=>{if(await shell.locator('.mobile-bar').isVisible())await shell.locator('.mobile-bar').getByRole('button',{name:'Ouvrir la navigation Hestia',exact:true}).click();await shell.locator('nav[aria-label="Météo"]').getByRole('link',{name:label,exact:true}).click();};
+ // The Hestia-FB menu: on a phone it opens from the bar's title (socle 1.21).
+ const go=async(label)=>{if(await shell.locator('.mobile-bar').isVisible())await shell.locator('.mobile-bar').getByRole('button',{name:'Ouvrir la navigation Hestia-FB',exact:true}).click();await shell.locator('nav[aria-label="Météo"]').getByRole('link',{name:label,exact:true}).click();};
  const saves=()=>page.evaluate(()=>calls.filter(c=>c.type==='hestia_weather/panel/save').length);
  const tab=label=>panel.getByRole('tablist',{name:'Réglages du lieu'}).getByRole('tab',{name:label,exact:true});
 
@@ -48,7 +48,7 @@ try{for(const width of requestedWidths){const page=await browser.newPage({viewpo
  assert.equal(await saves(),0);await reread(false);await panel.getByText('Le capteur de rafales ne répond pas',{exact:true}).waitFor({state:'detached'});
 
  // Extensions, one line each as in Confort: the official brick's switch is saved at once on its side, a third party's saves the place at once.
- await go('Extensions');await panel.getByRole('heading',{name:'Extensions',exact:true,level:1}).waitFor();await panel.getByRole('heading',{name:'Briques Hestia',exact:true,level:2}).waitFor();
+ await go('Extensions');await panel.getByRole('heading',{name:'Extensions',exact:true,level:1}).waitFor();await panel.getByRole('heading',{name:'Briques Hestia-FB',exact:true,level:2}).waitFor();
  const confort=panel.getByRole('switch',{name:'Donner à Hestia Confort le dehors de ce lieu',exact:true});await confort.waitFor();assert.equal(await confort.isChecked(),false);await noOverflow();await capture('weather-extensions');
  await confort.check();await page.waitForFunction(()=>calls.some(c=>c.type==='hestia_weather/panel/link'&&c.enabled&&c.entry_id==='maison'));
  assert.equal(await panel.getByRole('switch',{name:'Utiliser Météo-France pour ce lieu',exact:true}).count(),0);
@@ -83,10 +83,10 @@ try{for(const width of requestedWidths){const page=await browser.newPage({viewpo
  // Direct addresses and reload.
  await page.goto(origin+'/hestia/meteo/maison/eau-jardin');await panel.getByLabel('Restrictions d’eau (Vigieau)',{exact:true}).waitFor();assert.equal(await tab('Eau et jardin').getAttribute('aria-selected'),'true');
  await page.reload();await panel.getByLabel('Restrictions d’eau (Vigieau)',{exact:true}).waitFor();
- await page.goto(origin+'/hestia/meteo/extensions');await panel.getByRole('heading',{name:'Briques Hestia',exact:true,level:2}).waitFor();
+ await page.goto(origin+'/hestia/meteo/extensions');await panel.getByRole('heading',{name:'Briques Hestia-FB',exact:true,level:2}).waitFor();
  await page.goto(origin+'/hestia/meteo/lieux');await panel.getByRole('heading',{name:'Lieux',exact:true,level:1}).waitFor();
  await page.goto(origin+'/hestia/meteo/maison/sources');await panel.getByRole('heading',{name:'Prévisions du lieu',exact:true,level:2}).waitFor();await noOverflow();await panel.screenshot({path:output+'/weather-settings-'+width+'.png'});
- // Nordic makes its dividers equal the page background: both themes must retain visible Hestia outlines around the lists.
+ // Nordic makes its dividers equal the page background: both themes must retain visible Hestia-FB outlines around the lists.
  const lists=()=>panel.locator('.nk-list').evaluateAll(nodes=>nodes.filter(e=>e.getBoundingClientRect().width).map(e=>{const s=getComputedStyle(e);return {border:s.borderTopColor,width:s.borderTopWidth,page:getComputedStyle(e.getRootNode().host).backgroundColor};}));
  for(const dark of [true,false]){
   const colors=dark?{page:'#2e3440',card:'#38404f',text:'#d8dee9'}:{page:'#eceff4',card:'#ffffff',text:'#2e3440'};

@@ -89,7 +89,7 @@ def users(text: str, mapping: dict[str, str], keyed: bool = False) -> list[str]:
 
 
 def lines_with(text: str, mapping: dict[str, str]) -> list[int]:
-    """The line numbers (from 1) where an old id is written: for the files Hestia leaves to the user."""
+    """The line numbers (from 1) where an old id is written: for the files Hestia-FB leaves to the user."""
     pattern = _pattern(mapping)
     if pattern is None:
         return []

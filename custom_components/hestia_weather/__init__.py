@@ -31,13 +31,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     version = str((await async_get_integration(hass, DOMAIN)).version or "")
     async_setup_websocket(hass, version)
     async_setup_services(hass)
-    # The contract for the other Hestia bricks (Hestia Confort, future Hestia Chauffage…).
+    # The contract for the other Hestia-FB bricks (Hestia Confort, future Hestia Chauffage…).
     hass.data[API_KEY] = api = HestiaWeatherApi(hass)
     # The same, for a Hestia Confort not updated yet (still under its former name).
     await async_setup_former_api(hass, api)
     # After the change of name, the Marketplace may no longer follow Hestia Weather: a repair says so and mends it.
     async_setup_marketplace_link(hass)
-    # The « Météo » tab of the shared « Hestia » panel, and Hestia Weather's line on its home page.
+    # The « Météo » tab of the shared « Hestia-FB » panel, and Hestia Weather's line on its home page.
     await async_load_labels(hass)
     await async_setup_panel(hass, version)
     return True

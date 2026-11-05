@@ -1,8 +1,8 @@
-"""The Hestia bricks Hestia Weather can feed, and how each one stands with this place: what the « Écosystème Hestia » screen says.
+"""The Hestia-FB bricks Hestia Weather can feed, and how each one stands with this place: what the « Écosystème Hestia-FB » screen says.
 
 Hestia Weather consumes no other brick: it only publishes. A brick is « relié » when it listens to this place through the
 published interface (api.py), « installé » when Home Assistant has it set up but it does not listen here, else missing or yet
-to come. Nothing is guessed from the other bricks' settings (Écosystème Hestia, rule 3).
+to come. Nothing is guessed from the other bricks' settings (Écosystème Hestia-FB, rule 3).
 """
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def links(linked: Mapping[str, int], installed: Collection[str]) -> str:
 
 
 def states(linked: Mapping[str, int], installed: Collection[str]) -> list[dict[str, str]]:
-    """The same as `links`, one entry per brick, for the Hestia panel: `state` is linked, installed, missing or future."""
+    """The same as `links`, one entry per brick, for the Hestia-FB panel: `state` is linked, installed, missing or future."""
     return [{"domain": b.domain, "name": b.name, "takes": b.takes, "url": b.url,
              "state": "linked" if linked.get(b.domain) else "installed" if b.domain in installed else "missing" if b.url else "future"}
             for b in BRICKS]

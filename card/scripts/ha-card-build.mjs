@@ -1,4 +1,4 @@
-// Shared build options for cards embedded in a Hestia integration.
+// Shared build options for cards embedded in a Hestia-FB integration.
 // Keep the WHOLE bundle behind this gate: static ESM imports (including Lit)
 // would otherwise execute before it and capture HA's pre-polyfill environment.
 // HA defines home-assistant after installing its scoped element registry.

@@ -112,7 +112,7 @@ export const DE: Record<string, string> = {
   'Météo à {place}': 'Wetter in {place}',
   'Fermer': 'Schließen',
   // The « Add card » list
-  'Hestia - Météo': 'Hestia - Wetter',
+  'Hestia-FB - Météo': 'Hestia-FB - Wetter',
 
   // Hours, wind, help bubbles
   'Maintenant': 'Jetzt',
@@ -268,8 +268,8 @@ export const DE: Record<string, string> = {
   'Type de carte': 'Kartentyp',
   'Grandes cartes : la page météo et la tuile': 'Große Karten: die Wetterseite und die Kachel',
   'Petites cartes : une ligne ou une alerte': 'Kleine Karten: eine Zeile oder eine Warnung',
-  'Hestia - À la pièce': 'Hestia - Einzelkarte',
-  'Hestia - Petite carte': 'Hestia - Kleine Karte',
+  'Hestia-FB - À la pièce': 'Hestia-FB - Einzelkarte',
+  'Hestia-FB - Petite carte': 'Hestia-FB - Kleine Karte',
   'La page météo complète ou la tuile qui se déplie. Le format se choisit dans les réglages.': 'Die vollständige Wetterseite oder die Kachel, die sich ausklappt. Das Format wird in den Einstellungen gewählt.',
   'Une seule ligne, ou une alerte visible seulement en cas de vigilance.': 'Eine einzelne Zeile oder eine Warnung, die nur bei einer Warnlage sichtbar ist.',
   'Cartes à la pièce : ressenti, pluie, vent, pression, éclairs, air, prévisions': 'Einzelkarten: gefühlte Temperatur, Regen, Wind, Luftdruck, Blitze, Luft, Vorhersage',

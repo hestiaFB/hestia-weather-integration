@@ -1,13 +1,13 @@
 // The hub in English: each French text of shell.ts and ui.ts, and its English words. test-i18n.mjs checks that none is missing.
 export const SOCLE_EN:Record<string,string>={
  // The menu
- 'Accueil Hestia':'Hestia home','Vue d’ensemble':'Overview','Réglages':'Settings','Accueil':'Home','Bilan du logement':'Home review',
+ 'Accueil Hestia-FB':'Hestia-FB home','Vue d’ensemble':'Overview','Réglages':'Settings','Accueil':'Home','Bilan du logement':'Home review',
  'Réglages généraux':'General settings','Pièces':'Rooms','Apprentissage':'Learning','Bilan':'Report','Extensions':'Extensions','Sources météo':'Weather sources','Station météo · capteurs locaux':'Weather station · local sensors',
  'Qualité de l’air':'Air quality','Pollens':'Pollen','Entités':'Entities','Météo':'Weather','Confort':'Comfort','Hestia Confort':'Hestia Comfort','Hestia Weather':'Hestia Weather',
- 'Lieux':'Places','Navigation Hestia':'Hestia navigation','Ouvrir la navigation Hestia':'Open the Hestia navigation',
+ 'Lieux':'Places','Navigation Hestia-FB':'Hestia-FB navigation','Ouvrir la navigation Hestia-FB':'Open the Hestia-FB navigation',
  'Ouvrir le menu Home Assistant':'Open the Home Assistant menu',
  // The home page
- 'Votre logement, connecté':'Your home, connected','Vos briques Hestia et les points à compléter, au même endroit.':'Your Hestia bricks and what is left to complete, in one place.',
+ 'Votre logement, connecté':'Your home, connected','Vos briques Hestia-FB et les points à compléter, au même endroit.':'Your Hestia-FB bricks and what is left to complete, in one place.',
  'Version {version}':'Version {version}','Ouvrir {tab}':'Open {tab}','Tout est suivi':'All followed','À faire':'To do','État inconnu':'Unknown state',
  'À découvrir':'To discover','Installée. Ses réglages restent dans Paramètres, en attendant qu’elle rejoigne ce panneau.':'Installed. Its settings stay in Settings until it joins this panel.',
  'Ouvrir ses réglages':'Open its settings','Voir':'See',
@@ -31,11 +31,11 @@ export const SOCLE_EN:Record<string,string>={
  'Ce cadre ne reviendra plus une fois fermé.':'Once closed, this frame will not come back.','J’ai compris':'Got it',
  'Le redémarrage n’a pas été lancé.':'The restart was not started.',
  // The hub's settings
- 'Réglages Hestia':'Hestia settings','Les préférences communes à votre hub.':'The preferences shared by your hub.','Thème du hub':'Hub theme','Apparence':'Appearance',
- 'Suivre le thème Home Assistant':'Follow the Home Assistant theme','Utiliser le thème Hestia':'Use the Hestia theme',
- 'Home Assistant reprend les couleurs et la police de votre thème. Hestia utilise sa propre palette, en suivant le mode clair ou sombre de Home Assistant.':'Home Assistant takes your theme’s colours and font. Hestia uses its own palette, following Home Assistant’s light or dark mode.',
- 'Affichage':'Display','Hestia dans le menu Home Assistant':'Hestia in the Home Assistant menu','Hestia est dans le menu de gauche.':'Hestia is in the left menu.',
- 'Hestia n’est pas dans le menu de gauche.':'Hestia is not in the left menu.','Masqué, il reste ouvert par la roue de chaque intégration, dans Paramètres.':'Hidden, it still opens from each integration’s cog, in Settings.',
+ 'Réglages Hestia-FB':'Hestia-FB settings','Les préférences communes à votre hub.':'The preferences shared by your hub.','Thème du hub':'Hub theme','Apparence':'Appearance',
+ 'Suivre le thème Home Assistant':'Follow the Home Assistant theme','Utiliser le thème Hestia-FB':'Use the Hestia-FB theme',
+ 'Home Assistant reprend les couleurs et la police de votre thème. Hestia-FB utilise sa propre palette, en suivant le mode clair ou sombre de Home Assistant.':'Home Assistant takes your theme’s colours and font. Hestia-FB uses its own palette, following Home Assistant’s light or dark mode.',
+ 'Affichage':'Display','Hestia-FB dans le menu Home Assistant':'Hestia-FB in the Home Assistant menu','Hestia-FB est dans le menu de gauche.':'Hestia-FB is in the left menu.',
+ 'Hestia-FB n’est pas dans le menu de gauche.':'Hestia-FB is not in the left menu.','Masqué, il reste ouvert par la roue de chaque intégration, dans Paramètres.':'Hidden, it still opens from each integration’s cog, in Settings.',
  'Affiché':'Shown','Masqué':'Hidden',
  // Errors and loading
  'Réessayer':'Try again','Chargement…':'Loading…','Connexion indisponible.':'Connection unavailable.','Le réglage n’a pas été enregistré.':'The setting was not saved.',

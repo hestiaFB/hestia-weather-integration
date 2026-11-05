@@ -1,4 +1,4 @@
-// The « Météo » tab of the shared « Hestia » panel: each place's settings, step by step, then saved at once.
+// The « Météo » tab of the shared « Hestia-FB » panel: each place's settings, step by step, then saved at once.
 // Hestia Weather computes everything (draft.py): this page shows the draft, sends each change and saves it.
 import {LitElement,html,unsafeCSS,nothing,type TemplateResult,type PropertyValues} from 'lit';
 import {customElement,property,state} from 'lit/decorators.js';
@@ -43,7 +43,7 @@ export class WeatherSetup extends LitElement {
  @state() private confirmLeave=false;
  @state() private placeTitle='';
  @state() private extensionId='';
- // The pages of every Hestia brick (socle 1.21): its overview, its places, its settings, its extensions, and one place.
+ // The pages of every Hestia-FB brick (socle 1.21): its overview, its places, its settings, its extensions, and one place.
  @state() private page:'home'|'places'|'extensions'|'about'='home';
  // The Extensions page reads each place's draft: its switches change and save that place at once.
  @state() private extViews=new Map<string,{draft:Sources;view:View;enabled:string[]}>();
@@ -230,7 +230,7 @@ export class WeatherSetup extends LitElement {
     this.textRow('location',t('Nom du lieu'),p.location,p.location_placeholder,t('Affiché en tête de la carte. Vide : le nom vient du service météo.'))])}
    ${listSection(t('Alertes et saison'),p.fields.slice(1).filter(f=>!['water_restriction_entity','lightning_entity'].includes(f.key)).map(f=>this.field(f)))}
    ${listSection(t('Orages et éclairs'),[...this.integrationRow(v.extensions?.find(e=>e.id==='blitzortung'),!!lightning?.options.length),...(lightning?[this.field(lightning)]:[])])}
-   ${listSection('',moreRow(t('Réglages avancés'),'',html`<p class="hint nk-more-note">${t('Laissés vides, Hestia prend le soleil de Home Assistant.')}</p>${p.advanced.map(f=>this.field(f))}${this.textRow('forecast_source',t('Nom de la source des prévisions'),p.forecast_source,'')}`))}
+   ${listSection('',moreRow(t('Réglages avancés'),'',html`<p class="hint nk-more-note">${t('Laissés vides, Hestia-FB prend le soleil de Home Assistant.')}</p>${p.advanced.map(f=>this.field(f))}${this.textRow('forecast_source',t('Nom de la source des prévisions'),p.forecast_source,'')}`))}
    ${this.refreshSources()}${this.bottom()}`;
  }
  private station(v:View){const s=v.station;
@@ -284,7 +284,7 @@ export class WeatherSetup extends LitElement {
  }
  private water(v:View){const f=v.prevision.fields.find(x=>x.key==='water_restriction_entity');
   return html`${listSection(t('Restrictions d’eau'),[...this.integrationRow(v.extensions?.find(e=>e.id==='vigieau'),!!f?.options.length),...(f?[this.field(f)]:[])])}${this.refreshSources()}${this.bottom()}`;}
- // ---- The Extensions page: Hestia's own bricks, then the integrations of Home Assistant, place by place ----
+ // ---- The Extensions page: Hestia-FB's own bricks, then the integrations of Home Assistant, place by place ----
  private async loadExtensions(){
   const places=this.places?.places??[],views=new Map<string,{draft:Sources;view:View;enabled:string[]}>();
   this.busy=true;
@@ -303,7 +303,7 @@ export class WeatherSetup extends LitElement {
    this.saved=t('Enregistré : « {name} » redémarre avec ce changement.',{name:view.title});}
   catch(e){this.error=this.message(e);}finally{this.busy=false;}
  }
- /** Links a place to a Hestia brick or unlinks it: the brick saves it, then both pages read it back. */
+ /** Links a place to a Hestia-FB brick or unlinks it: the brick saves it, then both pages read it back. */
  private async link(entryId:string,brick:string,enabled:boolean){
   this.busy=true;this.error='';
   try{const reply=await this.ws<{official:Official[]}>({type:'hestia_weather/panel/link',entry_id:entryId,brick,enabled});
@@ -324,10 +324,10 @@ export class WeatherSetup extends LitElement {
    const one=switches.length===1?switches[0]:undefined;
    return [listRow({label:name,sub:[use,sub].filter(Boolean).join(' · ')||undefined,value:one?toggle(one.label,one.checked,one.set,one.disabled):value}),
     ...(switches.length>1?switches.map(sw=>listRow({label:sw.label,value:toggle(sw.label,sw.checked,sw.set,sw.disabled)})):[])];};
-  return html`<main>${pageHead({title:t('Extensions'),subtitle:t('Les autres briques Hestia et les intégrations que Météo lit. Un changement s’enregistre tout de suite : le lieu redémarre.')})}
+  return html`<main>${pageHead({title:t('Extensions'),subtitle:t('Les autres briques Hestia-FB et les intégrations que Météo lit. Un changement s’enregistre tout de suite : le lieu redémarre.')})}
    ${this.saved?html`<p class="notice" role="status">${this.saved}</p>`:nothing}${this.error?html`<p class="notice error" role="alert">${this.error}</p>`:nothing}
    ${!places.length?html`<p class="muted">${t('Ajoutez d’abord un lieu.')}</p>`:!views.length?html`<p class="muted" role="status">${t('Lecture des extensions…')}</p>`:html`
-   ${officials.length?listSection(t('Briques Hestia'),officials.flatMap(o=>rows(o.name,o.description,!o.installed?undefined:!o.switchable?t('Mettez à jour Hestia Confort pour régler la liaison d’ici.'):undefined,
+   ${officials.length?listSection(t('Briques Hestia-FB'),officials.flatMap(o=>rows(o.name,o.description,!o.installed?undefined:!o.switchable?t('Mettez à jour Hestia Confort pour régler la liaison d’ici.'):undefined,
      o.installed&&o.switchable?views.map(({p,v})=>({label:forPlace(fr('Donner à {name} le dehors de « {place} »'),fr('Donner à {name} le dehors de ce lieu'),o.name,p),checked:!!(v.view.official??[]).find(x=>x.id===o.id)?.linked,disabled:this.busy,set:(on:boolean)=>void this.link(p.entry_id,o.id,on)})):[],
      o.installed?undefined:install(o.url)))):nothing}
    ${extensionGroups(thirds).map(g=>listSection(g.label,g.items.flatMap(e=>{
@@ -359,7 +359,7 @@ export class WeatherSetup extends LitElement {
    ${this.bottom()}`;
  }
 
- // ---- Pages: the same three as every Hestia brick (socle 1.12) ----
+ // ---- Pages: the same three as every Hestia-FB brick (socle 1.12) ----
  private lines(kind:'todo'|'tips'):NkLine[]{
   const several=(this.places?.places.length??0)>1;
   return (this.places?.places??[]).flatMap(p=>p.health[kind].map(l=>({level:l.level,text:several?`${p.title} : ${l.text}`:l.text,why:l.why,
@@ -470,7 +470,7 @@ export class WeatherSetup extends LitElement {
    <ul class="hint">${r.entities.map(e=>html`<li>${e.from} → <strong>${e.to}</strong></li>`)}</ul>
    <h3>${t('Mis à jour tout seuls')}</h3>
    ${r.auto.length?html`<ul>${r.auto.map(u=>this.renameUse(u))}</ul>`:html`<p class="hint">${t('Aucune automatisation, aucun script ni tableau de bord ne les utilise.')}</p>`}
-   ${r.manual.length?html`<h3>${t('À corriger vous-même')}</h3><p class="hint">${t('Écrits à la main : Hestia ne les modifie pas.')}</p><ul>${r.manual.map(u=>this.renameUse(u))}</ul>`:nothing}
+   ${r.manual.length?html`<h3>${t('À corriger vous-même')}</h3><p class="hint">${t('Écrits à la main : Hestia-FB ne les modifie pas.')}</p><ul>${r.manual.map(u=>this.renameUse(u))}</ul>`:nothing}
    ${r.taken.length?html`<h3>${t('Gardés tels quels')}</h3><p class="hint">${t('Leur nouveau nom est déjà pris.')}</p><ul class="hint">${r.taken.map(id=>html`<li>${id}</li>`)}</ul>`:nothing}
    <p>${t('L’historique et les statistiques sont conservés.')}</p>
    <p class="hint">${t('Hors de Home Assistant (Node-RED, applications…), changez les noms vous-même.')}</p>

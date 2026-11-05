@@ -92,7 +92,7 @@ def test_entities_versions_and_links():
     assert [e["text"] for e in r["entities"]] == ["2 actives sur 3", "1 active sans valeur", "1 désactivée"]
     assert r["entities"][2]["why"] == "Jardin"
     assert r["versions"][1] == {"level": "ok", "text": "Carte 2.3.0b1", "why": "fournie par l’intégration"}
-    assert r["versions"][-1]["text"] == "Aucune brique Hestia reliée"
+    assert r["versions"][-1]["text"] == "Aucune brique Hestia-FB reliée"
     twice = report(place(card_twice=True))
     assert twice["level"] == "action" and twice["versions"][1]["level"] == "bad"
     assert [t["text"] for t in twice["todo"]] == ["Carte installée deux fois"]

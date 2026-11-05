@@ -19,7 +19,7 @@ export interface Technical {
  entities:{active:number;with_value:number;total:number};integration:string;links:string[];interface_version:number;
 }
 export interface Extension {id:string;name:string;description:string;installed:boolean;configured:boolean;online?:boolean;detail?:string;air_configured?:boolean;pollen_configured?:boolean;stage:number;field:string;url:string;integration:string;install:string}
-// A Hestia brick: Hestia Confort keeps the link, Hestia Weather reads and changes it through Confort's interface.
+// A Hestia-FB brick: Hestia Confort keeps the link, Hestia Weather reads and changes it through Confort's interface.
 export interface Official {id:string;name:string;official:true;installed:boolean;linked:boolean;elsewhere:string;switchable:boolean;description:string;url:string}
 export interface Place {entry_id:string;title:string;loaded:boolean;failed:boolean;health:Health;extensions?:Extension[];official?:Official[];
  /** How far each of the station's measures can be trusted (engine/station_place.describe). */
@@ -71,8 +71,8 @@ export const intros:string[][]=[
  [fr('Tout ce que vous avez choisi, onglet par onglet.'),
   fr('Rien ne change tant que vous n’avez pas enregistré ; un oubli, revenez à l’onglet voulu.')],
  [fr('Les restrictions d’eau de votre commune viennent de Vigieau.'), fr('Choisissez ici le capteur de la zone d’eau du robinet (AEP). Facultatif.')],
- [fr('Les autres briques Hestia et les intégrations de Home Assistant dont ce lieu se sert.'),
-  fr('Une brique Hestia se relie ici ou dans ses propres réglages : coupée d’un côté, elle l’est des deux.'),
+ [fr('Les autres briques Hestia-FB et les intégrations de Home Assistant dont ce lieu se sert.'),
+  fr('Une brique Hestia-FB se relie ici ou dans ses propres réglages : coupée d’un côté, elle l’est des deux.'),
   fr('Une extension tierce s’allume ou s’éteint ici ; son onglet sert à la régler.')],
 ];
 
@@ -80,10 +80,10 @@ export const intros:string[][]=[
 export function enabledKeys(view:View):string[]{
  return view.entities.new?[]:view.entities.families.flatMap(f=>(f.entities??[]).filter(e=>e.enabled).map(e=>e.key));
 }
-// Where a value came from, for an existing place: what Hestia proposes differs from what was saved, and was not touched.
+// Where a value came from, for an existing place: what Hestia-FB proposes differs from what was saved, and was not touched.
 export function provenance(key:string,value:string,saved:Sources|undefined,touched:Set<string>):string{
  if(!saved||touched.has(key)||!value)return '';
- return (saved[key]??'')===value?'':t('Proposé par Hestia : vérifiez-le avant d’enregistrer.');
+ return (saved[key]??'')===value?'':t('Proposé par Hestia-FB : vérifiez-le avant d’enregistrer.');
 }
 export function sameSet(a:string[],b:string[]){return a.length===b.length&&a.every(x=>b.includes(x));}
 export function entityLine(e:Entity|null){

@@ -343,7 +343,7 @@ class _SourceSteps:
             chosen = species
         fields: dict[Any, Any] = {
             vol.Optional("pollens"): EntitySelector(EntitySelectorConfig(domain="sensor", multiple=True, include_entities=sorted(set(species) | set(chosen))))}
-        # IRM KMI has no overall risk: Hestia keeps the highest species.
+        # IRM KMI has no overall risk: Hestia-FB keeps the highest species.
         if provider == polleninfo.POLLENINFORMATION:
             fields[vol.Optional("pollen_risk_entity")] = EntitySelector(EntitySelectorConfig(domain="sensor", include_entities=sorted(set(risks) | (
                 {self.sources["pollen_risk_entity"]} if self.sources.get("pollen_risk_entity") else set()))))
@@ -418,7 +418,7 @@ class HestiaWeatherConfigFlow(_SourceSteps, ConfigFlow, domain=DOMAIN):
         return self.async_show_menu(step_id="user", menu_options=["import_card", "weather"] if self._cards else ["weather"])
 
     async def async_step_panel(self, user_input: dict[str, Any]) -> ConfigFlowResult:
-        """A place set up in the « Météo » tab of the Hestia panel (draft.py), which went through the same steps."""
+        """A place set up in the « Météo » tab of the Hestia-FB panel (draft.py), which went through the same steps."""
         return self.async_create_entry(title=user_input["title"], data={}, options=_clean(user_input["options"]))
 
     async def async_step_import_card(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -461,7 +461,7 @@ class HestiaWeatherConfigFlow(_SourceSteps, ConfigFlow, domain=DOMAIN):
 
 
 class HestiaWeatherOptionsFlow(OptionsFlow):
-    """The settings live in the « Météo » tab of the Hestia panel: this screen only leads there."""
+    """The settings live in the « Météo » tab of the Hestia-FB panel: this screen only leads there."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:

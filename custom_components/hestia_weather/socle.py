@@ -1,4 +1,4 @@
-"""Hestia shared panel (socle v1): one sidebar entry « Hestia » for every installed Hestia brick.
+"""Hestia-FB shared panel (socle v1): one sidebar entry « Hestia-FB » for every installed Hestia-FB brick.
 
 Copied unchanged into each brick from hestia-ecosysteme/socle/ (see ECOSYSTEME.md § 8).
 Several copies may run side by side: the newest one shows the panel and every brick
@@ -25,25 +25,25 @@ from .engine import legacy
 
 SOCLE_VERSION = (1, 22)
 # Which copy of a same version is the newest: written by copier.sh when the socle changes (EMPREINTE), equal in ui.ts.
-SOCLE_BUILD = "20261105.1407"
+SOCLE_BUILD = "20261105.1748"
 # 1.1: an optional `tab`, the tab's own name when it is not the brick's (« Météo » for Hestia Weather).
 # 1.2: async_register_card, the brick's card on every dashboard, also as a dashboard resource.
 # 1.3: the home page says « À découvrir » and « Voir » for the bricks not installed (same contract as 1.2).
 # 1.4: guarded card bundles, extra module only as fallback, encoded resource migration.
 # 1.5: the sidebar entry can be hidden (`set_sidebar`, kept in .storage); the panel itself stays reachable by its address.
 # 1.6: grouped navigation and optional brick `navigation=1` capability; older bricks keep their overview link.
-# 1.7: full-height shell and a persisted HA/Hestia theme preference.
+# 1.7: full-height shell and a persisted HA/Hestia-FB theme preference.
 # 1.8: Weather navigation=2 groups its configuration under general settings, like Comfort.
 # 1.9: HA themes keep visible structural outlines even when divider-color equals the page background.
 # 1.10: a brick's first link is « Accueil »; Comfort navigation=2 adds « Bilan du logement » under it.
-# 1.11: the Hestia logo heads the menu (and the mobile bar).
+# 1.11: the Hestia-FB logo heads the menu (and the mobile bar).
 #       Same contract, later fixes: the panel settings are written one at a time; the bricks' states are read together.
 # 1.12: the panel is at /hestia (the former address leads there); the menu names each brick by its tab; ui.ts gives every brick the
 #       same pages (pageHead, todoFrame, itemsFrame, stepMenu, stepFooter, extensionsFrame, versionsFrame).
 #       A brick with `navigation: 3` also has its « Extensions » page (/hestia/<brique>/extensions): extensionCard, removeBlock.
 # 1.13: the hub speaks Home Assistant's language (i18n.ts: t(), one dictionary per language; English for any other).
 # 1.14: a brick's status may take the hub's language as a second argument: status(hass, language).
-# 1.15: every technical name says Hestia: websocket `hestia/…`, .storage/hestia_socle, the « hestia » appearance.
+# 1.15: every technical name says Hestia-FB: websocket `hestia/…`, .storage/hestia_socle, the « hestia » appearance.
 #       The former names live in the brick's legacy.py only: its migration carries the settings over.
 # 1.16: a brick may give `migration(hass)`: the home page shows « Passage au nom Hestia » until every step is done and
 #       the user closes it (`hestia/close_migration`, kept with the panel settings).
@@ -52,7 +52,7 @@ SOCLE_BUILD = "20261105.1407"
 # 1.19: ui.ts noteBox and noteTag, the purple dotted « Encart d'information » (--nk-note, --nk-note-bg): something to read, hub only.
 # 1.20: a brick may give its own `menu` ([[path, label, icon], …], CAHIER-HUB.md § 5): the hub shows it as is; ui.ts listSection,
 #       listRow and saveBar, the lists and the save bar every page shares.
-# 1.21: the structure answers at the touch: ☰ opens Home Assistant's menu, the bar's title opens the Hestia drawer
+# 1.21: the structure answers at the touch: ☰ opens Home Assistant's menu, the bar's title opens the Hestia-FB drawer
 #       (slides, pushed back with a finger), other bricks' groups fold; rows wait busy, the save bar says « Enregistré »,
 #       tabs fade at the edge; common motion tokens (ETAT-DES-LIEUX-HUB.md § 7). No change to the bricks' contract.
 # 1.22: the newest copy on the page gives every brick its pages (ETAT-DES-LIEUX-HUB.md § 9): a brick's tab imports ui.ts through
@@ -70,7 +70,7 @@ PANEL = "hestia"
 # The address before 1.12: still opened from bookmarks, older dashboards and older copies; it leads to PANEL.
 LEGACY_PANEL = legacy.PANEL
 THEMES = ("ha", "hestia")
-TITLE = "Hestia"
+TITLE = "Hestia-FB"
 ICON = "mdi:home-heart"
 LEVELS = ("ok", "action", "unknown")
 # Published bricks only: the home page never proposes a brick that does not exist yet.
@@ -97,7 +97,7 @@ async def async_register_brick(hass, brick, shell_url):
     if current is not None and _rank(current) >= (SOCLE_VERSION, SOCLE_BUILD):
         return
     if not await hass.async_add_executor_job(_defines_element, shell_url):
-        _LOGGER.error("Le script du panneau Hestia de %s ne définit pas %s : fichier d'une autre version ? "
+        _LOGGER.error("Le script du panneau Hestia-FB de %s ne définit pas %s : fichier d'une autre version ? "
                       "Réinstallez la brique. Le panneau reste à une autre brique.", brick["domain"], ELEMENT)
         return
     data["panel"] = {"socle": SOCLE_VERSION, "build": SOCLE_BUILD, "shell_url": shell_url, "domain": brick["domain"]}
@@ -184,7 +184,7 @@ async def _load_settings(hass, data):
     try:
         stored = await Store(hass, STORE_VERSION, KEY).async_load()
     except Exception:  # noqa: BLE001 - an unreadable file never keeps the panel from opening
-        _LOGGER.warning("Réglages du panneau Hestia illisibles : menu affiché par défaut", exc_info=True)
+        _LOGGER.warning("Réglages du panneau Hestia-FB illisibles : menu affiché par défaut", exc_info=True)
     settings = stored if isinstance(stored, dict) else {}
     data["settings"] = {"sidebar": data.get("settings", {}).get("sidebar", settings.get("sidebar", True)) is not False,
                         "theme": settings.get("theme") if settings.get("theme") in THEMES else "hestia",
@@ -210,7 +210,7 @@ def _settings_lock(hass):
 
 
 async def async_set_sidebar(hass, visible):
-    """Show or hide « Hestia » in the sidebar, at once, and remember it."""
+    """Show or hide « Hestia-FB » in the sidebar, at once, and remember it."""
     data = hass.data.setdefault(KEY, {"bricks": {}, "panel": None})
     async with _settings_lock(hass):
         await _load_settings(hass, data)
@@ -224,7 +224,7 @@ async def async_set_sidebar(hass, visible):
 async def async_set_theme(hass, theme):
     """Remember the hub appearance without changing the Home Assistant theme."""
     if theme not in THEMES:
-        raise ValueError("Thème Hestia inconnu")
+        raise ValueError("Thème Hestia-FB inconnu")
     data = hass.data.setdefault(KEY, {"bricks": {}, "panel": None})
     async with _settings_lock(hass):
         await _load_settings(hass, data)

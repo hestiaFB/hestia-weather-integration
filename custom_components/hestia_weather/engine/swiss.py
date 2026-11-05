@@ -1,6 +1,6 @@
 """MeteoSwiss warning attributes exposed by izacus/hass-swissweather.
 
-Keep native degrees alongside Hestia's presentation severity (0-3). No network access.
+Keep native degrees alongside Hestia-FB's presentation severity (0-3). No network access.
 """
 from dataclasses import dataclass
 from datetime import datetime

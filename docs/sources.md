@@ -18,7 +18,7 @@ Hestia Weather assemble des données **déjà présentes** dans Home Assistant. 
 
 ## Configurer
 
-Tout se règle dans le panneau **Hestia** de la barre latérale, onglet **Météo**. Chaque champ arrive prérempli avec ce que Home Assistant connaît : vous vérifiez, vous corrigez si besoin.
+Tout se règle dans le panneau **Hestia-FB** de la barre latérale, onglet **Météo**. Chaque champ arrive prérempli avec ce que Home Assistant connaît : vous vérifiez, vous corrigez si besoin.
 
 - **Accueil** : à lire seulement. L’état de chaque lieu, ce qui reste à régler, les extensions et les versions.
 - **Réglages généraux** : vos lieux (**Modifier**, **Ajouter un lieu**) et les cartes. Une installation faite sous l’ancien nom y trouve aussi « Nom des entités » ([les noms techniques](capteurs.md#noms-techniques)).
@@ -100,7 +100,7 @@ Hestia Weather lit, pour aujourd’hui et pour demain, **19 mesures** : l’indi
 
 ### Polleninformation, l’autre source de pollens
 
-[Polleninformation EU](https://github.com/krissen/polleninformation) donne un capteur par espèce et un risque d’allergie global, aujourd’hui et demain. Choisissez **Polleninformation** dans **Qualité de l’air et pollens** : Hestia propose les capteurs de votre lieu, vous vérifiez, ajoutez ou retirez.
+[Polleninformation EU](https://github.com/krissen/polleninformation) donne un capteur par espèce et un risque d’allergie global, aujourd’hui et demain. Choisissez **Polleninformation** dans **Qualité de l’air et pollens** : Hestia-FB propose les capteurs de votre lieu, vous vérifiez, ajoutez ou retirez.
 
 - Échelle : **0 (aucun) à 4 (très élevé)**, gardée telle quelle : la carte affiche « Niveau 2 sur 4 ».
 - Le panneau Pollens de la carte, le capteur `sensor.hestia_weather_pollens` et la synthèse les utilisent.
@@ -109,7 +109,7 @@ Hestia Weather lit, pour aujourd’hui et pour demain, **19 mesures** : l’indi
 
 ### IRM KMI, les pollens en Belgique
 
-[IRM KMI](https://github.com/jdejaegh/irm-kmi-ha) (version HACS) donne un capteur par espèce : aulne, frêne, bouleau, graminées, noisetier, armoise et chêne. Choisissez **IRM KMI (Belgique)** dans **Pollens** : Hestia propose ses capteurs, vous vérifiez, ajoutez ou retirez.
+[IRM KMI](https://github.com/jdejaegh/irm-kmi-ha) (version HACS) donne un capteur par espèce : aulne, frêne, bouleau, graminées, noisetier, armoise et chêne. Choisissez **IRM KMI (Belgique)** dans **Pollens** : Hestia-FB propose ses capteurs, vous vérifiez, ajoutez ou retirez.
 
 - Ses couleurs sont lues sur la même échelle **0 à 4** : vert ou « aucun » = 0, jaune = 1, orange = 2, rouge = 3, violet = 4.
 - Pas de risque global : le niveau du jour est celui de l’espèce la plus élevée.
@@ -118,34 +118,34 @@ Hestia Weather lit, pour aujourd’hui et pour demain, **19 mesures** : l’indi
 
 ### Swiss Pollen, les pollens en Suisse
 
-Installez [Swiss Pollen](https://github.com/frimtec/hass-swiss-pollen) dans HACS et configurez les espèces et stations souhaitées. Dans Hestia, choisissez **Swiss Pollen (Suisse)**, une station de mesure, puis les espèces à suivre. Une station unique est proposée automatiquement ; plusieurs stations demandent un choix.
+Installez [Swiss Pollen](https://github.com/frimtec/hass-swiss-pollen) dans HACS et configurez les espèces et stations souhaitées. Dans Hestia-FB, choisissez **Swiss Pollen (Suisse)**, une station de mesure, puis les espèces à suivre. Une station unique est proposée automatiquement ; plusieurs stations demandent un choix.
 
-- Hestia reprend le niveau calculé par le fournisseur : **0 aucun, 1 faible, 2 modéré, 3 élevé, 4 très élevé**. Il ne convertit pas les concentrations en indice Atmo.
+- Hestia-FB reprend le niveau calculé par le fournisseur : **0 aucun, 1 faible, 2 modéré, 3 élevé, 4 très élevé**. Il ne convertit pas les concentrations en indice Atmo.
 - Les mesures concernent le présent : aucune prévision pollen pour demain n’est inventée.
 - Les capteurs de diagnostic « état de la station » doivent être activés. Si l’état est absent, hors service ou en erreur, le niveau reste indisponible, y compris lorsqu’un capteur conserve une ancienne valeur.
 - La carte, la synthèse et le capteur Pollens utilisent la même disponibilité.
 
 ### Kleenex / Scottex — France et autres pays couverts
 
-Installez [Kleenex Pollen Radar](https://github.com/MarcoGos/kleenex_pollenradar) dans HACS et configurez le lieu. Choisissez ensuite **Kleenex / Scottex** dans Hestia. Les pays couverts sont indiqués à côté du fournisseur : France, Italie, Pays-Bas, Royaume-Uni, Irlande et États-Unis. La Suisse n’est pas annoncée par ce fournisseur. Polleninformation indique « Europe, selon les zones » : la couverture dépend du lieu.
+Installez [Kleenex Pollen Radar](https://github.com/MarcoGos/kleenex_pollenradar) dans HACS et configurez le lieu. Choisissez ensuite **Kleenex / Scottex** dans Hestia-FB. Les pays couverts sont indiqués à côté du fournisseur : France, Italie, Pays-Bas, Royaume-Uni, Irlande et États-Unis. La Suisse n’est pas annoncée par ce fournisseur. Polleninformation indique « Europe, selon les zones » : la couverture dépend du lieu.
 
-Hestia propose un seul lieu à la fois, puis les groupes **arbres, graminées, herbacées** et les capteurs détaillés par espèce que vous avez activés dans Kleenex. Il utilise les niveaux **1 faible, 2 modéré, 3 élevé, 4 très élevé** ; une concentration de zéro n’est pas transformée en niveau « aucun ».
+Hestia-FB propose un seul lieu à la fois, puis les groupes **arbres, graminées, herbacées** et les capteurs détaillés par espèce que vous avez activés dans Kleenex. Il utilise les niveaux **1 faible, 2 modéré, 3 élevé, 4 très élevé** ; une concentration de zéro n’est pas transformée en niveau « aucun ».
 
-Les prévisions de **demain** sont retrouvées par leur date, sans supposer un ordre dans la liste. Une date absente reste inconnue. Hestia contrôle les capteurs de diagnostic **Date** et **Last Updated (Pollen)** : ils doivent être activés. Les données d’un autre jour, sans date de mise à jour ou de plus de 48 heures restent indisponibles. Si le capteur facultatif **Error** est activé, une erreur signalée rend également les niveaux indisponibles.
+Les prévisions de **demain** sont retrouvées par leur date, sans supposer un ordre dans la liste. Une date absente reste inconnue. Hestia-FB contrôle les capteurs de diagnostic **Date** et **Last Updated (Pollen)** : ils doivent être activés. Les données d’un autre jour, sans date de mise à jour ou de plus de 48 heures restent indisponibles. Si le capteur facultatif **Error** est activé, une erreur signalée rend également les niveaux indisponibles.
 
-Hestia reprend les entités Home Assistant existantes, sans connexion supplémentaire au service Kleenex. La carte, la synthèse et les automatisations utilisent les mêmes données validées.
+Hestia-FB reprend les entités Home Assistant existantes, sans connexion supplémentaire au service Kleenex. La carte, la synthèse et les automatisations utilisent les mêmes données validées.
 
 ## MeteoSwiss — prévisions et vigilances suisses
 
-Installez [MeteoSwiss](https://github.com/izacus/hass-swissweather) dans HACS. Choisissez son entité `weather.*` pour les prévisions, et son capteur **Weather warnings** pour les vigilances officielles. Ce dernier regroupe toutes les alertes ; Hestia le reconnaît même si vous l’avez renommé.
+Installez [MeteoSwiss](https://github.com/izacus/hass-swissweather) dans HACS. Choisissez son entité `weather.*` pour les prévisions, et son capteur **Weather warnings** pour les vigilances officielles. Ce dernier regroupe toutes les alertes ; Hestia-FB le reconnaît même si vous l’avez renommé.
 
-Hestia conserve les phénomènes, leurs degrés suisses de **1 à 5**, leurs consignes et leurs dates de validité. Les alertes expirées sont retirées ; les avertissements publiés pour les prochaines heures restent visibles. Des attributs incomplets restent inconnus.
+Hestia-FB conserve les phénomènes, leurs degrés suisses de **1 à 5**, leurs consignes et leurs dates de validité. Les alertes expirées sont retirées ; les avertissements publiés pour les prochaines heures restent visibles. Des attributs incomplets restent inconnus.
 
 Le capteur Vigilance conserve son état compatible avec les automatisations existantes (`vert`, `jaune`, `orange`, `rouge`). Les degrés 2, 3 et 4–5 correspondent respectivement aux présentations jaune, orange et rouge. Le **degré 5 reste explicitement visible** dans le texte et les attributs `degre`, `echelle`, `degres_phenomenes` et `alertes` ; une transition de 4 à 5 déclenche aussi un événement de changement d’alerte. Les attributs `alertes` donnent les dates et les consignes ; le capteur source donne accès aux liens officiels.
 
 ## Vigieau — restrictions d’eau
 
-Installez [Vigieau](https://github.com/kamaradclimber/vigieau) dans HACS, pour votre commune. Choisissez son capteur **niveau d’alerte** (pas sa version chiffrée). Vigieau crée une zone par type d’eau : avec plusieurs zones, Hestia propose celle de l’**eau du robinet (AEP)** ; changez-la si vous arrosez avec un puits (eau souterraine, SOU) ou une rivière (eau de surface, SUP).
+Installez [Vigieau](https://github.com/kamaradclimber/vigieau) dans HACS, pour votre commune. Choisissez son capteur **niveau d’alerte** (pas sa version chiffrée). Vigieau crée une zone par type d’eau : avec plusieurs zones, Hestia-FB propose celle de l’**eau du robinet (AEP)** ; changez-la si vous arrosez avec un puits (eau souterraine, SOU) ou une rivière (eau de surface, SUP).
 
 Le capteur **Restrictions d’eau** (famille Jardin) reprend le niveau : pas de restriction, vigilance, alerte, alerte renforcée ou crise. La vigilance demande d’économiser l’eau sans rien interdire : la carte et la synthèse n’en parlent qu’**à partir de l’alerte**, en disant si l’arrosage fait partie des usages restreints. Le détail des usages et le lien de l’arrêté préfectoral sont en attributs. Une Vigieau qui ne répond pas laisse le capteur inconnu, jamais « pas de restriction ».
 

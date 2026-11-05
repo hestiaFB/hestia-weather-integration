@@ -1,6 +1,6 @@
 """Lightning from the Blitzortung integration (mrk-its/homeassistant-blitzortung): strikes detected by a community network of receivers.
 
-Its distance sensor only holds the last strike and falls back to « unknown » after a quiet spell: Hestia keeps the strikes of the last hour
+Its distance sensor only holds the last strike and falls back to « unknown » after a quiet spell: Hestia-FB keeps the strikes of the last hour
 itself, each at its time, and reads from them how near the storm is, where it stands and whether it comes closer. The direction is worked
 out from the strike's position and the home's, as Blitzortung does; strikes reloaded from the Recorder after a restart have no position."""
 from __future__ import annotations

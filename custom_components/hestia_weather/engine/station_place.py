@@ -343,8 +343,8 @@ def _hot_hours(cells: Mapping[str, Sequence[float]], day: date, zone: ZoneInfo, 
 
 def describe(settings: Settings, learned: Mapping[str, Any], shade: Mapping[str, Any] | None, now: datetime, zone: ZoneInfo,
              latitude: float, longitude: float) -> dict[str, dict[str, str]]:
-    """Each measure the station gives: « ok » (fiable), « handled » (fiable sauf…, Hestia s'en charge) or « watch »
-    (à vérifier), a title, what Hestia does, and what was learned."""
+    """Each measure the station gives: « ok » (fiable), « handled » (fiable sauf…, Hestia-FB s'en charge) or « watch »
+    (à vérifier), a title, what Hestia-FB does, and what was learned."""
     out: dict[str, dict[str, str]] = {}
     days = learned.get("days")
     since = t("Appris sur {n} jours d’historique.", n=days) if days else ""
@@ -363,20 +363,20 @@ def describe(settings: Settings, learned: Mapping[str, Any], shade: Mapping[str,
         window = wall_window(side, today, zone, round(latitude, 2), round(longitude, 2)) if side in SIDES and wall == "against" else None
         if hot:
             out["temperature"] = row("handled", t("Fiable, sauf par beau temps"),
-                                     t("De {start} à {end}, par beau temps, Hestia enlève jusqu’à {gap} °C.", start=_hm(hot[0]), end=_hm(hot[1]), gap=french(hot[2])),
+                                     t("De {start} à {end}, par beau temps, Hestia-FB enlève jusqu’à {gap} °C.", start=_hm(hot[0]), end=_hm(hot[1]), gap=french(hot[2])),
                                      " ".join(filter(None, (since, cold))))
         elif sum(1 for k, v in cells.items() if not k.startswith("night") and v[1] >= HOURS) >= CHECKED:
             out["temperature"] = row("ok", t("Fiable"), t("Vérifiée par beau temps : pas d’écart."), " ".join(filter(None, (since, cold))))
         elif window:
             out["temperature"] = row("handled", t("Fiable, sauf par beau temps"),
-                                     t("De {start} à {end} en ce moment, Hestia prend la prévision.", start=_hm(window[0]), end=_hm(window[1])),
+                                     t("De {start} à {end} en ce moment, Hestia-FB prend la prévision.", start=_hm(window[0]), end=_hm(window[1])),
                                      t("Le soleil est sur le mur à ces heures."))
         elif side == "roof":
-            out["temperature"] = row("handled", t("Fiable, sauf au soleil"), t("Au soleil, Hestia prend la prévision."), t("Le toit chauffe la station."))
+            out["temperature"] = row("handled", t("Fiable, sauf au soleil"), t("Au soleil, Hestia-FB prend la prévision."), t("Le toit chauffe la station."))
         elif side == "open" and settings.station_height in (None, "standard") and settings.station_ground in (None, "grass"):
-            out["temperature"] = row("ok", t("Fiable"), t("Loin des murs : Hestia compare chaque nuit avec la prévision."))
+            out["temperature"] = row("ok", t("Fiable"), t("Loin des murs : Hestia-FB compare chaque nuit avec la prévision."))
         else:
-            out["temperature"] = row("watch", t("À vérifier"), t("Hestia compare chaque nuit avec la prévision."), since)
+            out["temperature"] = row("watch", t("À vérifier"), t("Hestia-FB compare chaque nuit avec la prévision."), since)
 
     if settings.wind_speed_entity or settings.wind_gust_entity:
         sheltered = sheltered_sides(settings, learned)
@@ -388,11 +388,11 @@ def describe(settings: Settings, learned: Mapping[str, Any], shade: Mapping[str,
             names = ", ".join(t(OF[d]) for d in DIRS if d in sheltered)
             out["wind"] = row("handled", t("Fiable, sauf vent {sides}", sides=names),
                               t("Dégagée : {sides}.", sides=open_sides) if open_sides else t("Gênée de tous côtés."),
-                              " ".join(filter(None, (t("Vent {sides} : Hestia prend le vent prévu.", sides=names), more))))
+                              " ".join(filter(None, (t("Vent {sides} : Hestia-FB prend le vent prévu.", sides=names), more))))
         elif len([v for v in sides.values() if v[1] >= HOURS]) >= CHECKED or settings.wind_shelter is not None:
             out["wind"] = row("ok", t("Fiable"), t("Dégagée de tous côtés."), more)
         else:
-            out["wind"] = row("watch", t("Pas encore vérifié"), t("Hestia compare chaque nuit avec la prévision."))
+            out["wind"] = row("watch", t("Pas encore vérifié"), t("Hestia-FB compare chaque nuit avec la prévision."))
 
     if settings.rain_rate_entity or settings.daily_rain_entity or settings.rain_total_entity:
         rain = learned.get("rain") or {}

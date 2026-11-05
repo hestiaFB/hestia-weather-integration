@@ -1,4 +1,4 @@
-"""The interface Hestia Weather publishes for the other Hestia bricks (version 1).
+"""The interface Hestia Weather publishes for the other Hestia-FB bricks (version 1).
 
 Other bricks read `hass.data["hestia_weather_api"]` and check `version` before using it.
 They never read Hestia Weather's own settings: this object is the contract, and it only grows
@@ -68,7 +68,7 @@ class HestiaWeatherApi:
         """How far each of the station's measures can be trusted (docs/STATION-EMPLACEMENT.md), by `temperature`, `wind`,
         `rain`, `sun` — only those the station gives:
 
-        `level`: « ok » (fiable), « handled » (fiable sauf…, Hestia s'en charge) or « watch » (à vérifier); `title`, `line`,
+        `level`: « ok » (fiable), « handled » (fiable sauf…, Hestia-FB s'en charge) or « watch » (à vérifier); `title`, `line`,
         `learned`: what to say, in Home Assistant's language. `now`: « station », « corrected » (the excess learned taken
         off) or « forecast » (the forecast taken in its place) at the last calculation, with `value` (°C, or km/h for the
         gust) and `why` when it is not « station ». Hestia Comfort reads `temperature.value` instead of the raw sensor, and

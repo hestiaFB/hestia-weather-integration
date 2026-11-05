@@ -401,9 +401,9 @@ for (const format of FORMATS) {
 }
 // The list is written once, at load: in the language the page was opened in.
 const PICKER: Array<[NonNullable<WeatherCardConfig['format']>, string, string]> = [
-  ['full', fr('Hestia - Météo'), fr('La page météo complète ou la tuile qui se déplie. Le format se choisit dans les réglages.')],
-  ['comfort', fr('Hestia - À la pièce'), fr('Une seule partie : ressenti, pluie, vent, pression, éclairs, air et pollens ou prévisions.')],
-  ['mini', fr('Hestia - Petite carte'), fr('Une seule ligne, ou une alerte visible seulement en cas de vigilance.')],
+  ['full', fr('Hestia-FB - Météo'), fr('La page météo complète ou la tuile qui se déplie. Le format se choisit dans les réglages.')],
+  ['comfort', fr('Hestia-FB - À la pièce'), fr('Une seule partie : ressenti, pluie, vent, pression, éclairs, air et pollens ou prévisions.')],
+  ['mini', fr('Hestia-FB - Petite carte'), fr('Une seule ligne, ou une alerte visible seulement en cas de vigilance.')],
 ];
 guessLanguage();
 window.customCards = window.customCards || [];

@@ -2,7 +2,7 @@
   "config": {
     "abort": {
       "no_weather": "Aucune source météo trouvée. Ajoutez d’abord une intégration météo (Météo-France par exemple).",
-      "migrated": "Votre installation a été reprise sous le nouveau nom. Suivez la suite dans Hestia → Accueil."
+      "migrated": "Votre installation a été reprise sous le nouveau nom. Suivez la suite dans Hestia-FB → Accueil."
     },
     "step": {
       "user": {
@@ -115,13 +115,13 @@
       },
       "pollen_sensors": {
         "title": "Étape 3 sur 4 · Capteurs {source}",
-        "description": "Les espèces à suivre (et, pour Polleninformation, le risque d’allergie global). Hestia les a proposées : vérifiez, ajoutez ou retirez. Sans risque global, Hestia retient l’espèce la plus élevée.",
+        "description": "Les espèces à suivre (et, pour Polleninformation, le risque d’allergie global). Hestia-FB les a proposées : vérifiez, ajoutez ou retirez. Sans risque global, Hestia-FB retient l’espèce la plus élevée.",
         "data": {
           "pollens": "Espèces",
           "pollen_risk_entity": "Risque d’allergie global"
         },
         "data_description": {
-          "pollen_risk_entity": "Facultatif. Sans lui, Hestia retient l’espèce la plus élevée."
+          "pollen_risk_entity": "Facultatif. Sans lui, Hestia-FB retient l’espèce la plus élevée."
         }
       },
       "families": {
@@ -151,7 +151,7 @@
       },
       "pollen_area": {
         "title": "Étape 3 sur 4 · Zone Atmo des pollens",
-        "description": "La zone Atmo France dont Hestia lira les pollens. Elle peut être différente de celle de la qualité de l’air.",
+        "description": "La zone Atmo France dont Hestia-FB lira les pollens. Elle peut être différente de celle de la qualité de l’air.",
         "data": {
           "atmo_area": "Zone Atmo France"
         }
@@ -177,7 +177,7 @@
     "step": {
       "init": {
         "title": "Hestia Weather",
-        "description": "Les réglages de Hestia Weather se font dans l’onglet Météo du panneau Hestia.\n\n[Ouvrir les paramètres de Hestia Weather]({link})",
+        "description": "Les réglages de Hestia Weather se font dans l’onglet Météo du panneau Hestia-FB.\n\n[Ouvrir les paramètres de Hestia Weather]({link})",
         "submit": "Fermer"
       },
       "weather": {
@@ -284,13 +284,13 @@
       },
       "pollen_sensors": {
         "title": "Capteurs {source}",
-        "description": "Les espèces à suivre (et, pour Polleninformation, le risque d’allergie global). Hestia les a proposées : vérifiez, ajoutez ou retirez. Sans risque global, Hestia retient l’espèce la plus élevée.",
+        "description": "Les espèces à suivre (et, pour Polleninformation, le risque d’allergie global). Hestia-FB les a proposées : vérifiez, ajoutez ou retirez. Sans risque global, Hestia-FB retient l’espèce la plus élevée.",
         "data": {
           "pollens": "Espèces",
           "pollen_risk_entity": "Risque d’allergie global"
         },
         "data_description": {
-          "pollen_risk_entity": "Facultatif. Sans lui, Hestia retient l’espèce la plus élevée."
+          "pollen_risk_entity": "Facultatif. Sans lui, Hestia-FB retient l’espèce la plus élevée."
         }
       },
       "entities": {
@@ -323,14 +323,14 @@
       },
       "pollen_area": {
         "title": "Zone Atmo des pollens",
-        "description": "La zone Atmo France dont Hestia lira les pollens. Elle peut être différente de celle de la qualité de l’air.",
+        "description": "La zone Atmo France dont Hestia-FB lira les pollens. Elle peut être différente de celle de la qualité de l’air.",
         "data": {
           "atmo_area": "Zone Atmo France"
         }
       },
       "ecosystem": {
-        "title": "Écosystème Hestia",
-        "description": "Hestia Weather partage sa météo avec les autres briques Hestia. Chaque brique se relie à ce lieu dans ses propres réglages ; Hestia Weather ne modifie jamais les autres.\n\n{links}\n\nValidez pour revenir au menu."
+        "title": "Écosystème Hestia-FB",
+        "description": "Hestia Weather partage sa météo avec les autres briques Hestia-FB. Chaque brique se relie à ce lieu dans ses propres réglages ; Hestia Weather ne modifie jamais les autres.\n\n{links}\n\nValidez pour revenir au menu."
       },
       "pollen_station": {
         "title": "Lieu des pollens",

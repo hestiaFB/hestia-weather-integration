@@ -2,13 +2,13 @@
 // To improve a text, change only what is on the right of the colon; keep the {names} between braces as they are.
 export const SOCLE_DE:Record<string,string>={
  // The menu
- 'Accueil Hestia':'Hestia-Start','Vue d’ensemble':'Übersicht','Réglages':'Einstellungen','Accueil':'Start','Bilan du logement':'Bilanz der Wohnung',
+ 'Accueil Hestia-FB':'Hestia-FB-Start','Vue d’ensemble':'Übersicht','Réglages':'Einstellungen','Accueil':'Start','Bilan du logement':'Bilanz der Wohnung',
  'Réglages généraux':'Allgemeine Einstellungen','Pièces':'Räume','Apprentissage':'Lernen','Bilan':'Bilanz','Extensions':'Erweiterungen','Sources météo':'Wetterquellen','Station météo · capteurs locaux':'Wetterstation · lokale Sensoren',
  'Qualité de l’air':'Luftqualität','Pollens':'Pollen','Entités':'Entitäten','Météo':'Wetter','Confort':'Komfort','Hestia Confort':'Hestia Comfort','Hestia Weather':'Hestia Weather',
- 'Lieux':'Orte','Navigation Hestia':'Hestia-Navigation','Ouvrir la navigation Hestia':'Hestia-Navigation öffnen',
+ 'Lieux':'Orte','Navigation Hestia-FB':'Hestia-FB-Navigation','Ouvrir la navigation Hestia-FB':'Hestia-FB-Navigation öffnen',
  'Ouvrir le menu Home Assistant':'Menü von Home Assistant öffnen',
  // The home page
- 'Votre logement, connecté':'Ihr Zuhause, vernetzt','Vos briques Hestia et les points à compléter, au même endroit.':'Ihre Hestia-Bausteine und was noch zu ergänzen ist, an einem Ort.',
+ 'Votre logement, connecté':'Ihr Zuhause, vernetzt','Vos briques Hestia-FB et les points à compléter, au même endroit.':'Ihre Hestia-FB-Bausteine und was noch zu ergänzen ist, an einem Ort.',
  'Version {version}':'Version {version}','Ouvrir {tab}':'{tab} öffnen','Tout est suivi':'Alles wird verfolgt','À faire':'Zu tun','État inconnu':'Unbekannter Zustand',
  'À découvrir':'Zu entdecken','Installée. Ses réglages restent dans Paramètres, en attendant qu’elle rejoigne ce panneau.':'Installiert. Die Einstellungen bleiben unter Einstellungen, bis der Baustein in dieses Panel kommt.',
  'Ouvrir ses réglages':'Einstellungen öffnen','Voir':'Ansehen',
@@ -32,11 +32,11 @@ export const SOCLE_DE:Record<string,string>={
  'Ce cadre ne reviendra plus une fois fermé.':'Einmal geschlossen, erscheint dieser Rahmen nicht wieder.','J’ai compris':'Verstanden',
  'Le redémarrage n’a pas été lancé.':'Der Neustart wurde nicht gestartet.',
  // The hub's settings
- 'Réglages Hestia':'Hestia-Einstellungen','Les préférences communes à votre hub.':'Die gemeinsamen Einstellungen Ihres Hubs.','Thème du hub':'Design des Hubs','Apparence':'Aussehen',
- 'Suivre le thème Home Assistant':'Dem Design von Home Assistant folgen','Utiliser le thème Hestia':'Das Hestia-Design verwenden',
- 'Home Assistant reprend les couleurs et la police de votre thème. Hestia utilise sa propre palette, en suivant le mode clair ou sombre de Home Assistant.':'Home Assistant übernimmt die Farben und die Schrift Ihres Designs. Hestia verwendet eine eigene Palette und folgt dem hellen oder dunklen Modus von Home Assistant.',
- 'Affichage':'Anzeige','Hestia dans le menu Home Assistant':'Hestia im Menü von Home Assistant','Hestia est dans le menu de gauche.':'Hestia ist im linken Menü.',
- 'Hestia n’est pas dans le menu de gauche.':'Hestia ist nicht im linken Menü.','Masqué, il reste ouvert par la roue de chaque intégration, dans Paramètres.':'Ausgeblendet öffnet es sich weiterhin über das Zahnrad jeder Integration, unter Einstellungen.',
+ 'Réglages Hestia-FB':'Hestia-FB-Einstellungen','Les préférences communes à votre hub.':'Die gemeinsamen Einstellungen Ihres Hubs.','Thème du hub':'Design des Hubs','Apparence':'Aussehen',
+ 'Suivre le thème Home Assistant':'Dem Design von Home Assistant folgen','Utiliser le thème Hestia-FB':'Das Hestia-FB-Design verwenden',
+ 'Home Assistant reprend les couleurs et la police de votre thème. Hestia-FB utilise sa propre palette, en suivant le mode clair ou sombre de Home Assistant.':'Home Assistant übernimmt die Farben und die Schrift Ihres Designs. Hestia-FB verwendet eine eigene Palette und folgt dem hellen oder dunklen Modus von Home Assistant.',
+ 'Affichage':'Anzeige','Hestia-FB dans le menu Home Assistant':'Hestia-FB im Menü von Home Assistant','Hestia-FB est dans le menu de gauche.':'Hestia-FB ist im linken Menü.',
+ 'Hestia-FB n’est pas dans le menu de gauche.':'Hestia-FB ist nicht im linken Menü.','Masqué, il reste ouvert par la roue de chaque intégration, dans Paramètres.':'Ausgeblendet öffnet es sich weiterhin über das Zahnrad jeder Integration, unter Einstellungen.',
  'Affiché':'Angezeigt','Masqué':'Ausgeblendet',
  // Errors and loading
  'Réessayer':'Erneut versuchen','Chargement…':'Wird geladen…','Connexion indisponible.':'Verbindung nicht verfügbar.','Le réglage n’a pas été enregistré.':'Die Einstellung wurde nicht gespeichert.',

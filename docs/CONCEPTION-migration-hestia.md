@@ -84,6 +84,6 @@ Le code va dans un nouveau module `custom_components/niak_weather/migration.py`,
 
 ## À trancher par Frank
 
-1. **Place de la carte** : dans les réglages de Weather, ou sur l'accueil du panneau Hestia (qui est en lecture seule aujourd'hui).
-2. **Usages Lovelace des cartes Hestia** : les mettre à jour en même temps (recommandé).
+1. **Place de la carte** : dans les réglages de Weather, ou sur l'accueil du panneau Hestia-FB (qui est en lecture seule aujourd'hui).
+2. **Usages Lovelace des cartes Hestia-FB** : les mettre à jour en même temps (recommandé).
 3. **Version** : un correctif de la série en cours, en préversion d'abord.

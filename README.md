@@ -47,7 +47,7 @@ Tout est calculé une fois, dans Home Assistant : la carte affiche, vos automati
 
 ## Configuration
 
-Tout se règle dans le panneau **Hestia** de la barre latérale, onglet **Météo**. Pas de YAML. Chaque champ est déjà rempli avec ce que Home Assistant connaît : vous vérifiez, vous corrigez si besoin.
+Tout se règle dans le panneau **Hestia-FB** de la barre latérale, onglet **Météo**. Pas de YAML. Chaque champ est déjà rempli avec ce que Home Assistant connaît : vous vérifiez, vous corrigez si besoin.
 
 - **Accueil** : à lire seulement. L’état de chaque lieu, ce qui reste à régler, les extensions, les versions.
 - **Réglages généraux** : vos lieux (**Modifier**, **Ajouter un lieu**) et les cartes.
@@ -55,15 +55,15 @@ Tout se règle dans le panneau **Hestia** de la barre latérale, onglet **Mété
 
 Un lieu se règle en sept étapes : Sources météo, Station météo, Qualité de l’air, Pollens, Eau et jardin, Entités, puis le récapitulatif. Rien n’est enregistré avant **Enregistrer**. Un champ laissé vide est un choix : il n’est jamais rempli à votre place.
 
-Le panneau s’adapte au téléphone. Dans **Accueil Hestia → Réglages**, choisissez le thème de Home Assistant ou celui de Hestia, et masquez l’entrée du menu si vous le voulez. [Détail des sources et des réglages](docs/sources.md).
+Le panneau s’adapte au téléphone. Dans **Accueil Hestia-FB → Réglages**, choisissez le thème de Home Assistant ou celui de Hestia-FB, et masquez l’entrée du menu si vous le voulez. [Détail des sources et des réglages](docs/sources.md).
 
 ## La carte
 
-Douze cartes, rangées en trois types dans **Ajouter une carte** : **Hestia - Météo** (complète, tuile, tuile dépliée), **Hestia - À la pièce** (ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions) et **Hestia - Petite carte** (mini, alerte). Chacune montre les parties que vous cochez. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change. [La carte en détail : formats, réglages, visuel](docs/carte/README.md).
+Douze cartes, rangées en trois types dans **Ajouter une carte** : **Hestia-FB - Météo** (complète, tuile, tuile dépliée), **Hestia-FB - À la pièce** (ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions) et **Hestia-FB - Petite carte** (mini, alerte). Chacune montre les parties que vous cochez. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change. [La carte en détail : formats, réglages, visuel](docs/carte/README.md).
 
 ![Hestia Weather — tuile pleine et demi-largeur repliées, puis tuile dépliée, par temps d’orage avec vigilance jaune](docs/carte/images/hestia-weather-formats.png)
 
-Vous aviez installé la carte depuis HACS ? **Retirez-la de HACS**, puis rechargez la page : vos cartes restent en place. Tant qu’elle reste installée, l’accueil du panneau **Hestia** l’indique en orange.
+Vous aviez installé la carte depuis HACS ? **Retirez-la de HACS**, puis rechargez la page : vos cartes restent en place. Tant qu’elle reste installée, l’accueil du panneau **Hestia-FB** l’indique en orange.
 
 Dans l’application Home Assistant, une carte reste invisible juste après une mise à jour ? Réinitialisez son cache : **Paramètres → Application compagnon → Dépannage → Réinitialiser le cache du frontend**.
 
@@ -96,7 +96,7 @@ Hestia Weather parle **français**, **anglais** et **allemand**. La carte, le pa
 
 Les valeurs des capteurs (bulletin, raisons, alertes) restent en français, pour que vos automatisations ne changent pas avec la langue.
 
-**D’autres langues arriveront, avec votre aide.** Hestia est un projet d’entraide : vous parlez néerlandais, italien, espagnol… ? Une traduction vous semble maladroite ? [Proposez votre traduction](https://github.com/hestiaFB/hestia-weather-integration/issues/new?title=Traduction%20%3A%20) : une liste de phrases à traduire, sans rien connaître au code. Votre nom sera cité. Le guide : [Traductions](docs/traductions.md).
+**D’autres langues arriveront, avec votre aide.** Hestia-FB est un projet d’entraide : vous parlez néerlandais, italien, espagnol… ? Une traduction vous semble maladroite ? [Proposez votre traduction](https://github.com/hestiaFB/hestia-weather-integration/issues/new?title=Traduction%20%3A%20) : une liste de phrases à traduire, sans rien connaître au code. Votre nom sera cité. Le guide : [Traductions](docs/traductions.md).
 
 > **In English.** Hestia Weather speaks French, English and German. More languages will come through mutual help: if you speak another language, [offer a translation](https://github.com/hestiaFB/hestia-weather-integration/issues/new?title=Translation%3A%20). No coding needed.
 

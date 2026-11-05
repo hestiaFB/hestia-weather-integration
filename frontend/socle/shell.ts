@@ -1,4 +1,4 @@
-// Hestia shared panel (socle v1.22): header, tabs and the home page listing every Hestia brick.
+// Hestia-FB shared panel (socle v1.22): header, tabs and the home page listing every Hestia-FB brick.
 // Copied unchanged into each brick from hestia-ecosysteme/socle/ (see ECOSYSTEME.md § 8).
 import {LitElement,html,css,nothing,type PropertyValues} from 'lit';
 import {frame,hubStyles,modernStyles,hubIcon,line,motion,type NkLine} from './ui';
@@ -9,7 +9,7 @@ export const ELEMENT='hestia-socle-1-22';
 export const MENU_WORDS=[fr('Pièces'),fr('Lieux'),fr('Apprentissage'),fr('Bilan'),fr('À propos')];
 // The panel's address (socle 1.12): /hestia; the former address leads there, keeping the rest of the address.
 export const BASE='/hestia';
-// The Hestia logo (logo-github): its gradient reads on a light or a dark menu alike.
+// The Hestia-FB logo (logo-github): its gradient reads on a light or a dark menu alike.
 // One gradient id per copy: the hidden mobile bar's copy must not be the one the menu's refers to.
 const logo=(id:string)=>html`<svg class="nk-logo" viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id=${id} gradientUnits="userSpaceOnUse" x1="30" y1="30" x2="170" y2="170"><stop offset="0" stop-color="#F3A683"/><stop offset="0.5" stop-color="#B49BE0"/><stop offset="1" stop-color="#5E9BD8"/></linearGradient></defs><path d="M92.04 59.78L93.73 50.39L106.27 50.39L107.96 59.78A41 41 0 0 1 119.75 64.07L119.75 64.07L127.09 57.97L136.69 66.03L131.95 74.31A41 41 0 0 1 138.23 85.17L138.23 85.17L147.76 85.21L149.94 97.56L140.99 100.86A41 41 0 0 1 138.81 113.21L138.81 113.21L146.09 119.38L139.83 130.23L130.85 127.01A41 41 0 0 1 121.24 135.07L121.24 135.07L122.85 144.47L111.08 148.76L106.27 140.52A41 41 0 0 1 93.73 140.52L93.73 140.52L88.92 148.76L77.15 144.47L78.76 135.07A41 41 0 0 1 69.15 127.01L69.15 127.01L60.17 130.23L53.91 119.38L61.19 113.21A41 41 0 0 1 59.01 100.86L59.01 100.86L50.06 97.56L52.24 85.21L61.77 85.17A41 41 0 0 1 68.05 74.31L68.05 74.31L63.31 66.03L72.91 57.97L80.25 64.07A41 41 0 0 1 92.04 59.78Z" fill="none" stroke="url(#${id})" stroke-width="6" stroke-linejoin="round"/><path d="M82 114.5 V84 M118 116 V85.5 M82 100 H118" fill="none" stroke="url(#${id})" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="82" cy="121" r="5" fill="none" stroke="url(#${id})" stroke-width="4.5"/><circle cx="118" cy="79" r="5" fill="none" stroke="url(#${id})" stroke-width="4.5"/><path d="M100 43 V30" stroke="url(#${id})" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="100" cy="24" r="5.5" fill="none" stroke="url(#${id})" stroke-width="4"/><path d="M141 59 L150 50 H158" stroke="url(#${id})" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="164" cy="50" r="5.5" fill="none" stroke="url(#${id})" stroke-width="4"/><path d="M157 100 H170" stroke="url(#${id})" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="176" cy="100" r="5.5" fill="none" stroke="url(#${id})" stroke-width="4"/><path d="M141 141 L150 150 V158" stroke="url(#${id})" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="150" cy="164" r="5.5" fill="none" stroke="url(#${id})" stroke-width="4"/><path d="M100 157 V170" stroke="url(#${id})" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="100" cy="176" r="5.5" fill="none" stroke="url(#${id})" stroke-width="4"/><path d="M59 141 L50 150 H42" stroke="url(#${id})" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="36" cy="150" r="5.5" fill="none" stroke="url(#${id})" stroke-width="4"/><path d="M43 100 H30" stroke="url(#${id})" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="100" r="5.5" fill="none" stroke="url(#${id})" stroke-width="4"/><path d="M59 59 L50 50 V42" stroke="url(#${id})" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="36" r="5.5" fill="none" stroke="url(#${id})" stroke-width="4"/></svg>`;
 type Level='ok'|'action'|'unknown';
@@ -31,7 +31,7 @@ export function splitPath(path:string|undefined):[string,string]{
  return [parts[0]??'',parts.length>1?'/'+parts.slice(1).join('/'):''];
 }
 export function shortName(name:string){return name.replace(/^Hestia /,'');}
-// The tab's name: its own (since socle 1.1, « Météo » for Hestia Weather), else the brick's without « Hestia ».
+// The tab's name: its own (since socle 1.1, « Météo » for Hestia Weather), else the brick's without « Hestia-FB ».
 export function tabName(b:{name:string;tab?:string|null;navigation?:number|null}){return t(b.tab||shortName(b.name));}
 function navigate(path:string,replace=false){
  history[replace?'replaceState':'pushState'](null,'',path);
@@ -106,16 +106,16 @@ export class HestiaShell extends LitElement {
   catch(e){this.error=typeof e==='object'&&e&&'message' in e?String(e.message):t('Le thème n’a pas été enregistré.');}
   finally{this.saving=false;}
  }
- private appearance(){return frame(t('Thème du hub'),html`<label class="theme-label" for="hub-theme">${t('Apparence')}</label><select id="hub-theme" .value=${this.overview?.theme??'hestia'} ?disabled=${this.saving} @change=${(e:Event)=>void this.setTheme((e.target as HTMLSelectElement).value as 'ha'|'hestia')}><option value="ha">${t('Suivre le thème Home Assistant')}</option><option value="hestia">${t('Utiliser le thème Hestia')}</option></select><p class="muted">${t('Home Assistant reprend les couleurs et la police de votre thème. Hestia utilise sa propre palette, en suivant le mode clair ou sombre de Home Assistant.')}</p>`);}
+ private appearance(){return frame(t('Thème du hub'),html`<label class="theme-label" for="hub-theme">${t('Apparence')}</label><select id="hub-theme" .value=${this.overview?.theme??'hestia'} ?disabled=${this.saving} @change=${(e:Event)=>void this.setTheme((e.target as HTMLSelectElement).value as 'ha'|'hestia')}><option value="ha">${t('Suivre le thème Home Assistant')}</option><option value="hestia">${t('Utiliser le thème Hestia-FB')}</option></select><p class="muted">${t('Home Assistant reprend les couleurs et la police de votre thème. Hestia-FB utilise sa propre palette, en suivant le mode clair ou sombre de Home Assistant.')}</p>`);}
  private display(){const on=this.overview?.sidebar;
   if(on===undefined)return nothing;
-  return html`${frame(t('Affichage'),html`<section class="other"><div><h3 id="sidebar-label">${t('Hestia dans le menu Home Assistant')}</h3>
-   <p class="muted">${on?t('Hestia est dans le menu de gauche.'):t('Hestia n’est pas dans le menu de gauche.')}</p>
+  return html`${frame(t('Affichage'),html`<section class="other"><div><h3 id="sidebar-label">${t('Hestia-FB dans le menu Home Assistant')}</h3>
+   <p class="muted">${on?t('Hestia-FB est dans le menu de gauche.'):t('Hestia-FB n’est pas dans le menu de gauche.')}</p>
    <p class="muted">${t('Masqué, il reste ouvert par la roue de chaque intégration, dans Paramètres.')}</p></div>
    <button role="switch" aria-checked=${on?'true':'false'} aria-labelledby="sidebar-label" ?disabled=${this.saving} @click=${()=>this.setSidebar(!on)}><span class="track"><span class="thumb"></span></span>${on?t('Affiché'):t('Masqué')}</button></section>`)} `;}
  private menu(){this.dispatchEvent(new CustomEvent('hass-toggle-menu',{bubbles:true,composed:true}));}
  private go(slug:string){this.setMenu(false);navigate(BASE+(slug?'/'+slug:''));}
- // The Hestia menu on a phone (socle 1.21): a drawer that slides in from the left and leaves the same way.
+ // The Hestia-FB menu on a phone (socle 1.21): a drawer that slides in from the left and leaves the same way.
  // Opened, it takes the focus on the current page; closed by Escape, it gives it back to the bar's title.
  private setMenu(open:boolean,focusBack=false){if(this.menuOpen===open)return;this.menuOpen=open;
   void this.updateComplete.then(()=>{const root=this.renderRoot;
@@ -186,7 +186,7 @@ export class HestiaShell extends LitElement {
  private home(){const o=this.overview!;
   // While the move runs, the page reads it again every 5 seconds.
   if(o.migration?.some(m=>m.state==='running')&&!this.migrationTimer)this.migrationTimer=window.setTimeout(()=>{this.migrationTimer=0;void this.load();},5000);
-  return html`<main><div class="nk-home-head"><div><h1>${t('Votre logement, connecté')}</h1><p>${t('Vos briques Hestia et les points à compléter, au même endroit.')}</p></div></div>${this.migration()}<div class="nk-bricks">
+  return html`<main><div class="nk-home-head"><div><h1>${t('Votre logement, connecté')}</h1><p>${t('Vos briques Hestia-FB et les points à compléter, au même endroit.')}</p></div></div>${this.migration()}<div class="nk-bricks">
    ${o.bricks.map(b=>html`${frame(t(b.name),html`<section class="brick ${b.status.level}"><p class="version">${t('Version {version}',{version:b.version})}</p>
     <p class="level"><span class="dot"></span>${t(levelText[b.status.level])}${b.status.summary?html`<span class="summary">${b.status.summary}</span>`:nothing}</p>
     ${b.status.details.length?html`<ul>${b.status.details.map(d=>html`<li>${d}</li>`)}</ul>`:nothing}
@@ -205,19 +205,19 @@ export class HestiaShell extends LitElement {
   const [slug]=splitPath(this.route?.path);const o=this.overview;
   const active=o?.bricks.some(b=>b.slug===slug)?slug:'';const settings=slug==='reglages';
   // The phone bar (socle 1.21): ☰ opens Home Assistant's menu, as on every other panel; the title says where you are
-  // and opens the Hestia menu.
+  // and opens the Hestia-FB menu.
   const here=o?.bricks.find(b=>b.slug===active);
   return html`<div class="mobile-bar"><button class="icon" aria-label=${t('Ouvrir le menu Home Assistant')} @click=${()=>this.menu()}>${hubIcon('menu')}</button>
-    <button class="nk-where" aria-label=${t('Ouvrir la navigation Hestia')} aria-expanded=${String(this.menuOpen)} @click=${()=>this.setMenu(!this.menuOpen)}>${logo('nk-logo-bar')}<strong>${here?tabName(here):'Hestia'}</strong>${hubIcon('down')}</button></div>
+    <button class="nk-where" aria-label=${t('Ouvrir la navigation Hestia-FB')} aria-expanded=${String(this.menuOpen)} @click=${()=>this.setMenu(!this.menuOpen)}>${logo('nk-logo-bar')}<strong>${here?tabName(here):'Hestia-FB'}</strong>${hubIcon('down')}</button></div>
    <button class=${'backdrop'+(this.menuOpen?' open':'')} tabindex="-1" aria-hidden="true" @click=${()=>this.setMenu(false)}></button>
-   <aside class=${this.menuOpen?'open':''} aria-label=${t('Navigation Hestia')} @pointerdown=${this.dragStart} @pointermove=${this.dragMove} @pointerup=${this.dragEnd} @pointercancel=${this.dragEnd}
-    @keydown=${(e:KeyboardEvent)=>{if(e.key==='Escape')this.setMenu(false,true);}}><div class="brand">${logo('nk-logo-menu')}<strong>Hestia</strong><button class="icon" aria-label=${t('Ouvrir le menu Home Assistant')} @click=${()=>this.menu()}>${hubIcon('menu')}</button></div>
-    ${this.navGroup(fr('Accueil Hestia'),[['',fr('Vue d’ensemble'),'home'],['reglages',fr('Réglages'),'settings']])}
+   <aside class=${this.menuOpen?'open':''} aria-label=${t('Navigation Hestia-FB')} @pointerdown=${this.dragStart} @pointermove=${this.dragMove} @pointerup=${this.dragEnd} @pointercancel=${this.dragEnd}
+    @keydown=${(e:KeyboardEvent)=>{if(e.key==='Escape')this.setMenu(false,true);}}><div class="brand">${logo('nk-logo-menu')}<strong>Hestia-FB</strong><button class="icon" aria-label=${t('Ouvrir le menu Home Assistant')} @click=${()=>this.menu()}>${hubIcon('menu')}</button></div>
+    ${this.navGroup(fr('Accueil Hestia-FB'),[['',fr('Vue d’ensemble'),'home'],['reglages',fr('Réglages'),'settings']])}
     ${[...(o?.bricks??[])].sort((a,b)=>(a.slug==='meteo'?-1:b.slug==='meteo'?1:0)).map(b=>this.navGroup(tabName(b),b.menu?.length?b.menu.map(([path,label,icon])=>[b.slug+(path?'/'+path:''),label,icon]):((b.navigation??0)>=1&&b.slug==='confort'||(b.navigation??0)>=2&&b.slug==='meteo')?[[b.slug,fr('Accueil'),'home'],...(b.slug==='confort'&&(b.navigation??0)>=2?[[b.slug+'/bilan',fr('Bilan du logement'),'review']]:[]),[b.slug+'/reglages',fr('Réglages généraux'),'settings'],...((b.navigation??0)>=3?[[b.slug+'/extensions',fr('Extensions'),'extensions']]:[])]:b.navigation===1&&b.slug==='meteo'?[[b.slug,fr('Accueil'),'home'],[b.slug+'/sources',fr('Sources météo'),'weather'],[b.slug+'/station',fr('Station météo · capteurs locaux'),'temperature'],[b.slug+'/air',fr('Qualité de l’air'),'air'],[b.slug+'/pollens',fr('Pollens'),'pollen'],[b.slug+'/entites',fr('Entités'),'entities']]:[[b.slug,fr('Accueil'),'home']],b.slug===active?undefined:b.slug))}
    </aside>
    <div class="content" ?inert=${this.menuOpen}>${this.error?html`<main><p class="notice" role="alert">${this.error}</p><button @click=${()=>{this.error='';void this.load();}}>${t('Réessayer')}</button></main>`
     :!o?html`<main><p class="muted" role="status">${t('Chargement…')}</p></main>`
-    :active?this.tabs.get(active)??html`<main><p class="muted" role="status">${t('Chargement…')}</p></main>`:settings?html`<main><h1>${t('Réglages Hestia')}</h1><p class="muted">${t('Les préférences communes à votre hub.')}</p>${this.appearance()}${this.display()}</main>`:slug?html`<main><h1>${t('Cette page est indisponible')}</h1><p>${t('La brique correspondante n’est pas installée ou cette adresse est inconnue.')}</p><button @click=${()=>this.go('')}>${t('Retour à l’accueil')}</button></main>`:this.home()}</div>`;
+    :active?this.tabs.get(active)??html`<main><p class="muted" role="status">${t('Chargement…')}</p></main>`:settings?html`<main><h1>${t('Réglages Hestia-FB')}</h1><p class="muted">${t('Les préférences communes à votre hub.')}</p>${this.appearance()}${this.display()}</main>`:slug?html`<main><h1>${t('Cette page est indisponible')}</h1><p>${t('La brique correspondante n’est pas installée ou cette adresse est inconnue.')}</p><button @click=${()=>this.go('')}>${t('Retour à l’accueil')}</button></main>`:this.home()}</div>`;
  }
  static styles=[css`
   /* Les sept tailles de texte de la charte (hestia-ecosysteme/charte, échelle C) : le hub les reprend telles quelles. */

@@ -23,7 +23,7 @@ const MEASURE:Record<PlaceKey,string>={station_side:'temperature',station_wall:'
 
 interface Asked {key:PlaceKey;title:string;short:string;why:string;choices:[string,string,string?][]}
 function all():Asked[]{return [
- {key:'station_side',title:t('Où est la station ?'),short:t('Où est la station'),why:t('Hestia saura quand le soleil chauffe le mur près d’elle.'),
+ {key:'station_side',title:t('Où est la station ?'),short:t('Où est la station'),why:t('Hestia-FB saura quand le soleil chauffe le mur près d’elle.'),
   choices:[...DIRS.map(d=>[d,t(SIDE[d])] as [string,string]),['roof',t('Sur le toit')],['open',t('Loin de la maison, au jardin')]]},
  {key:'station_wall',title:t('À quelle distance du mur ?'),short:t('Distance du mur'),why:t('Contre un mur au soleil, le thermomètre monte trop.'),
   choices:[['against',t('Contre le mur'),t('moins de 1 m')],['near',t('De 1 à 3 m')],['far',t('Plus loin')]]},
@@ -31,12 +31,12 @@ function all():Asked[]{return [
   choices:[['low',t('Moins de 1,5 m')],['standard',t('De 1,5 à 2 m'),t('la hauteur conseillée')],['high',t('Plus haut')]]},
  {key:'station_ground',title:t('Qu’y a-t-il sous la station ?'),short:t('Le sol dessous'),why:t('Une dalle au soleil chauffe l’air autour.'),
   choices:[['grass',t('Herbe ou terre')],['gravel',t('Gravier')],['paving',t('Dalle, terrasse ou bitume')]]},
- {key:'station_shade',title:t('Le soleil arrive-t-il sur la station ?'),short:t('Le soleil'),why:t('Hestia ne prendra pas l’ombre pour un nuage.'),
+ {key:'station_shade',title:t('Le soleil arrive-t-il sur la station ?'),short:t('Le soleil'),why:t('Hestia-FB ne prendra pas l’ombre pour un nuage.'),
   choices:[['never',t('Plein soleil')],['morning',t('À l’ombre le matin')],['afternoon',t('À l’ombre l’après-midi')],['always',t('Presque toujours à l’ombre')]]},
  {key:'rain_gauge_shelter',title:t('Le pluviomètre est-il à l’abri ?'),short:t('Le pluviomètre'),why:t('À l’abri, il recueille moins de pluie.'),
   choices:[['open',t('À découvert')],['tree',t('Sous un arbre')],['eave',t('Près d’un mur ou sous un avant-toit')]]},
  {key:'wind_shelter',title:t('Autour de la station, d’où le vent arrive-t-il librement ?'),short:t('Le vent autour de la station'),
-  why:t('Un côté gêné par la maison, une haie ou un mur : Hestia y prendra le vent prévu.'),choices:[]},
+  why:t('Un côté gêné par la maison, une haie ou un mur : Hestia-FB y prendra le vent prévu.'),choices:[]},
 ];}
 /** The questions this station asks, in order (engine/station_place.asked). */
 export function questions(v:PlaceView):Asked[]{return all().filter(q=>v.asked.includes(q.key));}
@@ -83,8 +83,8 @@ function control(o:PlaceContext,q:Asked):TemplateResult{
  *  later; under each, what the nights learned. */
 export function placeSection(o:PlaceContext&{quiz:()=>void}):TemplateResult{
  const left=unanswered(o.view),told=new Set<string>();
- const help=html`<p>${t('Ce que les capteurs ne disent pas. Hestia s’en sert tout de suite pour savoir quand se méfier d’une mesure.')}</p>
-  <p>${t('Chaque nuit, il compare la station à la prévision : ce qu’il apprend remplace vos réponses. « Je ne sais pas » laisse Hestia apprendre seul.')}</p>`;
+ const help=html`<p>${t('Ce que les capteurs ne disent pas. Hestia-FB s’en sert tout de suite pour savoir quand se méfier d’une mesure.')}</p>
+  <p>${t('Chaque nuit, il compare la station à la prévision : ce qu’il apprend remplace vos réponses. « Je ne sais pas » laisse Hestia-FB apprendre seul.')}</p>`;
  if(!Object.keys(o.view.values).length)return listSection(t('Emplacement'),[listRow({name:t('Où est votre station ?'),label:html`<strong>${t('Où est votre station ?')}</strong>`,
   sub:left>1?t('{n} questions, une minute',{n:left}):t('{n} question, une minute',{n:left}),go:o.quiz})],{help});
  // What was learned of a measure is said once, under its first question (the temperature has four).
@@ -100,7 +100,7 @@ export function placeSection(o:PlaceContext&{quiz:()=>void}):TemplateResult{
 export function quizScreen(o:PlaceContext&{step:number;go:(step:number)=>void;finish:()=>void;close?:()=>void;saves:boolean}):TemplateResult{
  const list=questions(o.view),v=o.view.values;
  if(o.step>=list.length)return html`<div class="pl-quiz"><div class="pl-done"><span class="pl-mark" aria-hidden="true">✓</span><h2>${t('C’est noté.')}</h2>
-  <p class="muted">${t('Hestia s’en sert tout de suite.')}<br>${t('Chaque nuit, il vérifie sur l’historique.')}<br>${t('Tout se change dans Station › Emplacement.')}</p></div>
+  <p class="muted">${t('Hestia-FB s’en sert tout de suite.')}<br>${t('Chaque nuit, il vérifie sur l’historique.')}<br>${t('Tout se change dans Station › Emplacement.')}</p></div>
   ${listSection('',list.map(q=>listRow({label:q.short,value:answerText(o.view,q)})))}
   <p class="pl-foot"><span class="pl-sp"></span>${o.close?html`<button type="button" @click=${o.close}>${t('Voir dans Station')}</button>`:nothing}
    <button type="button" class="primary" ?disabled=${o.busy} @click=${o.finish}>${o.saves?t('Enregistrer'):t('Terminer')}</button></p></div>`;
@@ -125,13 +125,13 @@ function answerText(v:PlaceView,q:Asked):string{const x=v.values[q.key];
  if(q.key==='wind_shelter')return windText(v);
  return q.choices.find(c=>c[0]===x)?.[1]??t('Je ne sais pas');}
 
-/** État › « Fiabilité de la station »: a mark and a sentence by measure; blue fiable, grey Hestia s'en charge or à vérifier. */
+/** État › « Fiabilité de la station »: a mark and a sentence by measure; blue fiable, grey Hestia-FB s'en charge or à vérifier. */
 export function trustSection(trust:Record<string,Trust>|undefined):TemplateResult|typeof nothing{
  const names:[string,string][]=[['temperature',t('Température')],['wind',t('Vent')],['rain',t('Pluie')],['sun',t('Soleil')]];
  const rows=names.filter(([k])=>trust?.[k]).map(([k,label])=>{const x=trust![k];
   return listRow({name:label,label,sub:html`${x.line}${x.learned?html`<br><span class="pl-learned">${x.learned}</span>`:nothing}`,
    value:html`<span class=${`pl-trust ${x.level}`}>${x.title}</span>`});});
  if(!rows.length)return nothing;
- return html`${listSection(t('Fiabilité de la station'),rows,{help:html`<p>${t('Une station près d’un mur, d’un arbre ou de la maison peut se tromper. Hestia le dit ici, mesure par mesure, et prend la prévision quand il faut.')}</p>`})}
-  <p class="hint pl-legend">${t('Bleu : fiable. Gris plein : Hestia s’en charge, rien à faire. Gris creux : à vérifier.')}</p>`;
+ return html`${listSection(t('Fiabilité de la station'),rows,{help:html`<p>${t('Une station près d’un mur, d’un arbre ou de la maison peut se tromper. Hestia-FB le dit ici, mesure par mesure, et prend la prévision quand il faut.')}</p>`})}
+  <p class="hint pl-legend">${t('Bleu : fiable. Gris plein : Hestia-FB s’en charge, rien à faire. Gris creux : à vérifier.')}</p>`;
 }

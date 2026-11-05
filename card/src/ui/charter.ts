@@ -1,7 +1,7 @@
 import { css, unsafeCSS } from 'lit';
 import charte from './hestia-charte';
 
-/** The pieces of the charter shared by every Hestia card (hestia-ecosysteme/charte, copied by copier.sh): the « i », the glass frame,
+/** The pieces of the charter shared by every Hestia-FB card (hestia-ecosysteme/charte, copied by copier.sh): the « i », the glass frame,
  *  the value's dot, the scale drawn as the timeline. Without the charter's tokens: Weather keeps its own (same values), and a part
  *  drawn over the hero keeps the dark sky's colours. Loaded before Weather's own pieces. */
 export const shared = unsafeCSS(charte.replace(/:host \{[\s\S]*?\n\}\n/, ''));

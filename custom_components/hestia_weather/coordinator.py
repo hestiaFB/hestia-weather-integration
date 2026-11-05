@@ -108,7 +108,7 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         """The provider's forecasts in the engine's units, passed on by the Hestia Weather weather entity."""
         self.forecast_version = 0
         self.forecast_at: datetime | None = None
-        """When the hourly forecast last arrived, for the Hestia panel."""
+        """When the hourly forecast last arrived, for the Hestia-FB panel."""
         self.watch = AlertWatch()
         self._store = alert_store(hass, entry.entry_id)
         self.history: dict[str, list[Change]] = {}

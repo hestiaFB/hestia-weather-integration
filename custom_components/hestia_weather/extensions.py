@@ -47,7 +47,7 @@ def comfort_api(hass: HomeAssistant) -> Any:
 
 
 def official(hass: HomeAssistant, entry_id: str | None) -> list[dict[str, Any]]:
-    """Hestia's own bricks for this place. Hestia Confort keeps the link and Weather reads or changes it through
+    """Hestia-FB's own bricks for this place. Hestia Confort keeps the link and Weather reads or changes it through
     Confort's interface, so turning it off on either side turns it off on both."""
     link = comfort_api(hass)
     installed = link is not None or bool(hass.config_entries.async_entries("hestia_comfort"))

@@ -48,7 +48,7 @@
         {
           "key": "vigilance_entity",
           "label": "Vigilance officielle",
-          "help": "Les alertes officielles de Météo-France ou de MétéoSuisse s’ajoutent à celles que calcule Hestia.",
+          "help": "Les alertes officielles de Météo-France ou de MétéoSuisse s’ajoutent à celles que calcule Hestia-FB.",
           "value": "",
           "entity": null,
           "need": "Facultatif",

@@ -1,4 +1,4 @@
-"""The « Météo » tab of the shared « Hestia » panel (socle, see socle.py) and what the panel's home page says about Hestia Weather.
+"""The « Météo » tab of the shared « Hestia-FB » panel (socle, see socle.py) and what the panel's home page says about Hestia Weather.
 
 The assistant of Paramètres (Configurer) stays as it is while the panel takes over: Hestia Weather keeps no former panel
 address, so the « Configurer » button still opens it.
@@ -153,7 +153,7 @@ def facts(hass: HomeAssistant, entry: Any, card_twice: bool = False, context: Co
     ready = [family_label(family)[0] for family, members in families.FAMILIES
              if any(k in keys for k in members) and not any(keys.get(k) for k in members) and not any(k in needs for k in members if k in keys)]
     bricks = linked(hass, entry.entry_id)
-    names = [b["name"] for b in ecosystem_of(hass, entry.entry_id) if b["state"] == "linked"] + ([t("une autre brique Hestia")] if bricks.get("") else [])
+    names = [b["name"] for b in ecosystem_of(hass, entry.entry_id) if b["state"] == "linked"] + ([t("une autre brique Hestia-FB")] if bricks.get("") else [])
     return health.Facts(
         title=entry.title, failed=failed, restarting=not loaded and not failed,
         weather=_name(weather, sources.get("weather_entity") or "") if weather else (sources.get("weather_entity") or ""),
@@ -239,7 +239,7 @@ async def migration_status(hass: HomeAssistant) -> dict[str, Any] | None:
 
 
 async def weather_status(hass: HomeAssistant, language: str | None = None) -> dict[str, Any]:
-    """What the « Hestia » home page says about Hestia Weather, from its own settings only, in the hub's language (socle 1.14)."""
+    """What the « Hestia-FB » home page says about Hestia Weather, from its own settings only, in the hub's language (socle 1.14)."""
     twice = await card_twice(hass)
     with speaking(language):
         # Home Assistant's registries are read once for every place, not once per place.
@@ -293,7 +293,7 @@ async def ws_open(hass: HomeAssistant, connection: websocket_api.ActiveConnectio
     if entry is None and not _has_weather(hass):
         connection.send_error(msg["id"], "no_weather", t("Aucun service météo dans Home Assistant : installez Météo-France, puis revenez ici."))
         return
-    # The saved settings come along: what Hestia proposes on top of them shows as proposed.
+    # The saved settings come along: what Hestia-FB proposes on top of them shows as proposed.
     _send_draft(connection, msg, Draft.start(hass, entry), saved=dict(entry.options) if entry else None)
 
 
@@ -351,7 +351,7 @@ async def ws_remove(hass: HomeAssistant, connection: websocket_api.ActiveConnect
 @websocket_api.async_response
 @spoken
 async def ws_link(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    """Links this place to an official Hestia brick or unlinks it, saved at once on the brick's side: one link for both."""
+    """Links this place to an official Hestia-FB brick or unlinks it, saved at once on the brick's side: one link for both."""
     try:
         _entry(hass, msg["entry_id"])
         await set_official(hass, msg["brick"], msg["entry_id"], msg["enabled"])

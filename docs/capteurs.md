@@ -26,7 +26,7 @@ Il y a cinq façons de s’en servir :
 
 Une donnée manquante donne **inconnu**, jamais « pas de pluie » ou « pas d’alerte ».
 
-Les entités marquées « à activer » existent mais sont désactivées au départ. Pour en activer : panneau **Hestia → Météo → Réglages généraux**, **Modifier** le lieu, étape **Entités**. Tout y est rangé par famille, et l’écran dit ce qui manque à certaines (un capteur UV, Atmo France…). À la première installation, les familles choisies décident de ce qui est activé.
+Les entités marquées « à activer » existent mais sont désactivées au départ. Pour en activer : panneau **Hestia-FB → Météo → Réglages généraux**, **Modifier** le lieu, étape **Entités**. Tout y est rangé par famille, et l’écran dit ce qui manque à certaines (un capteur UV, Atmo France…). À la première installation, les familles choisies décident de ce qui est activé.
 
 ## Maintenant
 

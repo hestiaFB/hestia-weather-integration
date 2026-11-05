@@ -1,4 +1,4 @@
-"""What the « Hestia » panel's home page says about Hestia Weather: blue when every place is followed, orange with what to do."""
+"""What the « Hestia-FB » panel's home page says about Hestia Weather: blue when every place is followed, orange with what to do."""
 from engine.home import Place, status
 
 
