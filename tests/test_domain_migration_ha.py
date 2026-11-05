@@ -211,6 +211,16 @@ class DomainMigrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn(("hestia_weather", "migration_failed"), issues)
         # The shared table says which id the place took, for the other bricks.
         self.assertEqual(await domain_migration.async_entry_ids(hass), {self.old_id: entry.entry_id})
+        # Hestia Confort, not updated yet, still finds Hestia Weather where it looked, by the place id it kept.
+        former = hass.data[legacy.API_KEY]
+        self.assertEqual((former.version, former.place(self.old_id)), (1, entry.entry_id))
+        self.assertEqual(former.places(), [{"entry_id": self.old_id, "title": "Gardanne"}])  # the id its settings keep
+        self.assertEqual(former.station(self.old_id), hass.data["hestia_weather_api"].station(entry.entry_id))
+        heard = []
+        stop = former.add_listener(self.old_id, lambda: heard.append(1), brick=legacy.COMFORT_DOMAIN)
+        entry.runtime_data.async_update_listeners()
+        self.assertEqual(heard, [1])
+        stop()
         await self.stop(hass)
 
     async def test_add_an_integration_resumes_the_home(self):

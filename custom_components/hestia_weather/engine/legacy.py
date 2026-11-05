@@ -30,6 +30,9 @@ STORES = (f"{DOMAIN}.alertes.", f"{DOMAIN}.migration")
 # it once carried over (domain_migration._start_siblings).
 COMFORT_DOMAIN = "niak_comfort"
 SIBLINGS = {"hestia_comfort": COMFORT_DOMAIN}
+# Where Hestia Confort under its former name (1.7) looks for Hestia Weather's interface: former_api.py answers there
+# while Hestia Confort has not been updated.
+API_KEY = "niak_weather_api"
 # Former names in what the user wrote (automations, scripts, scenes, dashboards, imported blueprints), with the new one.
 # Whole words only; an entity id (sensor.niak_weather_…) is never touched: ids stay as they are.
 TEXT = (

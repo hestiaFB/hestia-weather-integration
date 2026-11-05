@@ -13,6 +13,8 @@ from .const import DOMAIN
 from .coordinator import HestiaWeatherConfigEntry, HestiaWeatherCoordinator, alert_store
 from .domain_migration import async_setup_migration
 from .draft import async_load_labels
+from .former_api import async_setup_former_api
+from .marketplace_link import async_setup_marketplace_link
 from .panel import CARD_URL, async_setup_panel
 from .socle import async_remove_card
 from .services import async_setup_services
@@ -30,7 +32,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async_setup_websocket(hass, version)
     async_setup_services(hass)
     # The contract for the other Hestia bricks (Hestia Confort, future Hestia Chauffage…).
-    hass.data[API_KEY] = HestiaWeatherApi(hass)
+    hass.data[API_KEY] = api = HestiaWeatherApi(hass)
+    # The same, for a Hestia Confort not updated yet (still under its former name).
+    await async_setup_former_api(hass, api)
+    # After the change of name, the Marketplace may no longer follow Hestia Weather: a repair says so and mends it.
+    async_setup_marketplace_link(hass)
     # The « Météo » tab of the shared « Hestia » panel, and Hestia Weather's line on its home page.
     await async_load_labels(hass)
     await async_setup_panel(hass, version)

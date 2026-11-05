@@ -668,6 +668,21 @@
     "migration_failed": {
       "title": "Hestia Weather : le passage au nouveau nom n’est pas terminé",
       "description": "Rien n’a été perdu. Le passage reprendra au prochain redémarrage de Home Assistant. Si ce message revient, ouvrez un signalement avec le journal de Home Assistant."
+    },
+    "marketplace_untracked": {
+      "title": "Hestia Weather : reprendre les mises à jour",
+      "description": "Depuis le passage au nom Hestia, le Marketplace ne suit plus Hestia Weather : il ne vous proposera plus ses mises à jour.\n\nAppuyez sur Réparer : il télécharge à nouveau la même version ({version}). Rien ne change dans votre maison.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Reprendre les mises à jour de Hestia Weather",
+            "description": "Le Marketplace va télécharger à nouveau Hestia Weather {version}, la version que vous avez déjà. Vos réglages, vos capteurs et leur historique ne changent pas.\n\nHome Assistant vous demandera peut-être de redémarrer ensuite."
+          }
+        },
+        "abort": {
+          "download_failed": "Le Marketplace n’a pas pu télécharger Hestia Weather. Ouvrez Paramètres › Marketplace › Hestia Weather et appuyez sur Télécharger."
+        }
+      }
     }
   }
 }
