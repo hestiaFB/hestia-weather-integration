@@ -90,6 +90,11 @@ async def async_track_again(hass: HomeAssistant) -> bool:
     try:
         if repository.data.installed:
             await repository.uninstall()  # the former folder, empty of places: removed first
+        try:
+            # Read again first: the Marketplace may still keep the former folder's name, and would write there.
+            await repository.update_repository(ignore_issues=True, force=True)
+        except Exception:  # noqa: BLE001 - offline for a moment: the download below says whether it worked
+            LOGGER.debug("Hestia Weather not read again before its download", exc_info=True)
         await repository.async_install_repository()
         installed = bool(repository.data.installed)
     except Exception:  # noqa: BLE001 - the repair then says how to do it by hand
