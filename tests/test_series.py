@@ -282,3 +282,23 @@ def test_what_is_kept_between_calculations_never_changes_a_curve() -> None:
         for later in (0, 60, 600, 4000):
             moment = at + timedelta(seconds=later)
             assert wind_chart_series(rows, "km/h", moment, 3, mode, period) == wind_chart_series(list(rows), "km/h", moment, 3, mode, period)
+
+
+def test_kept_rain_bars_are_the_bars_computed_from_scratch() -> None:
+    # The bars already over are kept until the hour changes (docs/PLAN-OPTIMISATION.md, point 5): with the counter's
+    # reading carried to now, on the hour or not, across resets, they must be the bars drawn from scratch.
+    import random
+    from datetime import timedelta
+    from engine.series import rain_bars
+    random.seed(11)
+    for _ in range(60):
+        top = NOW.timestamp() - NOW.timestamp() % 3600
+        level, sums = 0.0, []
+        for h in range(random.randint(1, 32 * 24), 0, -1):
+            level = 0.0 if random.random() < 0.02 else level + random.choice([0, 0, 0, 0.2, 1.4])
+            sums.append(Change(top - h * 3600, str(round(level, 1))))
+        for minutes in (0, 0, 7, 60, 61):
+            at = NOW + timedelta(minutes=minutes)
+            live = Change(at.timestamp(), str(round(level + random.uniform(0, 3), 1))) if random.random() < 0.8 else None
+            for period in ("24h", "30d"):
+                assert rain_bars(sums, at, PARIS, period, live) == rain_bars([*sums, *([live] if live else [])], at, PARIS, period)

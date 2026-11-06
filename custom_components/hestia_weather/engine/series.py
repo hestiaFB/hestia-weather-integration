@@ -41,10 +41,14 @@ def rain_state_key(entity_id: str) -> str:
     return f"{entity_id}#last"
 
 
-def rain_bars(sums: Sequence[Change], now: datetime, zone: ZoneInfo, period: str) -> tuple[RainDay, ...]:
-    """Rain per hour over the last 24 hours, or per day over the last 30 days, from the running sum; the last bar is the one under way."""
-    points = [(c.time, finite_number(c.state)) for c in sums]
-    if not points:
+_bars: dict[tuple[Any, ...], tuple[Sequence[Change], tuple[RainDay, ...]]] = {}
+
+
+def rain_bars(sums: Sequence[Change], now: datetime, zone: ZoneInfo, period: str, live: Change | None = None) -> tuple[RainDay, ...]:
+    """Rain per hour over the last 24 hours, or per day over the last 30 days, from the running sum; the last bar is the one
+    under way, carried on to `live` (the counter's reading now) when it is given. The bars already over only change with
+    the statistics or the hour: kept until then (docs/PLAN-OPTIMISATION.md, point 5)."""
+    if not sums:
         return ()
     end = now.timestamp()
     if period == "24h":
@@ -56,11 +60,25 @@ def rain_bars(sums: Sequence[Change], now: datetime, zone: ZoneInfo, period: str
         days = [today - timedelta(days=RAIN_DAYS - 1 - i) for i in range(RAIN_DAYS)]
         bounds = [(midnight(d, zone), midnight(d + timedelta(days=1), zone)) for d in days]
         labels = [str(d.day) for d in days]
-    bars = []
-    for (a, b), label in zip(bounds, labels):
+
+    def bar(points: list[tuple[float, float | None]], a: float, b: float, label: str) -> RainDay:
         total = counter_increase(points, a, min(b, end))
-        bars.append(RainDay(datetime.fromtimestamp(a, zone).isoformat(timespec="minutes"), label, total.value, total.partial))
-    return tuple(bars)
+        return RainDay(datetime.fromtimestamp(a, zone).isoformat(timespec="minutes"), label, total.value, total.partial)
+
+    key = (id(sums), period, bounds[0][0], str(zone))
+    hit = _bars.get(key)
+    if hit is not None and hit[0] is sums:
+        over = hit[1]
+    else:
+        points = [(c.time, finite_number(c.state)) for c in sums]
+        # A bar over ends before now: neither now nor the reading under way changes it.
+        over = tuple(bar(points, a, b, label) for (a, b), label in zip(bounds[:-1], labels[:-1]))
+        _keep(_bars, key, (sums, over))
+    points = [(c.time, finite_number(c.state)) for c in (*sums, *((live,) if live is not None else ()))]
+    # The reading under way belongs to every bar that ends at or after it: the last one, and the one before when now falls
+    # right on the hour (or on midnight).
+    kept = sum(1 for a, b in bounds[:-1] if live is None or b < live.time)
+    return (*over[:kept], *(bar(points, a, b, label) for (a, b), label in zip(bounds[kept:], labels[kept:])))
 
 
 def finite_number(state: str) -> float | None:

@@ -248,8 +248,10 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         # Listen first: a weather service that starts while the first fetches run is caught at once.
         entry.async_on_unload(async_track_state_change_event(self.hass, sorted(ids), self._on_state_change))
         entry.async_on_unload(self.hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, self._registry_changed))
+        # Beside them, in a worker thread: where the sun can be over a year here (8 784 positions), which the station's shade
+        # reads; computed on the event loop at the first calculation, it held Home Assistant up at start (point 5 of the plan).
         await asyncio.gather(self._load_forecasts(), self._load_history(), self._load_rain(), self._load_week(), self._load_air_forecast(),
-                             self._load_strikes(), self._load_lightning_month())
+                             self._load_strikes(), self._load_lightning_month(), self.hass.async_add_executor_job(self.shade_cells))
         for interval, load in ((FORECAST_INTERVAL, self._load_forecasts), (HISTORY_INTERVAL, self._load_history), (RAIN_INTERVAL, self._load_rain),
                                (WEEK_INTERVAL, self._load_week), (AIR_INTERVAL, self._load_air_forecast), (AIR_INTERVAL, self._load_pressure_forecast), (RAIN_INTERVAL, self._load_lightning_month),
                                (WEEK_INTERVAL, self._load_shade)):

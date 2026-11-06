@@ -404,16 +404,17 @@ def _rain_periods(rain_history: Mapping[str, Sequence[Change]], entities: Sequen
     entity = next((e for e in entities if e and rain_history.get(rain_sum_key(e))), None)
     if entity is None:
         return ()
-    sums = list(rain_history[rain_sum_key(entity)])
+    sums = rain_history[rain_sum_key(entity)]
     last_state = next(iter(rain_history.get(rain_state_key(entity), ())), None)
     reading, base = live(entity), finite(sums[-1].state)
     start = finite(last_state.state) if last_state else None
+    carried = None
     if reading is not None and base is not None and start is not None:
         # The counter went on since the last hour of statistics; below its value there, it was reset (a daily counter at midnight).
-        sums.append(Change(now.timestamp(), str(base + (reading - start if reading >= start else reading))))
+        carried = Change(now.timestamp(), str(base + (reading - start if reading >= start else reading)))
     out = []
     for period in RAIN_PERIODS:
-        bars = rain_bars(sums, now, zone, period)
+        bars = rain_bars(sums, now, zone, period, carried)
         known = [d.value for d in bars if d.value is not None]
         out.append(RainPeriod(period, bars, round(sum(known), 1) if known else None, any(d.partial or d.value is None for d in bars[:-1])))
     return tuple(out)
