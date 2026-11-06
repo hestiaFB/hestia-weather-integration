@@ -671,7 +671,6 @@
     },
     "marketplace_untracked": {
       "title": "Hestia Weather: wieder Updates erhalten",
-      "description": "Seit dem Wechsel zum Namen Hestia verfolgt der Marketplace Hestia Weather nicht mehr: Er bietet keine Updates mehr an.\n\nTippen Sie auf Reparieren: Er lädt dieselbe Version ({version}) erneut herunter. In Ihrem Zuhause ändert sich nichts.",
       "fix_flow": {
         "step": {
           "confirm": {

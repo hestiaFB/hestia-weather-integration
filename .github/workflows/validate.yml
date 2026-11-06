@@ -35,7 +35,8 @@ jobs:
         working-directory: frontend
       - run: npm run validate
         working-directory: frontend
-      - run: git diff --exit-code -- custom_components/hestia_weather/frontend/
+      # The gzip copies are left out: the same script compresses to other bytes with another Node's zlib.
+      - run: git diff --exit-code -- custom_components/hestia_weather/frontend/ ':(exclude)*.gz'
 
   card:
     runs-on: ubuntu-latest

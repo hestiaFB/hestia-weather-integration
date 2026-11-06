@@ -671,7 +671,6 @@
     },
     "marketplace_untracked": {
       "title": "Hestia Weather: get updates again",
-      "description": "Since the move to the Hestia name, the Marketplace no longer follows Hestia Weather: it will not offer its updates any more.\n\nPress Repair: it downloads the same version ({version}) again. Nothing changes in your home.",
       "fix_flow": {
         "step": {
           "confirm": {
