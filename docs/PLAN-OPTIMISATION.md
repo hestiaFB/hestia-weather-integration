@@ -226,6 +226,16 @@ Les 0,16 s qui restent ne sont plus Weather : c'est Confort qui réagit à chaqu
 | Mise à jour envoyée à la carte | 49 ko × nombre de cartes | 41 ko × 1 | 41 ko | **14-17 ko** |
 | Carte + polices au premier chargement | 835 ko | 185 ko | 185 ko | 185 ko |
 
+### Derniers ajouts avant publication — 6 nov.
+
+- Au démarrage, les positions du soleil sur un an (8 784, pour l'ombre de la station) sont calculées dans un fil à part,
+  avec les premières lectures, au lieu de bloquer la boucle au premier calcul (environ 0,4 s sous profileur au labo).
+- Les barres de pluie terminées (24 h, 30 jours) sont gardées jusqu'à l'heure suivante ; seule la barre en cours suit le
+  compteur. Environ 50 calculs de cumul en moins par minute. Identique au calcul complet, heures pile comprises
+  (test tiré au hasard dans `tests/test_series.py`).
+- Démarrage de Weather : environ 2 s au labo, surtout de l'attente des lectures de l'historique (Home Assistant reste
+  réactif pendant ce temps). Calculer sans attendre ferait partir capteurs et alertes de valeurs vides : laissé ainsi.
+
 Ce qui bloque encore la boucle environ 0,16-0,18 s par minute pendant la mise à jour de Weather, c'est Confort qui y
 réagit (son écouteur sur Weather) : à traiter dans le plan de Confort.
 
