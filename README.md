@@ -129,6 +129,8 @@ Installée sous son nom technique d’origine, l’intégration passe seule au n
 - les automatisations, scripts, scènes et tableaux de bord faits dans l’interface sont mis à jour ;
 - ce qui est écrit à la main en YAML n’est jamais modifié : une réparation dans **Paramètres** liste les fichiers et les lignes à changer.
 
-Hestia Weather 3.x va avec Hestia Confort 2.x : mettez-les à jour ensemble.
+Hestia Weather 3.x va avec Hestia Confort 2.x et 3.x : mettez-les à jour ensemble.
+
+**La mise à jour est refusée** (« changed its domain from niak_… to hestia_… ») ? Suivez [le guide du passage au nom Hestia](docs/PASSAGE-HESTIA.md) : un dossier à supprimer, deux redémarrages, rien n’est perdu.
 
 **Entités** : une nouvelle installation crée des `sensor.hestia_weather_…`. Installée avant la 2.9.4, vos entités gardent leur nom d’origine. Pour leur donner le nom Hestia, **Réglages généraux → Nom des entités** : un aperçu d’abord, puis vos automatisations, scripts, scènes et tableaux de bord suivent, et un retour en arrière reste possible.
