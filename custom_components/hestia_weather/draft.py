@@ -145,7 +145,9 @@ class Draft(_SourceSteps):
 
     def _pollen_found(self) -> dict[str, bool]:
         states, registry, _ = self._read()
-        return {p: bool(polleninfo.candidates(states, registry, p)[0]) for p in polleninfo.PROVIDERS}
+        # Every pollen source is a sensor: the others are not read.
+        sensors = detection.sensor_states(states)
+        return {p: bool(polleninfo.candidates(sensors, registry, p)[0]) for p in polleninfo.PROVIDERS}
 
     def pollen_choice(self) -> str:
         source = self.sources.get("pollen_source")

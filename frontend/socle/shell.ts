@@ -1,10 +1,10 @@
-// Hestia-FB shared panel (socle v1.22): header, tabs and the home page listing every Hestia-FB brick.
+// Hestia-FB shared panel (socle v1.23): header, tabs and the home page listing every Hestia-FB brick.
 // Copied unchanged into each brick from hestia-ecosysteme/socle/ (see ECOSYSTEME.md § 8).
 import {LitElement,html,css,nothing,type PropertyValues} from 'lit';
 import {frame,hubStyles,modernStyles,hubIcon,line,motion,type NkLine} from './ui';
-import {t,fr,setLanguage} from './i18n';
+import {t,fr,setLanguage,wordsReady} from './i18n';
 
-export const ELEMENT='hestia-socle-1-22';
+export const ELEMENT='hestia-socle-1-23';
 // The words of the bricks' own menus (socle 1.20), known before any brick's page is loaded.
 export const MENU_WORDS=[fr('Pièces'),fr('Lieux'),fr('Apprentissage'),fr('Bilan'),fr('À propos')];
 // The panel's address (socle 1.12): /hestia; the former address leads there, keeping the rest of the address.
@@ -39,23 +39,34 @@ function navigate(path:string,replace=false){
 }
 
 export class HestiaShell extends LitElement {
- static properties={hass:{attribute:false},narrow:{type:Boolean},route:{attribute:false},panel:{attribute:false},overview:{state:true},error:{state:true},saving:{state:true},menuOpen:{state:true},restartAsk:{state:true},unfolded:{state:true}};
+ static properties={hass:{attribute:false,noAccessor:true},narrow:{type:Boolean},route:{attribute:false},panel:{attribute:false},overview:{state:true},error:{state:true},saving:{state:true},menuOpen:{state:true},restartAsk:{state:true},unfolded:{state:true}};
  // Declared, not initialised as fields: whatever the brick's compiler options, Lit keeps its accessors.
- declare hass?:Hass;declare narrow:boolean;declare route?:{prefix:string;path:string};declare panel?:{config?:{redirect?:string}};
+ declare narrow:boolean;declare route?:{prefix:string;path:string};declare panel?:{config?:{redirect?:string}};
  declare menuOpen:boolean;declare overview?:Overview;declare error:string;declare saving:boolean;declare restartAsk:boolean;
  // The menu groups of the other bricks that the user unfolded (socle 1.21): the open brick's group is always unfolded.
  declare unfolded:Set<string>;
  private migrationTimer=0;
  constructor(){super();this.narrow=false;this.error='';this.saving=false;this.menuOpen=false;this.restartAsk=false;this.unfolded=new Set();this.fonts();}
- private fonts(){if(document.getElementById('hestia-hub-fonts'))return;const style=document.createElement('style');style.id='hestia-hub-fonts';style.textContent=[400,500,600,700].map(w=>`@font-face{font-family:Manrope;src:url('${new URL('./manrope-'+w+'.ttf',import.meta.url).href}');font-weight:${w};font-display:swap}`).join('');document.head.append(style);}
+ // woff2 first (socle 1.23: 4 × 16 kB instead of 4 × 95 kB), the TTF only for a copy of the brick that would lack it.
+ private fonts(){if(document.getElementById('hestia-hub-fonts'))return;const style=document.createElement('style');style.id='hestia-hub-fonts';const font=(w:number,ext:string)=>new URL('./manrope-'+w+'.'+ext,import.meta.url).href;style.textContent=[400,500,600,700].map(w=>`@font-face{font-family:Manrope;src:url('${font(w,'woff2')}') format('woff2'),url('${font(w,'ttf')}') format('truetype');font-weight:${w};font-display:swap}`).join('');document.head.append(style);}
+ // Home Assistant hands a new `hass` at every change of state in the home (8 a second on the lab): the hub only redraws for
+ // its language and theme, the last ones drawn (an older `hass` changed in place cannot hide a new theme), and the open tab
+ // gets it directly, deciding itself what to redraw (socle 1.23).
+ private currentHass?:Hass;
+ private drawnWith?:string;
+ get hass():Hass|undefined{return this.currentHass;}
+ set hass(value:Hass|undefined){const old=this.currentHass;this.currentHass=value;const open=this.tabs?.get(splitPath(this.route?.path)[0]);if(open)open.hass=value;
+  const key=value?`${value.language}|${value.themes?.darkMode}`:undefined;if(!old||key!==this.drawnWith){this.drawnWith=key;this.requestUpdate('hass',old);}}
  private tabs=new Map<string,Tab>();
  private loading=false;
  private shown:string|undefined;
  private viewportObserver?:ResizeObserver;
  private viewportFrame=0;
  private resizeViewport=()=>{cancelAnimationFrame(this.viewportFrame);this.viewportFrame=requestAnimationFrame(()=>{if(!this.isConnected)return;const top=Math.max(0,this.getBoundingClientRect().top),bottom=parseFloat(getComputedStyle(this).getPropertyValue('--safe-area-inset-bottom'))||0;const height=Math.max(0,(window.visualViewport?.height??window.innerHeight)-top-bottom)+'px';if(this.style.getPropertyValue('--nk-viewport-height')!==height)this.style.setProperty('--nk-viewport-height',height);});};
- connectedCallback(){super.connectedCallback();window.addEventListener('resize',this.resizeViewport);window.visualViewport?.addEventListener('resize',this.resizeViewport);this.viewportObserver=new ResizeObserver(this.resizeViewport);this.viewportObserver.observe(this.parentElement??this);this.resizeViewport();}
- disconnectedCallback(){super.disconnectedCallback();window.removeEventListener('resize',this.resizeViewport);window.visualViewport?.removeEventListener('resize',this.resizeViewport);this.viewportObserver?.disconnect();cancelAnimationFrame(this.viewportFrame);}
+ // The words of a language arrive after the page (socle 1.23): the hub draws again with them.
+ private words=()=>this.requestUpdate();
+ connectedCallback(){super.connectedCallback();window.addEventListener('hestia-words',this.words);window.addEventListener('resize',this.resizeViewport);window.visualViewport?.addEventListener('resize',this.resizeViewport);this.viewportObserver=new ResizeObserver(this.resizeViewport);this.viewportObserver.observe(this.parentElement??this);this.resizeViewport();}
+ disconnectedCallback(){super.disconnectedCallback();window.removeEventListener('hestia-words',this.words);window.removeEventListener('resize',this.resizeViewport);window.visualViewport?.removeEventListener('resize',this.resizeViewport);this.viewportObserver?.disconnect();cancelAnimationFrame(this.viewportFrame);}
 
  protected updated(changed:PropertyValues){
   // The words follow Home Assistant's language: a change redraws the hub.
@@ -75,7 +86,8 @@ export class HestiaShell extends LitElement {
  }
  private async load(){
   this.loading=true;
-  try{this.overview=await this.hass!.callWS<Overview>({type:'hestia/overview',language:this.hass!.language});this.error='';}
+  // Its words come with it: the home page never shows in French first for a hub in another language.
+  try{const [overview]=await Promise.all([this.hass!.callWS<Overview>({type:'hestia/overview',language:this.hass!.language}),wordsReady()]);this.overview=overview;this.error='';}
   catch(e){this.error=typeof e==='object'&&e&&'message' in e?String(e.message):t('Connexion indisponible.');}
   finally{this.loading=false;}
  }
@@ -91,7 +103,10 @@ export class HestiaShell extends LitElement {
   }
   const [,rest]=splitPath(this.route?.path);
   el.setAttribute('data-appearance',this.overview?.theme??'hestia');
-  el.hass=this.hass;el.narrow=this.narrow;el.route={prefix:`${BASE}/${brick.slug}`,path:rest};
+  el.hass=this.hass;el.narrow=this.narrow;
+  // A new address object only when the address changes: the tab reads it again at each new one (socle 1.23).
+  const prefix=`${BASE}/${brick.slug}`,known=el.route as {prefix?:string;path?:string}|undefined;
+  if(known?.prefix!==prefix||known?.path!==rest)el.route={prefix,path:rest};
  }
  // The sidebar entry (socle 1.6): shown only when this copy of the socle answers with the setting.
  private async setSidebar(visible:boolean){
@@ -265,10 +280,11 @@ export class HestiaShell extends LitElement {
  :host{position:relative;display:grid;grid-template-columns:264px minmax(0,1fr);height:var(--nk-viewport-height,100dvh);min-height:0;grid-template-rows:minmax(0,1fr)}aside{padding:28px 18px 20px;border-right:1px solid var(--nk-border);overflow:auto;background:var(--nk-surface)}.brand{display:flex;align-items:center;gap:8px;padding:0 4px 26px}.brand strong{font-size:var(--nw-fs-case,21px);letter-spacing:-.04em}.brand button{border:0;padding:8px;min-width:44px}.brand svg{width:25px;height:25px}.brand .nk-logo{width:40px;height:40px;margin:-6px 0 -6px -4px;flex-shrink:0}.brand button{margin-left:auto}.mobile-bar .nk-logo{width:30px;height:30px;flex-shrink:0;margin-right:-4px}nav{display:block;overflow:visible;margin:0 0 20px}nav+nav{border-top:1px solid var(--nk-border);padding-top:18px}.nav-label{margin:0 12px 9px;font-size:var(--nw-fs-label,11px);font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--nk-muted)}nav a{display:flex;gap:12px;align-items:center;border:0;border-radius:24px;margin:3px 0;min-height:44px;padding:9px 13px;font-size:var(--nw-fs-text,14px);white-space:normal}nav a svg{width:19px;height:19px;flex-shrink:0}nav a[aria-current=page]{background:var(--nk-selected);border:0;color:var(--primary-text-color);font-weight:600}@media(hover:hover) and (pointer:fine){nav a:hover{background:var(--nk-selected)}}nav a:active{background:var(--nk-selected)}.content{min-width:0;overflow:auto;height:100%;grid-column:2}.content>*:not(main){height:100%}.mobile-bar,.backdrop{display:none}.theme-label{display:block;margin-bottom:6px}select{width:100%;max-width:460px;min-height:44px;padding:10px 14px;border:1px solid var(--nk-border);border-radius:15px;background:var(--nk-surface);color:inherit;font:inherit}.other{padding:0}.other+ .other{margin-top:20px;padding-top:20px}.nk-home-head{margin-top:0}
  @media(max-width:760px){:host{display:flex;flex-direction:column}.mobile-bar{display:flex;align-items:center;gap:4px;border-bottom:1px solid var(--nk-border);padding:6px 10px;flex-shrink:0}.mobile-bar button{border:0;background:transparent;padding:8px;min-width:44px}.mobile-bar strong{font-size:var(--nw-fs-title,17px)}
   .nk-where{gap:8px;padding:6px 12px 6px 8px!important;border-radius:999px!important;transition:background-color var(--h-fast) var(--h-ease-out)}.nk-where svg{width:18px;height:18px;color:var(--nk-muted);transition:transform var(--h-base) var(--h-ease-out)}.nk-where[aria-expanded=true] svg{transform:rotate(180deg)}.nk-where:active{background:var(--nk-selected)}
+  /* Socle 1.23: the drawer opens in 220 ms instead of 280: it is crossed at every change of page on a phone. */
   aside{display:block;position:absolute;inset:0 auto 0 0;width:min(290px,86vw);z-index:21;border-radius:0 24px 24px 0;box-shadow:0 12px 40px #0003;touch-action:pan-y;transform:translateX(-104%);visibility:hidden;transition:transform var(--h-exit) var(--h-ease-sheet),visibility 0s linear var(--h-exit)}
-  aside.open{transform:none;visibility:visible;transition:transform var(--h-slow) var(--h-ease-sheet),visibility 0s}aside.dragging{transition:none}
+  aside.open{transform:none;visibility:visible;transition:transform var(--h-base) var(--h-ease-sheet),visibility 0s}aside.dragging{transition:none}
   .backdrop{display:block;position:absolute;inset:0;border:0;border-radius:0;background:#0006;z-index:20;width:100%;height:100%;padding:0;min-height:0;opacity:0;visibility:hidden;transition:opacity var(--h-exit) var(--h-ease-out),visibility 0s linear var(--h-exit)}
-  .backdrop.open{opacity:1;visibility:visible;transition:opacity var(--h-slow) var(--h-ease-out),visibility 0s}
+  .backdrop.open{opacity:1;visibility:visible;transition:opacity var(--h-base) var(--h-ease-out),visibility 0s}
   .content{flex:1;height:auto}.other{gap:12px}.brand{padding-bottom:20px}}
  @media(max-width:760px) and (prefers-reduced-motion:reduce){aside,aside.open{transform:none;transition-property:opacity,visibility}aside{opacity:0}aside.open{opacity:1}}
  .nav-fold{display:flex;align-items:center;justify-content:space-between;width:calc(100% - 12px);min-height:44px;margin:0 0 0 12px;padding:0;border:0;border-radius:0;background:none;font:inherit;font-size:var(--nw-fs-label,11px);font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--nk-muted);cursor:pointer}

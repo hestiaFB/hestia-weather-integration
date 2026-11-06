@@ -145,6 +145,10 @@ def _is_atmo(state: StateLike, entry: Mapping[str, Any] | None) -> bool:
     return (entry or {}).get("platform") == "atmofrance" or bool(re.search(r"atmo[ _-]?france", normal(state.attributes.get("attribution"))))
 
 
+is_atmo = _is_atmo
+"""Whether a sensor comes from Atmo France (detection.atmo_areas reads only those)."""
+
+
 def _is_tomorrow(state: StateLike, entry: Mapping[str, Any] | None) -> bool:
     return bool(re.search(r"(?:\bj\s*[+_ -]\s*1\b|\bdemain\b|\btomorrow\b|_j_?1(?:_|\b))", _text(state, entry)))
 
@@ -203,10 +207,12 @@ def candidates(states: Sequence[StateLike], key: str, registry: Mapping[str, Map
 
 
 def detect(states: Sequence[StateLike], registry: Mapping[str, Mapping[str, Any]], options: Mapping[str, Any],
-           devices: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, str]:
-    """Atmo settings to propose: the zone (the only one, or the one named like the location) and each sensor found once."""
+           devices: Mapping[str, Mapping[str, Any]] | None = None, *, groups: list[dict[str, str]] | None = None,
+           atmo_states: Sequence[StateLike] | None = None) -> dict[str, str]:
+    """Atmo settings to propose: the zone (the only one, or the one named like the location) and each sensor found once.
+    `groups` and `atmo_states` (the Atmo France sensors only) may be given when already known: the same result, read faster."""
     found: dict[str, str] = {}
-    groups = areas(states, registry, devices)
+    groups = areas(states, registry, devices) if groups is None else groups
     by_id = {s.entity_id: s for s in states}
     selected = {_area(by_id[options[k]], registry.get(options[k])) for k in ATMO_KEYS if options.get(k) in by_id} - {""}
     weather = by_id.get(options.get("weather_entity") or "")
@@ -230,7 +236,7 @@ def detect(states: Sequence[StateLike], registry: Mapping[str, Mapping[str, Any]
         zone = chosen if metric in ("air", *POLLUTANT_METRICS) else pollen_area
         if not zone:
             continue
-        ids = candidates(states, key, registry, zone)
+        ids = candidates(states if atmo_states is None else atmo_states, key, registry, zone)
         if len(ids) == 1:
             found[key] = ids[0]
     return found

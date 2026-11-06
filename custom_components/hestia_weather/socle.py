@@ -23,9 +23,9 @@ from homeassistant.helpers.storage import Store
 
 from .engine import legacy
 
-SOCLE_VERSION = (1, 22)
+SOCLE_VERSION = (1, 23)
 # Which copy of a same version is the newest: written by copier.sh when the socle changes (EMPREINTE), equal in ui.ts.
-SOCLE_BUILD = "20261105.1748"
+SOCLE_BUILD = "20261106.1007"
 # 1.1: an optional `tab`, the tab's own name when it is not the brick's (« Météo » for Hestia Weather).
 # 1.2: async_register_card, the brick's card on every dashboard, also as a dashboard resource.
 # 1.3: the home page says « À découvrir » and « Voir » for the bricks not installed (same contract as 1.2).
@@ -62,8 +62,12 @@ SOCLE_BUILD = "20261105.1748"
 #       a cache that kept an older script under the brick's address (browser, or a proxy ignoring ?v=) can no longer leave
 #       the page blank (another element name) nor an old tab in a new hub. A copy whose script on disk does not define its
 #       own element (a file left from another version) never shows the panel: another brick's copy shows it.
+# 1.23: quicker at the click (hestia-ecosysteme/docs/PLAN-OPTIMISATION-HUB.md): the hub no longer redraws at every change of
+#       state in the home, only for its language and theme, and hands the open tab its new `hass` directly; the tab's
+#       address object only changes with the address. ui.ts hassChanged(): a tab redraws only for the entities it shows.
+#       The hub's fonts in woff2 (TTF kept as a fallback). No change to the bricks' contract.
 # The shell's custom element carries its version: two copies never fight over one name.
-ELEMENT = "hestia-socle-1-22"
+ELEMENT = "hestia-socle-1-23"
 KEY = "hestia_socle"
 STORE_VERSION = 1
 PANEL = "hestia"

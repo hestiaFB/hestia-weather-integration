@@ -12,7 +12,7 @@ const socle=fileURLToPath(new URL('../socle/',import.meta.url));
 const temp=mkdtempSync(join(tmpdir(),'hestia-i18n-'));
 after(()=>rmSync(temp,{recursive:true,force:true}));
 await build({entryPoints:[join(socle,'i18n.ts'),join(socle,'i18n-en.ts'),join(socle,'i18n-de.ts')],bundle:true,platform:'node',format:'esm',outdir:temp,outExtension:{'.js':'.mjs'},logLevel:'silent'});
-const {t,setLanguage,addDictionary}=await import(pathToFileURL(join(temp,'i18n.mjs')).href);
+const {t,setLanguage,addDictionary,wordsReady}=await import(pathToFileURL(join(temp,'i18n.mjs')).href);
 const {SOCLE_EN}=await import(pathToFileURL(join(temp,'i18n-en.mjs')).href);
 const {SOCLE_DE}=await import(pathToFileURL(join(temp,'i18n-de.mjs')).href);
 
@@ -39,9 +39,9 @@ test('the hub has English words for every French text it shows',()=>{
 test('the dictionary keeps no word nothing shows',()=>{
  assert.deepEqual(Object.keys(SOCLE_EN).filter(x=>!texts.has(x)&&!fromBricks.includes(x)),[]);
 });
-test('the language follows Home Assistant, English for a language without its words',()=>{
- setLanguage('en');assert.equal(t('Ouvrir {tab}',{tab:'Weather'}),'Open Weather');
- setLanguage('nl');assert.equal(t('Réglages'),'Settings');
+test('the language follows Home Assistant, English for a language without its words',async()=>{
+ setLanguage('en');await wordsReady();assert.equal(t('Ouvrir {tab}',{tab:'Weather'}),'Open Weather');
+ setLanguage('nl');await wordsReady();assert.equal(t('Réglages'),'Settings');
  setLanguage('fr');assert.equal(t('Réglages'),'Réglages');
 });
 test('the hub has German words for every English one, with the same {names}',()=>{
@@ -49,12 +49,19 @@ test('the hub has German words for every English one, with the same {names}',()=
  assert.deepEqual(Object.keys(SOCLE_DE).sort(),Object.keys(SOCLE_EN).sort());
  assert.deepEqual(Object.entries(SOCLE_DE).filter(([french,german])=>names(french)!==names(german)).map(([french])=>french),[]);
 });
-test('German, and English for a word a brick has no German for',()=>{
- setLanguage('de-DE');
+test('German, and English for a word a brick has no German for',async()=>{
+ setLanguage('de-DE');await wordsReady();
  try{
   assert.equal(t('Réglages'),'Einstellungen');
   addDictionary('en',{'Mot d’une brique sans allemand':'A brick’s word without German'});
   assert.equal(t('Mot d’une brique sans allemand'),'A brick’s word without German');
   assert.equal(t('Mot qu’aucun dictionnaire n’a'),'Mot qu’aucun dictionnaire n’a');
  }finally{setLanguage('fr');}
+});
+test('a dictionary is only read for its language, and a brick may give how to load its words (socle 1.23)',async()=>{
+ let read=0;addDictionary('en',async()=>{read++;return {'Mot chargé à la demande':'A word loaded when needed'};});
+ setLanguage('fr');await wordsReady();assert.equal(read,0);
+ setLanguage('en');await wordsReady();
+ try{assert.equal(read,1);assert.equal(t('Mot chargé à la demande'),'A word loaded when needed');assert.equal(t('Réglages'),'Settings');}
+ finally{setLanguage('fr');}
 });

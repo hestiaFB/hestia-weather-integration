@@ -47,6 +47,18 @@ class SocleCopy(unittest.TestCase):
     def test_the_fonts_are_served(self):
         for weight in (400, 500, 600, 700):
             self.assertTrue((FRONTEND / f"manrope-{weight}.ttf").is_file(), weight)
+            # Socle 1.23: the hub asks for the light woff2 first.
+            self.assertTrue((FRONTEND / f"manrope-{weight}.woff2").is_file(), weight)
+
+    def test_the_hub_scripts_are_served_compressed(self):
+        # Socle 1.23: Home Assistant serves the `.gz` beside a script to the browsers that accept it; an old one would be served
+        # instead of the new script.
+        import gzip
+        # Socle 1.23: the pieces loaded when needed (hub-<sum>.js) too.
+        for name in ("hestia-socle.js", "panel.js", *(p.name for p in FRONTEND.glob("hub-*.js"))):
+            copy = FRONTEND / f"{name}.gz"
+            self.assertTrue(copy.is_file(), f"{name}.gz : relancer node build.mjs")
+            self.assertEqual(gzip.decompress(copy.read_bytes()), (FRONTEND / name).read_bytes(), f"{name}.gz : relancer node build.mjs")
 
 
 if __name__ == "__main__":

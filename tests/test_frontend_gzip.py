@@ -10,7 +10,9 @@ FRONTEND = Path(__file__).parent.parent / "custom_components" / "hestia_weather"
 
 def test_each_gzip_copy_is_the_file_beside_it() -> None:
     copies = sorted(FRONTEND.glob("*.js.gz"))
-    assert {c.name for c in copies} == {"hestia-weather-card.js.gz", "panel.js.gz", "hestia-socle.js.gz"}
+    # Socle 1.23: and the hub's pieces loaded when needed (hub-<sum>.js), each with its copy.
+    assert {c.name for c in copies if not c.name.startswith("hub-")} == {"hestia-weather-card.js.gz", "panel.js.gz", "hestia-socle.js.gz"}
+    assert {c.name[:-3] for c in copies if c.name.startswith("hub-")} == {p.name for p in FRONTEND.glob("hub-*.js")}
     for copy in copies:
         assert gzip.decompress(copy.read_bytes()) == (FRONTEND / copy.name[:-3]).read_bytes(), f"{copy.name} : relancer npm run build"
 

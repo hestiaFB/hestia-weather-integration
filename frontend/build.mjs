@@ -1,15 +1,13 @@
 import {build} from 'esbuild';
-import {readFileSync, writeFileSync} from 'node:fs';
-import {gzipSync} from 'node:zlib';
 // The tab takes the socle's pieces from the newest copy on the page (socle 1.22, socle/hub.ts).
 import {hubPieces} from './socle/hub-plugin.mjs';
-await build({entryPoints:['panel.ts'],bundle:true,format:'esm',target:'es2022',minify:true,plugins:[hubPieces],
-  outfile:'../custom_components/hestia_weather/frontend/panel.js',legalComments:'none',loader:{'.css':'text'}});
+// Socle 1.23: pieces loaded when needed (the English and German words), then the gzip copy beside each script
+// (tests/test_frontend_gzip.py).
+import {DECOUPE,nettoyer,compresser} from './socle/compresser.mjs';
+const out='../custom_components/hestia_weather/frontend';
+nettoyer(out);
+await build({entryPoints:{panel:'panel.ts'},...DECOUPE,outdir:out,bundle:true,target:'es2022',minify:true,plugins:[hubPieces],
+  legalComments:'none',loader:{'.css':'text'}});
 // Shared « Hestia-FB » panel (socle), copied from hestia-ecosysteme/socle/ by its copier.sh.
-await build({entryPoints:['socle/shell.ts'],bundle:true,format:'esm',target:'es2022',minify:true,
-  outfile:'../custom_components/hestia_weather/frontend/hestia-socle.js',legalComments:'none'});
-// Their gzip copies, served by Home Assistant to the browsers that accept them (tests/test_frontend_gzip.py).
-for (const name of ['panel.js', 'hestia-socle.js']) {
-  const out = `../custom_components/hestia_weather/frontend/${name}`;
-  writeFileSync(`${out}.gz`, gzipSync(readFileSync(out), {level: 9}));
-}
+await build({entryPoints:{'hestia-socle':'socle/shell.ts'},...DECOUPE,outdir:out,bundle:true,target:'es2022',minify:true,legalComments:'none'});
+compresser(out,['panel.js','hestia-socle.js']);

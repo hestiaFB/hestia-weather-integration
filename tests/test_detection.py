@@ -379,3 +379,28 @@ def test_takes_the_uv_a_netatmo_station_lacks_from_openuv() -> None:
     assert candidates(every, "uv_index_entity", registry, options, devices) == ["sensor.openuv_indice_uv_actuel"]
     assert "sensor.openuv_indice_uv_actuel" in manual_candidates(every, "uv_index_entity", registry, options, devices)
     assert fill(every, registry, devices, BASE, "station")["uv_index_entity"] == "sensor.openuv_indice_uv_actuel"
+
+
+# ── What a sensor gives, kept from one command of the panel to the next (PLAN-OPTIMISATION-HUB.md, point 1) ──
+
+def test_kept_between_commands_gives_the_same_lists_and_follows_changes() -> None:
+    from engine import detection
+    detection.forget()
+    attrs = {"device_class": "temperature", "unit_of_measurement": "°C", "friendly_name": "GW2000A Outdoor Temperature"}
+    registry = {"sensor.gw2000a_outdoor_temperature": {"platform": "ecowitt", "device_id": "gw"}}
+    def command(a: dict[str, Any], reg: dict[str, Any]) -> tuple[list[str], list[str]]:
+        # New state objects each command, as Home Assistant gives them; the attributes object is kept while unchanged.
+        found = states(State("sensor.gw2000a_outdoor_temperature", "12", a), State("sensor.other", "3", {"unit_of_measurement": "km/h"}))
+        with detection.batch():
+            return (candidates(found, "temperature_entity", reg), manual_candidates(found, "temperature_entity", reg))
+    plain = (candidates(states(State("sensor.gw2000a_outdoor_temperature", "12", attrs), State("sensor.other", "3", {"unit_of_measurement": "km/h"})),
+                        "temperature_entity", registry),
+             manual_candidates(states(State("sensor.gw2000a_outdoor_temperature", "12", attrs), State("sensor.other", "3", {"unit_of_measurement": "km/h"})),
+                               "temperature_entity", registry))
+    assert command(attrs, registry) == command(attrs, registry) == plain == (["sensor.gw2000a_outdoor_temperature"], ["sensor.gw2000a_outdoor_temperature"])
+    # Its attributes change (new object, as Home Assistant makes one): read again.
+    assert command({**attrs, "device_class": "humidity", "unit_of_measurement": "%"}, registry) == ([], [])
+    # Its registry entry changes (disabled): read again.
+    assert command(attrs, {"sensor.gw2000a_outdoor_temperature": {"platform": "ecowitt", "device_id": "gw", "disabled_by": "user"}}) == ([], [])
+    assert command(attrs, registry) == plain
+    detection.forget()

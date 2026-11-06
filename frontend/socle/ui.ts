@@ -6,11 +6,11 @@ import {ref} from 'lit/directives/ref.js';
 import {t} from './i18n';
 // This very module, to publish it whole (end of file).
 import * as self from './ui';
-export {t,fr,setLanguage,addDictionary,currentLanguage,currentLocale} from './i18n';
+export {t,fr,setLanguage,addDictionary,currentLanguage,currentLocale,wordsReady} from './i18n';
 
 // This copy's socle: the same version as socle.py, and the build copier.sh writes when the socle changes.
-export const SOCLE:readonly [number,number]=[1,22];
-export const SOCLE_BUILD='20261105.1748';
+export const SOCLE:readonly [number,number]=[1,23];
+export const SOCLE_BUILD='20261106.1007';
 // Newer or equal: the version first, then the build. Another major version is never mixed in.
 export const sameOrNewer=(a:{SOCLE:readonly number[];SOCLE_BUILD:string},b:{SOCLE:readonly number[];SOCLE_BUILD:string})=>
  a.SOCLE[0]===b.SOCLE[0]&&(a.SOCLE[1]!==b.SOCLE[1]?a.SOCLE[1]>b.SOCLE[1]:a.SOCLE_BUILD>=b.SOCLE_BUILD);
@@ -452,6 +452,21 @@ export const pageStyles=css`${motion}
  @media(hover:hover) and (pointer:fine){.nk-kpi-go:hover{border-color:var(--primary-color)}}
  @media(max-width:600px){.nk-kpis{gap:8px}.nk-kpi{padding:10px 12px;border-radius:12px}.nk-kpi b{font-size:var(--nw-fs-title,17px)}.nk-kpi span{font-size:var(--nw-fs-small,12px)}}
 `;
+
+/** Whether a new `hass` changes what a page shows (socle 1.23). Home Assistant hands a new one to the panel at every change of
+ * state anywhere in the home (8 a second on the lab): a page redraws only for its language, its theme, the registries, or one
+ * of the entities it shows (`ids`). Use it in `shouldUpdate`, when `hass` is the only property that changed. */
+export function hassChanged(old:HassLike|undefined,now:HassLike|undefined,ids:Iterable<string>=[],seen?:{key?:string}):boolean{
+ if(!old||!now)return old!==now;
+ // The language and theme last drawn (`seen`, kept by the page): an older `hass` changed in place cannot hide a new theme.
+ const key=`${now.language}|${now.themes?.darkMode}`;
+ if(seen?seen.key!==key:old.language!==now.language||old.themes?.darkMode!==now.themes?.darkMode){if(seen)seen.key=key;return true;}
+ if(old.connection!==now.connection||old.user!==now.user
+  ||old.entities!==now.entities||old.devices!==now.devices||old.areas!==now.areas)return true;
+ for(const id of ids)if(old.states?.[id]!==now.states?.[id])return true;
+ return false;
+}
+export interface HassLike {language?:string;themes?:{darkMode?:boolean};connection?:unknown;user?:unknown;entities?:unknown;devices?:unknown;areas?:unknown;states?:Record<string,unknown>}
 
 // The newest copy loaded on the page is the one every brick's pages use (hub.ts). Published last: every piece above exists.
 const shared=globalThis as {hestiaSocleUi?:typeof self};

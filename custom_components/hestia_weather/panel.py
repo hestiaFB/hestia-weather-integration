@@ -123,7 +123,7 @@ def facts(hass: HomeAssistant, entry: Any, card_twice: bool = False, context: Co
                 ids = detection.candidates(states, field, registry, sources, devices)
                 if len(ids) == 1:
                     unused.append((field, field_label(field), _name(get(ids[0]), ids[0])))
-    areas = atmo.areas(states, registry, devices)
+    areas = detection.atmo_areas(states, registry, devices)
     area = next((a["label"] for a in areas if a["value"] == sources.get("atmo_area")), sources.get("atmo_area") or "")
     pollen_zone = sources.get("atmo_pollen_area", sources.get("atmo_area")) or ""
     pollen_area = next((a["label"] for a in areas if a["value"] == pollen_zone), pollen_zone)
@@ -241,7 +241,7 @@ async def migration_status(hass: HomeAssistant) -> dict[str, Any] | None:
 async def weather_status(hass: HomeAssistant, language: str | None = None) -> dict[str, Any]:
     """What the « Hestia-FB » home page says about Hestia Weather, from its own settings only, in the hub's language (socle 1.14)."""
     twice = await card_twice(hass)
-    with speaking(language):
+    with speaking(language), detection.batch():
         # Home Assistant's registries are read once for every place, not once per place.
         context = _context(hass)
         return home.status([place(hass, e, twice, context)[1] for e in _entries(hass)], twice)
@@ -271,8 +271,9 @@ def _has_weather(hass: HomeAssistant) -> bool:
 async def ws_places(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     twice = await card_twice(hass)
     context = _context(hass)  # read once for every place
-    connection.send_result(msg["id"], {"places": [place(hass, e, twice, context)[0] for e in _entries(hass)], "can_add": _has_weather(hass),
-                                          "others": others(hass)})
+    with detection.batch():  # what each sensor gives, known from the command before (PLAN-OPTIMISATION-HUB.md, point 1)
+        places = [place(hass, e, twice, context)[0] for e in _entries(hass)]
+    connection.send_result(msg["id"], {"places": places, "can_add": _has_weather(hass), "others": others(hass)})
 
 
 def _send_draft(connection: websocket_api.ActiveConnection, msg: dict[str, Any], draft: Draft, error: str = "", **extra: Any) -> None:
@@ -294,7 +295,8 @@ async def ws_open(hass: HomeAssistant, connection: websocket_api.ActiveConnectio
         connection.send_error(msg["id"], "no_weather", t("Aucun service météo dans Home Assistant : installez Météo-France, puis revenez ici."))
         return
     # The saved settings come along: what Hestia-FB proposes on top of them shows as proposed.
-    _send_draft(connection, msg, Draft.start(hass, entry), saved=dict(entry.options) if entry else None)
+    with detection.batch():
+        _send_draft(connection, msg, Draft.start(hass, entry), saved=dict(entry.options) if entry else None)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "hestia_weather/panel/change", LANGUAGE: str, vol.Optional("entry_id"): str,
@@ -309,10 +311,13 @@ async def ws_change(hass: HomeAssistant, connection: websocket_api.ActiveConnect
     except LookupError as err:
         connection.send_error(msg["id"], "not_found", str(err))
         return
-    draft = Draft(hass, msg["draft"], entry)
-    error = draft.change(msg["change"])
-    # A refused change leaves the draft as it was.
-    _send_draft(connection, msg, Draft(hass, msg["draft"], entry) if error else draft, error)
+    if msg["change"].get("op") == "redetect":
+        detection.forget()  # « Rechercher à nouveau les capteurs »: every sensor read again
+    with detection.batch():
+        draft = Draft(hass, msg["draft"], entry)
+        error = draft.change(msg["change"])
+        # A refused change leaves the draft as it was.
+        _send_draft(connection, msg, Draft(hass, msg["draft"], entry) if error else draft, error)
 
 
 @websocket_api.websocket_command({vol.Required("type"): "hestia_weather/panel/save", LANGUAGE: str, vol.Optional("entry_id"): str,

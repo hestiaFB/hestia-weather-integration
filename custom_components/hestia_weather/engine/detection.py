@@ -3,6 +3,7 @@ Never a guess between two candidates: an ambiguous field stays empty for the use
 from __future__ import annotations
 
 import re
+import time
 from contextlib import contextmanager
 from typing import Any, Callable, Iterator, Mapping, Sequence
 
@@ -64,35 +65,78 @@ _NOT_OUTDOOR = r"dew|rosee|humidex|heat_?index|wind_?chill|apparent|ressenti|ind
 
 
 # One command of the panel reads the same states again for each station field, ~60 times: inside `batch()`, each sensor's
-# text and each field's candidates are worked out once (6 s → a fraction on a home of 2 600 entities). The memo holds the
-# objects it was computed for and lives for one command only; outside `batch()`, nothing is kept.
+# text and each field's candidates are worked out once (6 s → a fraction on a home of 2 600 entities). Outside `batch()`,
+# nothing is kept.
+# What a sensor gives (its text, its unit, whether it fits each field) depends only on its attributes and registry entry:
+# it is kept from one command to the next while both stay the same (Home Assistant keeps the same attributes object while
+# they do not change), so a change in the panel no longer reads the whole home again (PLAN-OPTIMISATION-HUB.md, point 1:
+# 1.1 s per click on the lab's 7 800 entities). The lists built from it (`sensors`, `manual`, `found`) live for one command.
 _memo: dict[str, dict[int, tuple[Any, ...]]] | None = None
+_LISTS = frozenset({"sensors", "manual", "index", "offers", "atmo_states", "sources_lists", "sensor_states", "table"})
+_kept: dict[str, dict[str, Any]] = {}
+"""entity_id → {kind: (attributes, registry entry, value)}, kept between commands."""
+_kept_at = 0.0
+_FORGET = 600.0
+"""Seconds without a command after which what was kept is dropped: the panel is closed."""
 
 
 def _per_state(kind: str, state: Any, entry: Any, compute: Callable[[], Any]) -> Any:
-    """`compute()` once per sensor (and registry entry) inside `batch()`; every time outside it."""
+    """`compute()` once per sensor (and registry entry) inside `batch()`, then again only when they change; every time outside it."""
     if _memo is None:
         return compute()
-    memo = _memo.setdefault(kind, {})
-    hit = memo.get(id(state))
-    if hit is not None and hit[0] is state and hit[1] is entry:
+    if kind in _LISTS:
+        memo = _memo.setdefault(kind, {})
+        hit = memo.get(id(state))
+        if hit is not None and hit[0] is state and hit[1] is entry:
+            return hit[2]
+        value = compute()
+        memo[id(state)] = (state, entry, value)
+        return value
+    known = _kept.get(state.entity_id)
+    if known is None:
+        known = _kept[state.entity_id] = {}
+    hit = known.get(kind)
+    attributes = state.attributes
+    # No registry entry is read as None by some searches and {} by others: the same, or every command would read it again
+    # (all the entities a Remote Home Assistant recopies, on the lab).
+    entry = entry or None
+    if hit is not None and hit[0] is attributes and (hit[1] is entry or hit[1] == entry):
+        if hit[1] is not entry:
+            known[kind] = (attributes, entry, hit[2])  # the same entry read again: compared once per command
         return hit[2]
     value = compute()
-    memo[id(state)] = (state, entry, value)
+    known[kind] = (attributes, entry, value)
     return value
 
 
 @contextmanager
 def batch() -> Iterator[None]:
-    global _memo
+    global _memo, _kept_at
     outer = _memo
     if outer is None:
+        now = time.monotonic()
+        if now - _kept_at > _FORGET:
+            _kept.clear()
+        _kept_at = now
         _memo = {"text": {}, "found": {}}
     try:
         yield
     finally:
         if outer is None:
             _memo = None
+            _forget_gone()
+
+
+def _forget_gone() -> None:
+    """Entities that come and go (Blitzortung's strikes…) do not pile up: past twice the home's size, the oldest go."""
+    if len(_kept) > 20000:
+        for entity_id in list(_kept)[: len(_kept) - 10000]:
+            del _kept[entity_id]
+
+
+def forget() -> None:
+    """« Rechercher à nouveau les capteurs »: everything is read again."""
+    _kept.clear()
 
 
 def sensor_text(state: StateLike, entry: Mapping[str, Any] | None = None) -> str:
@@ -115,6 +159,10 @@ def _raw_unit(state: StateLike) -> str:
 
 def function_matches(state: StateLike, field: str, entry: Mapping[str, Any] | None = None) -> bool:
     """Whether a sensor can do this job, for automatic and manual choices alike (a dew point is not a thermometer)."""
+    return _per_state("fn:" + field, state, entry, lambda: _function_matches(state, field, entry))
+
+
+def _function_matches(state: StateLike, field: str, entry: Mapping[str, Any] | None = None) -> bool:
     if _netatmo_rain(entry, field):
         return True
     t, unit, cls = sensor_text(state, entry), _unit(state), state.attributes.get("device_class")
@@ -307,24 +355,44 @@ def _candidates(states: Sequence[StateLike], field: str, registry: Registry, opt
         return sorted(i for i, e in registry.items() if i in live and not e.get("disabled_by") and e.get("device_id") in covered
                       and _netatmo_gives(e, field, devices))
     found = []
-    for state, entry in _station_sensors(states, registry):
+    # Inside `batch()`, the sensors that fit each field are sorted out in a single pass (see `_index`).
+    pairs = _index(states, registry)[field] if _memo is not None and field in STATION_RULES else \
+        [(state, entry) for state, entry in _station_sensors(states, registry) if _fits(state, field, rule, entry)]
+    for state, entry in pairs:
         if covered and (entry or {}).get("device_id") not in covered and field != "temperature_trend_entity":
-            continue
-        t = sensor_text(state, entry)
-        if not rule.search(t) or not function_matches(state, field, entry):
-            continue
-        if (field == "temperature_entity" and re.search(_NOT_OUTDOOR, t)) or (field == "humidity_entity" and re.search(r"humidex|absolute|absolue|indoor|interieur", t)) \
-                or (field == "pressure_entity" and re.search(r"trend|tendance", t)) or (field == "wind_speed_entity" and re.search(r"gust|rafale|max", t)) \
-                or (field == "wind_gust_entity" and re.search(r"max|daily", t)) or (field == "daily_rain_entity" and re.search(r"24h|24_h|max|year", t)) \
-                or (field == "uv_index_entity" and re.search(r"max|ozone|exposure|exposition|protection|niveau|level", t)):
             continue
         found.append(state.entity_id)
     return sorted(found)
 
 
+def _index(states: Sequence[StateLike], registry: Registry) -> dict[str, list[tuple[StateLike, Mapping[str, Any] | None]]]:
+    """For each station field, the station sensors that fit it by name and measure, whatever the station: one pass per command,
+    each sensor's fields known from the command before while it does not change."""
+    def compute() -> dict[str, list[tuple[StateLike, Mapping[str, Any] | None]]]:
+        fit: dict[str, list[tuple[StateLike, Mapping[str, Any] | None]]] = {f: [] for f in STATION_FIELDS}
+        for state, entry, facts in _table(states, registry):
+            for f in facts[2]:
+                fit[f].append((state, entry))
+        return fit
+    return _per_state("index", states, registry, compute)
+
+
+def _fits(state: StateLike, field: str, rule: re.Pattern[str], entry: Mapping[str, Any] | None) -> bool:
+    """A station sensor recognised for this field by its name and its measure."""
+    t = sensor_text(state, entry)
+    if not rule.search(t) or not function_matches(state, field, entry):
+        return False
+    return not ((field == "temperature_entity" and re.search(_NOT_OUTDOOR, t)) or (field == "humidity_entity" and re.search(r"humidex|absolute|absolue|indoor|interieur", t))
+                or (field == "pressure_entity" and re.search(r"trend|tendance", t)) or (field == "wind_speed_entity" and re.search(r"gust|rafale|max", t))
+                or (field == "wind_gust_entity" and re.search(r"max|daily", t)) or (field == "daily_rain_entity" and re.search(r"24h|24_h|max|year", t))
+                or (field == "uv_index_entity" and re.search(r"max|ozone|exposure|exposition|protection|niveau|level", t)))
+
+
 def _station_sensors(states: Sequence[StateLike], registry: Registry) -> list[tuple[StateLike, Mapping[str, Any] | None]]:
     """The enabled sensors not computed by others, with their registry entry: once per command inside `batch()`."""
     def compute() -> list[tuple[StateLike, Mapping[str, Any] | None]]:
+        if _memo is not None:
+            return [(state, entry) for state, entry, facts in _table(states, registry) if facts[0]]
         found = []
         for state in states:
             entry = registry.get(state.entity_id)
@@ -337,10 +405,14 @@ def _station_sensors(states: Sequence[StateLike], registry: Registry) -> list[tu
 def _manual_sensors(states: Sequence[StateLike], registry: Registry) -> list[tuple[StateLike, Mapping[str, Any]]]:
     """The enabled sensors a form may offer, with their registry entry ({} without one): once per command inside `batch()`."""
     def compute() -> list[tuple[StateLike, Mapping[str, Any]]]:
+        if _memo is not None:
+            return [(state, entry or {}) for state, entry, facts in _table(states, registry) if facts[1]]
         found = []
         for state in states:
+            if not state.entity_id.startswith("sensor."):
+                continue
             entry = registry.get(state.entity_id) or {}
-            if state.entity_id.startswith("sensor.") and not entry.get("disabled_by") and entry.get("platform") not in DERIVED:
+            if not entry.get("disabled_by") and entry.get("platform") not in DERIVED:
                 found.append((state, entry))
         return found
     return _per_state("manual", states, registry, compute)
@@ -348,6 +420,10 @@ def _manual_sensors(states: Sequence[StateLike], registry: Registry) -> list[tup
 
 def measurement_matches(state: StateLike, field: str) -> bool:
     """The sensor measures the right thing, by its type or unit: an explicit unit wins over a misleading name."""
+    return _per_state("mm:" + field, state, None, lambda: _measurement_matches(state, field))
+
+
+def _measurement_matches(state: StateLike, field: str) -> bool:
     cls, unit = _per_state("measure", state, None, lambda: (normal(state.attributes.get("device_class")),
                                                               re.sub(r"\s", "", normal(state.attributes.get("unit_of_measurement")))))
     if _RAIN_PERIODS.match(field):
@@ -367,6 +443,14 @@ def manual_candidates(states: Sequence[StateLike], field: str, registry: Registr
     semantic = set(candidates(states, field, registry, options, devices))
     covered = _station_devices(devices, options.get("station_device_id"))
     found = []
+    if _memo is not None and field in STATION_RULES:
+        # Inside `batch()`: the sensors that may be offered for each field, sorted out in one pass (see `_offers`).
+        for state, entry, by_measure in _offers(states, registry)[field]:
+            if covered and entry.get("device_id") and entry.get("device_id") not in covered and field not in ANY_DEVICE:
+                continue
+            if by_measure or state.entity_id in semantic:
+                found.append(state.entity_id)
+        return sorted(found)
     for state, entry in _manual_sensors(states, registry):
         if covered and entry.get("device_id") and entry.get("device_id") not in covered and field not in ANY_DEVICE:
             continue
@@ -377,6 +461,99 @@ def manual_candidates(states: Sequence[StateLike], field: str, registry: Registr
         if function_matches(state, field, entry):
             found.append(state.entity_id)
     return sorted(found)
+
+
+def _offers(states: Sequence[StateLike], registry: Registry) -> dict[str, list[tuple[StateLike, Mapping[str, Any], bool]]]:
+    """For each station field, the sensors a form may offer: those that can do the job and either measure the right thing
+    (True) or have no type nor unit (False, offered only when their name fits). One pass per command."""
+    def compute() -> dict[str, list[tuple[StateLike, Mapping[str, Any], bool]]]:
+        offer: dict[str, list[tuple[StateLike, Mapping[str, Any], bool]]] = {f: [] for f in STATION_FIELDS}
+        for state, entry, facts in _table(states, registry):
+            for f, by_measure in facts[3]:
+                offer[f].append((state, entry or {}, by_measure))
+        return offer
+    return _per_state("offers", states, registry, compute)
+
+
+def atmo_areas(states: Sequence[StateLike], registry: Registry, devices: Devices | None = None) -> list[dict[str, str]]:
+    """`atmo.areas`, once per command inside `batch()`, reading only the Atmo France sensors (known from the command before)."""
+    if _memo is None:
+        return atmo.areas(states, registry, devices)
+    memo = _memo.setdefault("areas", {})
+    hit = memo.get(id(states))
+    if hit is None or hit[0] is not states or hit[1] is not registry or hit[2] is not devices:
+        hit = memo[id(states)] = (states, registry, devices, atmo.areas(_atmo_states(states, registry), registry, devices))
+    return [dict(a) for a in hit[3]]
+
+
+def _atmo_states(states: Sequence[StateLike], registry: Registry) -> list[StateLike]:
+    """The Atmo France sensors, once per command inside `batch()`."""
+    # Only an entity of Atmo France or with an attribution can be one (atmo.is_atmo): the others are not even looked up.
+    return _per_state("atmo_states", states, registry, lambda: [state for state, _, facts in _table(states, registry) if facts[5]])
+
+
+def sensor_states(states: Sequence[StateLike]) -> Sequence[StateLike]:
+    """Only the sensors, once per command inside `batch()`: for searches that look at nothing else (the pollen sources)."""
+    if _memo is None:
+        return states
+    return _per_state("sensor_states", states, None, lambda: [s for s in states if s.entity_id.startswith("sensor.")])
+
+
+def _table(states: Sequence[StateLike], registry: Registry) -> list[tuple[StateLike, Mapping[str, Any] | None, tuple[Any, ...]]]:
+    """Inside `batch()`, a single pass over the home per command: for each entity, everything the searches above need,
+    kept from the command before while its attributes and registry entry do not change (`_facts`)."""
+    def compute() -> list[tuple[StateLike, Mapping[str, Any] | None, tuple[Any, ...]]]:
+        rows = []
+        for state in states:
+            entry = registry.get(state.entity_id)
+            rows.append((state, entry, _per_state("facts", state, entry, lambda state=state, entry=entry: _facts(state, entry))))
+        return rows
+    return _per_state("table", states, registry, compute)
+
+
+_NO_SOURCE = (False,) * 4
+
+
+def _facts(state: StateLike, entry: Mapping[str, Any] | None) -> tuple[Any, ...]:
+    """(station sensor, sensor a form may offer, the station fields it fits, the fields it may be offered for with whether by its
+    measure, the four sources it is, an Atmo France sensor): the same tests as the searches, entity by entity."""
+    e = entry or {}
+    sensor = state.entity_id.startswith("sensor.")
+    station = sensor and not e.get("disabled_by") and not _is_thermal(state, entry)
+    manual = sensor and not e.get("disabled_by") and e.get("platform") not in DERIVED
+    fits = tuple(f for f, rule in STATION_RULES.items() if _fits(state, f, rule, entry)) if station else ()
+    offers: tuple[tuple[str, bool], ...] = ()
+    if manual:
+        typed = bool(state.attributes.get("device_class") or state.attributes.get("unit_of_measurement"))
+        found = []
+        for f in STATION_FIELDS:
+            by_measure = measurement_matches(state, f) or _netatmo_rain(e, f)
+            if (by_measure or not typed) and function_matches(state, f, e):
+                found.append((f, by_measure))
+        offers = tuple(found)
+    sources = tuple(test(state, e) for test in _SOURCE_TESTS) if sensor else _NO_SOURCE
+    # Only an entity of Atmo France or with an attribution can be one (atmo.is_atmo).
+    is_atmo = ("attribution" in state.attributes or e.get("platform") == "atmofrance") and atmo.is_atmo(state, entry)
+    return station, manual, fits, offers, sources, is_atmo
+
+
+_SOURCES = ("season", "vigilance", "water", "lightning")
+
+
+def _scan(kind: str, states: Sequence[StateLike], registry: Registry, test: Callable[[StateLike, Mapping[str, Any]], bool]) -> list[str]:
+    """The sensors passing `test(state, registry entry or {})`, in the states' order (each test refuses any other domain).
+    Inside `batch()`, the four lists (season, vigilance, Vigieau, Blitzortung) are made in a single pass over the sensors, once per
+    command, each sensor's answers kept from the command before while it does not change."""
+    if _memo is None:
+        return [s.entity_id for s in states if test(s, registry.get(s.entity_id) or {})]
+    def compute() -> dict[str, list[str]]:
+        found: dict[str, list[str]] = {k: [] for k in _SOURCES}
+        for state, _, facts in _table(states, registry):
+            for k, flag in zip(_SOURCES, facts[4]):
+                if flag:
+                    found[k].append(state.entity_id)
+        return found
+    return list(_per_state("sources_lists", states, registry, compute)[kind])
 
 
 def _unique_best(ids: Sequence[str], score: Callable[[str], float]) -> str | None:
@@ -436,7 +613,11 @@ def detect_station(states: Sequence[StateLike], registry: Registry, devices: Dev
 
 def _with_air(states: Sequence[StateLike], registry: Registry, devices: Devices, options: Mapping[str, Any],
               selected: dict[str, Any]) -> dict[str, Any]:
-    selected.update(atmo.detect(states, registry, options, devices))
+    if _memo is None:
+        selected.update(atmo.detect(states, registry, options, devices))
+    else:
+        selected.update(atmo.detect(states, registry, options, devices, groups=atmo_areas(states, registry, devices),
+                                    atmo_states=_atmo_states(states, registry)))
     if options.get("pollens") is None and options.get("pollen_source") == "legacy":
         found = polleninfo.detect(states, registry, options.get("pollen_provider") or polleninfo.POLLENINFORMATION)
         selected.update({k: v for k, v in found.items() if options.get(k) is None})
@@ -445,47 +626,42 @@ def _with_air(states: Sequence[StateLike], registry: Registry, devices: Devices,
 
 def season_candidates(states: Sequence[StateLike], registry: Registry) -> list[str]:
     """The Season integration, or any sensor whose options are exactly the four seasons."""
-    found = []
-    for state in states:
-        entry = registry.get(state.entity_id) or {}
-        options = state.attributes.get("options")
-        seasons = ",".join(sorted(map(str, options))) if isinstance(options, (list, tuple)) else ""
-        if not entry.get("disabled_by") and state.entity_id.startswith("sensor.") and (entry.get("platform") == "season" or seasons == "autumn,spring,summer,winter"):
-            found.append(state.entity_id)
-    return found
+    return _scan("season", states, registry, _is_season)
+
+
+def _is_season(state: StateLike, entry: Mapping[str, Any]) -> bool:
+    options = state.attributes.get("options")
+    seasons = ",".join(sorted(map(str, options))) if isinstance(options, (list, tuple)) else ""
+    return not entry.get("disabled_by") and state.entity_id.startswith("sensor.") and (entry.get("platform") == "season" or seasons == "autumn,spring,summer,winter")
 
 
 def vigilance_candidates(states: Sequence[StateLike], registry: Registry) -> list[str]:
     """Météo-France weather alert sensors."""
-    found = []
-    for state in states:
-        entry = registry.get(state.entity_id) or {}
-        if entry.get("disabled_by") or not state.entity_id.startswith("sensor."):
-            continue
-        if entry.get("platform") == "swissweather":
-            if str(entry.get("unique_id") or "").endswith(".warnings"):
-                found.append(state.entity_id)
-            continue
-        if not (entry.get("platform") == "meteo_france" or re.search(r"meteo.france", normal(state.attributes.get("attribution")))):
-            continue
-        if re.search(r"weather_alert|vigilance|alerte",
-                     normal(f"{state.entity_id} {entry.get('unique_id')} {entry.get('translation_key')} {entry.get('original_name')}")):
-            found.append(state.entity_id)
-    return found
+    return _scan("vigilance", states, registry, _is_vigilance)
+
+
+def _is_vigilance(state: StateLike, entry: Mapping[str, Any]) -> bool:
+    if entry.get("disabled_by") or not state.entity_id.startswith("sensor."):
+        return False
+    if entry.get("platform") == "swissweather":
+        return str(entry.get("unique_id") or "").endswith(".warnings")
+    if not (entry.get("platform") == "meteo_france" or re.search(r"meteo.france", normal(state.attributes.get("attribution")))):
+        return False
+    return bool(re.search(r"weather_alert|vigilance|alerte",
+                          normal(f"{state.entity_id} {entry.get('unique_id')} {entry.get('translation_key')} {entry.get('original_name')}")))
 
 
 def water_candidates(states: Sequence[StateLike], registry: Registry) -> list[str]:
     """Vigieau's alert level sensors, one per watched zone: not its number twin, nor one sensor per use."""
-    found = []
-    for state in states:
-        entry = registry.get(state.entity_id) or {}
-        unique_id, key = str(entry.get("unique_id") or ""), str(entry.get("translation_key") or "")
-        if (entry.get("platform") != "vigieau" or entry.get("disabled_by") or not state.entity_id.startswith("sensor.")
-                or unique_id.endswith("-numeric") or key.endswith("_numeric") or key.endswith("_restrictions")):
-            continue
-        if key == "alert_level" or re.search(r"alert", unique_id, re.IGNORECASE):
-            found.append(state.entity_id)
-    return found
+    return _scan("water", states, registry, _is_water)
+
+
+def _is_water(state: StateLike, entry: Mapping[str, Any]) -> bool:
+    unique_id, key = str(entry.get("unique_id") or ""), str(entry.get("translation_key") or "")
+    if (entry.get("platform") != "vigieau" or entry.get("disabled_by") or not state.entity_id.startswith("sensor.")
+            or unique_id.endswith("-numeric") or key.endswith("_numeric") or key.endswith("_restrictions")):
+        return False
+    return key == "alert_level" or bool(re.search(r"alert", unique_id, re.IGNORECASE))
 
 
 def tap_water(candidates: Sequence[str], registry: Registry, devices: Devices) -> str | None:
@@ -496,14 +672,13 @@ def tap_water(candidates: Sequence[str], registry: Registry, devices: Devices) -
 
 def lightning_candidates(states: Sequence[StateLike], registry: Registry) -> list[str]:
     """Blitzortung's distance sensors: each of their changes is a strike."""
-    found = []
-    for state in states:
-        entry = registry.get(state.entity_id) or {}
-        if entry.get("platform") != "blitzortung" or entry.get("disabled_by") or not state.entity_id.startswith("sensor."):
-            continue
-        if entry.get("translation_key") == "distance" or str(entry.get("unique_id") or "").endswith("-distance"):
-            found.append(state.entity_id)
-    return found
+    return _scan("lightning", states, registry, _is_lightning)
+
+
+def _is_lightning(state: StateLike, entry: Mapping[str, Any]) -> bool:
+    if entry.get("platform") != "blitzortung" or entry.get("disabled_by") or not state.entity_id.startswith("sensor."):
+        return False
+    return entry.get("translation_key") == "distance" or str(entry.get("unique_id") or "").endswith("-distance")
 
 
 def detect_sources(states: Sequence[StateLike], registry: Registry, options: Mapping[str, Any], devices: Devices | None = None) -> dict[str, str]:
@@ -551,7 +726,7 @@ def fill(states: Sequence[StateLike], registry: Registry, devices: Devices, opti
             del search[field]
     if category == "station" and search.get("station_device_id") and not any(e.get("device_id") == search["station_device_id"] for e in registry.values()):
         del search["station_device_id"]
-    if category == "atmo" and search.get("atmo_area") and not any(a["value"] == search["atmo_area"] for a in atmo.areas(states, registry, devices)):
+    if category == "atmo" and search.get("atmo_area") and not any(a["value"] == search["atmo_area"] for a in atmo_areas(states, registry, devices)):
         del search["atmo_area"]
     if category == "weather":
         detected: dict[str, Any] = dict(detect_sources(states, registry, search, devices))
@@ -620,13 +795,20 @@ def station_profile(states: Sequence[StateLike], registry: Registry, devices: De
     device = devices.get(device_id or "") or {}
     if netatmo_module(device):
         return "Netatmo"
-    text = " ".join([str(device.get("name") or ""), str(device.get("name_by_user") or ""), str(device.get("manufacturer") or ""),
-                     *(sensor_text(by_id[i], e) for i, e in entries if i in by_id)]).lower()
-    if "ws90" in text:
+    # The words are looked for in each text on its own (neither contains a space, so none spans two texts): without a device,
+    # every entity without one is read, and each sensor's answer is kept between commands.
+    names = " ".join([str(device.get("name") or ""), str(device.get("name_by_user") or ""), str(device.get("manufacturer") or "")]).lower()
+    marks = [_per_state("model", by_id[i], e, lambda i=i, e=e: _model_marks(sensor_text(by_id[i], e))) for i, e in entries if i in by_id]
+    if "ws90" in names or any(m[0] for m in marks):
         return "WS90 via MQTT" if any(e.get("platform") in ("mqtt", "zigbee2mqtt") for _, e in entries) else "WS90"
-    if "gw2000" in text:
+    if "gw2000" in names or any(m[1] for m in marks):
         return "GW2000A / Ecowitt"
     return N_("Autres capteurs / configuration manuelle")
+
+
+def _model_marks(text: str) -> tuple[bool, bool]:
+    lower = text.lower()
+    return "ws90" in lower, "gw2000" in lower
 
 
 def model_devices(states: Sequence[StateLike], registry: Registry, devices: Devices, model: str) -> list[str]:
@@ -644,12 +826,17 @@ def source_devices(states: Sequence[StateLike], registry: Registry, devices: Dev
         state = by_id.get(entity_id)
         if state is None or not entry.get("device_id") or entry.get("disabled_by") or entry.get("platform") in DERIVED:
             continue
-        if entity_id in semantic or any(measurement_matches(state, f) for f in STATION_FIELDS):
+        if entity_id in semantic or _per_state("measures", state, None, lambda state=state: any(measurement_matches(state, f) for f in STATION_FIELDS)):
             ids.append(entry["device_id"])
+    # The first live entity of each device, in one pass over the registry (once per device, it read the whole registry).
+    firsts: dict[str, str] = {}
+    for i, e in registry.items():
+        if e.get("device_id") and i in by_id:
+            firsts.setdefault(e["device_id"], i)
     result = []
     for device_id in dict.fromkeys(ids):
         device = devices.get(device_id) or {}
-        first = next((i for i, e in registry.items() if e.get("device_id") == device_id and i in by_id), None)
+        first = firsts.get(device_id)
         label = device.get("name_by_user") or device.get("name") or (str(by_id[first].attributes.get("friendly_name") or device_id) if first else device_id)
         result.append({"value": device_id, "label": str(label)})
     return sorted(result, key=lambda d: d["label"])
@@ -670,3 +857,6 @@ def station_report(states: Sequence[StateLike], registry: Registry, devices: Dev
         fields.append({"field": field, "status": status, "entity": (entity or ids[0]) if status == "recognized" else None, "candidates": ids})
     return {"profile": station_profile(states, registry, devices, options.get("station_device_id")), "fields": fields,
             "recognized": sum(1 for f in fields if f["status"] == "recognized")}
+
+
+_SOURCE_TESTS = (_is_season, _is_vigilance, _is_water, _is_lightning)

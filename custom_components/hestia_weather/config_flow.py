@@ -31,16 +31,36 @@ POLLEN_KEYS = frozenset(ATMO_KEYS) - AIR_KEYS
 NONE = "none"
 
 
+_REGISTRIES = f"{DOMAIN}_registries"
+
+
 def _context(hass: HomeAssistant) -> tuple[list[State], dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
-    """States, entity registry and device registry, in the plain form the detection reads."""
-    registry = {e.entity_id: {"platform": e.platform, "device_id": e.device_id, "disabled_by": e.disabled_by, "config_entry_id": e.config_entry_id,
-                              "unique_id": e.unique_id, "translation_key": e.translation_key, "original_name": e.original_name}
-                for e in er.async_get(hass).entities.values()}
-    device_registry = dr.async_get(hass)
-    # Recent Home Assistant iterates the devices themselves, older versions their ids.
-    entries = (device_registry.async_get(d) if isinstance(d, str) else d for d in device_registry.devices)
-    devices = {d.id: {"name": d.name, "name_by_user": d.name_by_user, "manufacturer": d.manufacturer, "model": d.model, "via_device_id": d.via_device_id}
-               for d in entries if d is not None}
+    """States, entity registry and device registry, in the plain form the detection reads (never changed by it).
+
+    The two registries are kept until Home Assistant says one changed: rebuilt for every command of the panel, they cost as
+    much as the detection itself on a home of 8 000 entities (PLAN-OPTIMISATION-HUB.md, point 1), and the detection keeps what
+    it worked out for them while they are the same objects.
+    """
+    kept = hass.data.get(_REGISTRIES)
+    if kept is None:
+        kept = hass.data[_REGISTRIES] = {}
+
+        @callback
+        def _changed(_event: Any) -> None:
+            kept.pop("registries", None)
+        hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, _changed)
+        hass.bus.async_listen(dr.EVENT_DEVICE_REGISTRY_UPDATED, _changed)
+    if "registries" not in kept:
+        registry = {e.entity_id: {"platform": e.platform, "device_id": e.device_id, "disabled_by": e.disabled_by, "config_entry_id": e.config_entry_id,
+                                  "unique_id": e.unique_id, "translation_key": e.translation_key, "original_name": e.original_name}
+                    for e in er.async_get(hass).entities.values()}
+        device_registry = dr.async_get(hass)
+        # Recent Home Assistant iterates the devices themselves, older versions their ids.
+        entries = (device_registry.async_get(d) if isinstance(d, str) else d for d in device_registry.devices)
+        devices = {d.id: {"name": d.name, "name_by_user": d.name_by_user, "manufacturer": d.manufacturer, "model": d.model, "via_device_id": d.via_device_id}
+                   for d in entries if d is not None}
+        kept["registries"] = (registry, devices)
+    registry, devices = kept["registries"]
     return hass.states.async_all(), registry, devices
 
 
@@ -201,7 +221,7 @@ class _SourceSteps:
 
     def _areas(self) -> list[dict[str, str]]:
         states, registry, devices = self._read()
-        return atmo.areas(states, registry, devices)
+        return detection.atmo_areas(states, registry, devices)
 
     def _stations(self) -> list[dict[str, str]]:
         _, registry, devices = self._read()

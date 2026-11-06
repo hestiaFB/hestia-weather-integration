@@ -3,15 +3,14 @@
 import {LitElement,html,unsafeCSS,nothing,type TemplateResult,type PropertyValues} from 'lit';
 import {customElement,property,state} from 'lit/decorators.js';
 import styles from './styles.css';
-import {frame,hubStyles,modernStyles,helpTip,pageHead,todoLists,listSection,listRow,moreRow,tabBar,saveBar,toggle,kpis,stepFooter,leaveNotice,detectedFrame,removeBlock,pageStyles,aboutPage,SOCLE,setLanguage,addDictionary,t,fr,type NkLine,type NkLevel} from './socle/ui';
+import {frame,hubStyles,modernStyles,helpTip,pageHead,todoLists,listSection,listRow,moreRow,tabBar,saveBar,toggle,kpis,stepFooter,leaveNotice,detectedFrame,removeBlock,pageStyles,aboutPage,hassChanged,SOCLE,setLanguage,addDictionary,wordsReady,t,fr,type NkLine,type NkLevel} from './socle/ui';
 import {placeSection,quizScreen,trustSection,questions as placeQuestions} from './emplacement';
-import {PANEL_EN} from './i18n-en';
-import {PANEL_DE} from './i18n-de';
 import {NONE,stages,intros,extensionGroups,extensionSwitch,enabledKeys,provenance,sameSet,entityLine,grouped,capital,type Change,type Choice,type DraftReply,type Entity,type Field,type Hass,type Place,type Places,type Sources,type View,type Extension,type Official,type RenamePreview,type RenameReply,type RenameUse} from './model';
 
 // Weather's words beside the hub's (socle 1.13): French in the code, English for any language without a dictionary.
-addDictionary('en',PANEL_EN);
-addDictionary('de',PANEL_DE);
+// Loaded only for a Home Assistant in English or German (socle 1.23, PLAN-OPTIMISATION-HUB.md point 10).
+addDictionary('en',()=>import('./i18n-en').then(m=>m.PANEL_EN));
+addDictionary('de',()=>import('./i18n-de').then(m=>m.PANEL_DE));
 const categories=['sources','station','air','pollens','entites','recapitulatif','eau-jardin','extensions','etat'];
 // The extensions have their own page (socle 1.12): a place's steps no longer show them.
 const order=[0,1,2,3,6,4,5];
@@ -67,8 +66,14 @@ export class WeatherSetup extends LitElement {
  private touched=new Set<string>();
  private generation=0;
  private beforeUnload=(e:BeforeUnloadEvent)=>{if(this.dirty()||[...this.drafts.values()].some(d=>JSON.stringify(d.draft)!==d.initial||!sameSet(d.enabled,d.initialEnabled))){e.preventDefault();e.returnValue='';}};
- connectedCallback(){super.connectedCallback();window.addEventListener('beforeunload',this.beforeUnload);}
- disconnectedCallback(){super.disconnectedCallback();this.routeGeneration++;if(this.busy)this.routeHandled=undefined;window.removeEventListener('beforeunload',this.beforeUnload);}
+ // The words of a language arrive after the page (socle 1.23): drawn again with them.
+ private words=()=>this.requestUpdate();
+ connectedCallback(){super.connectedCallback();window.addEventListener('beforeunload',this.beforeUnload);window.addEventListener('hestia-words',this.words);}
+ disconnectedCallback(){super.disconnectedCallback();this.routeGeneration++;if(this.busy)this.routeHandled=undefined;window.removeEventListener('beforeunload',this.beforeUnload);window.removeEventListener('hestia-words',this.words);}
+ // Home Assistant hands a new `hass` at every change of state in the home: this tab shows none, it only redraws for its language,
+ // its theme or a new connection (socle 1.23, PLAN-OPTIMISATION-HUB.md point 7).
+ protected shouldUpdate(changed:PropertyValues){return !(changed.size===1&&changed.has('hass'))||hassChanged(changed.get('hass') as Hass|undefined,this.hass,[],this.hassSeen);}
+ private hassSeen={};
  protected updated(changed:PropertyValues){
   // The hub's words (socle 1.13) follow Home Assistant's language.
   // Its places come back from Weather in the new language too: they are read again.
@@ -84,7 +89,7 @@ export class WeatherSetup extends LitElement {
  private message(e:unknown){return typeof e==='object'&&e&&'message' in e?String((e as {message:unknown}).message):t('Home Assistant ne répond pas. Réessayez.');}
  private async load(){
   this.busy=true;
-  try{this.places=await this.ws<Places>({type:'hestia_weather/panel/places'});this.error='';await this.followRoute();}
+  try{[this.places]=await Promise.all([this.ws<Places>({type:'hestia_weather/panel/places'}),wordsReady()]);this.error='';await this.followRoute();}
   catch(e){this.error=this.message(e);}
   finally{this.busy=false;}
   // A place restarting after a save: look again in a moment, a few times at most.
@@ -288,7 +293,9 @@ export class WeatherSetup extends LitElement {
  private async loadExtensions(){
   const places=this.places?.places??[],views=new Map<string,{draft:Sources;view:View;enabled:string[]}>();
   this.busy=true;
-  try{for(const p of places){const reply=await this.ws<DraftReply>({type:'hestia_weather/panel/open',entry_id:p.entry_id});views.set(p.entry_id,{draft:reply.draft,view:reply.view,enabled:enabledKeys(reply.view)});}
+  // Every place asked at once, not one after the other (PLAN-OPTIMISATION-HUB.md, point 5).
+  try{const replies=await Promise.all(places.map(p=>this.ws<DraftReply>({type:'hestia_weather/panel/open',entry_id:p.entry_id})));
+   places.forEach((p,i)=>{const reply=replies[i];views.set(p.entry_id,{draft:reply.draft,view:reply.view,enabled:enabledKeys(reply.view)});});
    this.extViews=views;this.error='';}
   catch(e){this.error=this.message(e);}finally{this.busy=false;}
  }
