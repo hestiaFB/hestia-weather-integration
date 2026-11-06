@@ -1,3 +1,52 @@
+## 3.2.0 — Le nom Hestia, une nouvelle carte, une station mieux comprise, et bien plus léger
+
+### Avant de mettre à jour
+
+- Vous êtes en 2.9.x : installez d’abord la **2.9.9**. Elle fait passer toute votre maison au nom Hestia, sans rien perdre. Redémarrez quand Home Assistant le demande, puis installez cette version.
+- Home Assistant 2026.11 : une réparation « Reprendre les mises à jour » apparaît après la 2.9.9. Appuyez sur Réparer.
+- Le Marketplace affiche « changed its domain… uninstall it and install it again » ? Vous n’êtes pas passé par la 2.9.9 : ne désinstallez rien. Dans le Marketplace, ouvrez Hestia Weather, téléchargez la version **2.9.9**, redémarrez, puis suivez les étapes ci-dessus.
+- Hestia Confort 1.7.30 reste relié à cette version. Hestia Confort 2 suivra.
+- Si une réparation liste des lignes YAML écrites à la main, remplacez-y l’ancien nom.
+
+### Nouveautés
+
+- Le nom technique devient `hestia_weather`. Vos lieux, réglages, alertes, historiques et statistiques sont gardés, comme le nom, la pièce et l’icône de vos entités.
+- Automatisations, scripts, scènes, tableaux de bord et blueprints faits dans l’interface suivent tout seuls.
+- Hestia Weather parle allemand : carte, bulletin du jour, panneau et hub Hestia.
+- Une nouvelle carte : la frise du temps prévu avec ses évènements, la vigilance dans le bandeau et sur la frise.
+- Ressenti : la valeur, un mot, l’échelle de la saison et ce qui joue (vent, humidité, soleil, rosée).
+- Air extérieur et pollens : aujourd’hui et demain.
+- Un « i » à côté de chaque bloc dit d’où viennent ses données.
+- Où est votre station ? Sept questions simples (côté de la maison, mur, hauteur, sol, soleil, pluviomètre, vent), ouvertes d’un appui depuis la Vue d’ensemble.
+- Une station mal placée (contre un mur au soleil, sur un toit) ne fausse plus la carte : Hestia apprend chaque nuit son écart avec la prévision et corrige seulement la température.
+- L’ombre sur votre station (une maison, un arbre) est apprise chaque nuit sur les trois derniers mois. Vous pouvez aussi la donner tout de suite : le matin ou l’après-midi.
+- Nouvelle page État › Fiabilité de la station : ce que vaut chaque mesure.
+- Les pollens, l’ombre et la fiabilité de la station sont partagés avec Hestia Confort 2.
+- Les extensions trouvées chez vous se demandent en un clic.
+- Le panneau a une page « À propos ».
+
+### Améliorations
+
+- Hestia Weather est bien plus léger : Home Assistant ne se fige plus pendant ses calculs, même sur un petit boîtier.
+- Le tableau de bord travaille moins : une seule mise à jour pour toutes les cartes d’une page, et seulement ce qui a changé.
+- La carte et le panneau se chargent plus vite, surtout sur l’appli mobile.
+- Le panneau Hestia répond plus vite quand on ouvre un lieu ou change un réglage.
+- Hestia Weather ne ralentit plus le démarrage de Home Assistant.
+- Le hub s’appelle « Hestia-FB » dans le menu de Home Assistant.
+- Sur téléphone, le bandeau ressemble à la tuile, et le ciel reste bien visible.
+- Un texte trop long (vigilance, évènements, alertes de la station) défile au lieu d’être coupé.
+- La carte prend la police, les pièces et les tailles de texte communes à toutes les briques Hestia.
+- Les animations s’arrêtent quand la carte n’est pas à l’écran.
+- L’onglet Station s’ouvre bien plus vite.
+
+### Corrections
+
+- Le panneau Hestia ne reste plus vide quand une brique garde un fichier d’une autre version (issue #48).
+- Une bulle d’aide ne se referme plus toute seule pendant qu’on la lit.
+- Thème sombre : bulletin, frise et échelle plus lisibles.
+- La tuile ne dépasse plus de l’écran d’un téléphone.
+- Deux cartes sur une même page ne mélangent plus leurs graphiques.
+
 ## 3.1.0 — Le nom Hestia, une nouvelle carte, et l’allemand
 
 ### Avant de mettre à jour

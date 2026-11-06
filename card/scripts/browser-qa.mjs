@@ -19,6 +19,8 @@ const server = createServer((req, res) => {
   if (path === '/icons.json') { res.setHeader('Content-Type', 'application/json'); res.end(icons); }
   // The panel's fonts, served by the integration under /hestia_weather-assets/ in Home Assistant.
   else if (/^\/hestia_weather-assets\/manrope-[\w-]+\.(ttf|woff2)$/.test(path)) { res.setHeader('Content-Type', path.endsWith('.woff2') ? 'font/woff2' : 'font/ttf'); res.end(readFileSync(`../custom_components/hestia_weather/frontend/${path.split('/').pop()}`)); }
+  // The panel's pieces loaded when needed (socle 1.23), beside panel.js in Home Assistant.
+  else if (/^\/hub-[\w-]+\.js$/.test(path)) { res.setHeader('Content-Type', 'text/javascript'); res.end(readFileSync(`../custom_components/hestia_weather/frontend${path}`)); }
   else if (file) { res.setHeader('Content-Type', file[0]); res.end(readFileSync(file[1])); }
   else { res.writeHead(404); res.end(); }
 });
@@ -44,9 +46,9 @@ try {
       await show({ format, width, theme, condition, vigilance: condition === 'pouring' ? 'Orange' : undefined, animated: false });
       const overflow = await inCard(root => {
         const host = root.host.getBoundingClientRect();
-        // The timeline draws in its own shadow root: its labels and hours are checked too.
+        // The timeline draws in its own shadow root: its labels and hours are checked too. A scrolling line runs inside its clipped frame.
         const all = [...root.querySelectorAll('*'), ...[...root.querySelectorAll('hestia-frise')].flatMap(f => [...f.shadowRoot.querySelectorAll('*')])];
-        return all.filter(e => { const r = e.getBoundingClientRect(); return r.width && !e.closest('.sky, dialog, .press-ring') && (r.right > host.right + 1 || r.left < host.left - 1); })
+        return all.filter(e => { const r = e.getBoundingClientRect(); return r.width && !e.closest('.sky, dialog, .press-ring, hestia-weather-marquee .run') && (r.right > host.right + 1 || r.left < host.left - 1); })
           .map(e => e.className || e.tagName).slice(0, 5);
       });
       assert.deepEqual(overflow, [], `Overflow ${format} ${width} ${theme} ${condition}`);
@@ -76,7 +78,8 @@ try {
   const state = () => inCard(root => ({ open: root.querySelector('.nw-tilecard').classList.contains('open'), expanded: root.querySelector('.nw-tilecard').getAttribute('aria-expanded'),
     dialog: !!root.querySelector('dialog')?.open, inert: root.querySelector('.more').inert }));
   assert.deepEqual(await state(), { open: false, expanded: 'false', dialog: false, inert: true }, 'Tile starts folded');
-  const folded = await inCard(root => ({ top: [...root.querySelectorAll('.meta .nw-alert')].map(a => a.textContent.replace(/\s+/g, ' ').trim()),
+  // A scrolling line carries a hidden second copy of its words: only what is read aloud counts.
+  const folded = await inCard(root => ({ top: [...root.querySelectorAll('.meta .nw-alert')].map(a => { const c = a.cloneNode(true); c.querySelectorAll('[aria-hidden="true"]').forEach(n => n.remove()); return c.textContent.replace(/\s+/g, ' ').trim(); }),
     ticker: root.querySelector('hestia-ticker').points.map(p => ['official' in p, p.official ?? false]) }));
   assert.deepEqual(folded.top, ['Vigilance jaune · Orages'], 'Folded: the official vigilance stays on top, as a compact pill');
   assert.deepEqual(folded.ticker[0], [true, false], 'Folded: what the station measures leads the scrolling bubble, in alert style');
@@ -299,7 +302,7 @@ try {
       const host = root.host.getBoundingClientRect();
       return [...root.querySelectorAll('*')].filter(e => {
         const r = e.getBoundingClientRect();
-        return r.width && !e.closest('.sky, dialog, .press-ring') && (r.right > host.right + 1 || r.left < host.left - 1);
+        return r.width && !e.closest('.sky, dialog, .press-ring, hestia-weather-marquee .run') && (r.right > host.right + 1 || r.left < host.left - 1);
       }).map(e => e.className || e.tagName).slice(0, 5);
     });
     assert.deepEqual(overflow, [], `Swiss card overflow at ${width}`);

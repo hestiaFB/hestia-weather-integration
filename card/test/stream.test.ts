@@ -80,7 +80,7 @@ describe('one subscription shared by the cards of a page', () => {
     const air = { today: [1] };
     send(message({ wind: { now: 1 }, air, lightning: { step: 0 } }));
     send({ version: 1, integration: 'x', entryId: 'e', title: 'Gardanne', changes: { wind: { now: 2 } }, removed: ['lightning'] } as unknown as StreamMessage);
-    const last = seen[1] as { view: Record<string, unknown> };
+    const last = seen[1] as unknown as { view: Record<string, unknown> };
     expect(last.view).toEqual({ wind: { now: 2 }, air: { today: [1] } });
     expect(last.view.air).toBe(air);
     expect('changes' in last).toBe(false);
