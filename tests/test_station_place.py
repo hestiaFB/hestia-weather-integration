@@ -103,6 +103,12 @@ def test_a_side_whose_wind_is_far_weaker_is_sheltered():
     assert sp.sheltered_sides(settings(wind_shelter=["e"]), {}) == {"e"}
 
 
+def test_the_house_side_is_always_sheltered():
+    assert sp.sheltered_sides(settings(station_side="ne", station_wall="far"), {}) == {"sw"}
+    assert sp.sheltered_sides(settings(station_side="ne", wind_shelter=["w"]), {}) == {"sw", "w"}
+    assert sp.sheltered_sides(settings(station_side="open", wind_shelter=["w"]), {}) == {"w"}
+
+
 def test_from_a_sheltered_side_the_stronger_of_station_and_forecast():
     s = settings(wind_shelter=["w"])
     speed, gust, note = sp.retained_wind(s, {}, 6.0, 9.0, 28.0, 43.0, 265.0)
@@ -147,7 +153,8 @@ def test_each_measure_says_how_far_it_can_be_trusted():
     trust = sp.describe(s, {}, {"cells": {"200/20": 0.3}, "learned": 40, "reachable": 120}, AFTERNOON, PARIS, LAT, LON)
     assert {k: v["level"] for k, v in trust.items()} == {"temperature": "handled", "wind": "handled", "rain": "handled", "sun": "handled"}
     assert trust["temperature"]["line"] == "De 12 h 30 à 17 h 20 en ce moment, Hestia-FB prend la prévision."
-    assert trust["wind"]["line"] == "Dégagée : N, NE, E, SE, S, SO, NO."
+    # The house, north-east of a station on its south-west side, hinders the wind too.
+    assert trust["wind"]["line"] == "Dégagée : N, E, SE, S, SO, NO."
     plain = sp.describe(settings(), {}, None, AFTERNOON, PARIS, LAT, LON)
     assert {k: v["level"] for k, v in plain.items()} == {"temperature": "watch", "wind": "watch"}
 

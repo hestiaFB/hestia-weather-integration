@@ -397,6 +397,15 @@ class Draft(_SourceSteps):
             if value == "roof":
                 s.pop("station_height", None)
                 s.pop("station_ground", None)
+            # One rose for the house and the wind: placing the house answers the wind too (the house is a hindered side
+            # of its own, out of the list of the others); « Je ne sais pas » for one is « Je ne sais pas » for both.
+            if value is not None and "wind_shelter" in station_place.asked(_settings(s), s):
+                wind = s.get("wind_shelter")
+                if value == "":
+                    s["wind_shelter"] = ""
+                else:
+                    house = station_place.opposite(value) if value in station_place.SIDES else None
+                    s["wind_shelter"] = [d for d in wind if d != house] if isinstance(wind, list) else []
         return ""
 
     def _place_view(self) -> dict[str, Any]:

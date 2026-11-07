@@ -176,9 +176,17 @@ def learn_rain(days: Iterable[tuple[float | None, float | None]], known: Mapping
     return {"share": _blend(before, median(m / f for f, m in pairs)), "days": len(pairs)}
 
 
+def house_side(settings: Settings) -> str | None:
+    """The side the house stands on, seen from the station: opposite the wall the station is beside."""
+    return opposite(settings.station_side) if settings.station_side in SIDES else None
+
+
 def sheltered_sides(settings: Settings, learned: Mapping[str, Any]) -> frozenset[str]:
-    """The sides the wind is sheltered from: learned when at least three sides are, else declared."""
+    """The sides the wind is sheltered from: learned when at least three sides are, else declared. The house is always a
+    declared side, whatever its distance (Frank, 6 November 2026: one rose for the house and the wind)."""
     declared = set(settings.wind_shelter or ())
+    if (house := house_side(settings)) is not None:
+        declared.add(house)
     sides = {k: v for k, v in ((learned.get("wind") or {}).get("sides") or {}).items() if v[1] >= HOURS}
     if len(sides) < CHECKED:
         return frozenset(declared)

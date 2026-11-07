@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rose maison et vent</title>
+<meta name="description" content="Maquette : « Où est la station ? » et « le vent autour de la station » fusionnés en une seule rose. Rien n'est enregistré.">
+<style>
+/* Échelle C de la charte : 11·12·14·17·21·34. Palette du hub (socle 1.19) : bleu = dégagé, gris pointillé = gêné. */
+:root{--nw-fs-label:11px;--nw-fs-small:12px;--nw-fs-text:14px;--nw-fs-title:17px;--nw-fs-case:21px}
+@font-face{font-family:Manrope;font-weight:400;src:url(../../hestia-ecosysteme/socle/fonts/manrope-400.ttf)}
+@font-face{font-family:Manrope;font-weight:500;src:url(../../hestia-ecosysteme/socle/fonts/manrope-500.ttf)}
+@font-face{font-family:Manrope;font-weight:600;src:url(../../hestia-ecosysteme/socle/fonts/manrope-600.ttf)}
+:root{color-scheme:dark;--bg:#1b1c1e;--text:#eeece8;--muted:#b2aea7;--faint:#8c8882;--line:#323336;--row:#232426;--hover:#2b2c2f;--sel:#303133;
+ --button:#ebe8e1;--on-button:#202122;--ok:#a6c8d7;--note:#c7a6ef}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){color-scheme:light;--bg:#faf9f7;--text:#242321;--muted:#6c6862;--faint:#8a857e;--line:#e4e1db;--row:#fff;--hover:#f1efea;--sel:#eceae5;
+ --button:#272623;--on-button:#fff;--ok:#36677d;--note:#7a4bb5}}
+:root[data-theme="light"]{color-scheme:light;--bg:#faf9f7;--text:#242321;--muted:#6c6862;--faint:#8a857e;--line:#e4e1db;--row:#fff;--hover:#f1efea;--sel:#eceae5;
+ --button:#272623;--on-button:#fff;--ok:#36677d;--note:#7a4bb5}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#1b1c1e;--text:#eeece8;--muted:#b2aea7;--faint:#8c8882;--line:#323336;--row:#232426;--hover:#2b2c2f;--sel:#303133;
+ --button:#ebe8e1;--on-button:#202122;--ok:#a6c8d7;--note:#c7a6ef}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:400 var(--nw-fs-text)/1.6 Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+.mock{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:8px 16px;font-size:var(--nw-fs-small);color:var(--muted);border-bottom:1px dashed var(--note)}
+.mock b{color:var(--note)}.mock label{display:inline-flex;align-items:center;gap:6px}
+main{max-width:760px;margin:0 auto;padding:28px 16px 100px}
+h2.part{font-size:var(--nw-fs-small);font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin:34px 4px 10px}
+.note{border:1px dashed var(--note);border-radius:14px;padding:10px 14px;color:var(--muted);font-size:var(--nw-fs-small);margin:10px 0 0}
+.note b{color:var(--note)}
+
+/* Écran du questionnaire */
+.quiz{background:var(--row);border:1px solid var(--line);border-radius:20px;padding:28px 28px 22px}
+.step{font-size:var(--nw-fs-small);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.bar{height:4px;border-radius:2px;background:var(--line);margin-bottom:22px}.bar i{display:block;height:100%;border-radius:2px;background:var(--ok)}
+.quiz h3{font-size:var(--nw-fs-case);font-weight:650;letter-spacing:-.02em;line-height:1.25;margin:0 0 6px}
+.muted{color:var(--muted);margin:0 0 14px}
+.hint{color:var(--muted);text-align:center;margin:0 0 12px}
+.seg{display:flex;justify-content:center;margin:0 auto 14px;width:max-content;border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;border-radius:999px;padding:5px 16px;cursor:pointer;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.seg button[aria-pressed="true"]{background:var(--sel);color:var(--text);font-weight:600}
+.seg svg{width:16px;height:16px}
+.sum{color:var(--muted);text-align:center;font-size:var(--nw-fs-small);margin:0;min-height:2.6em}
+.or{display:flex;align-items:center;gap:10px;color:var(--faint);font-size:var(--nw-fs-small);margin:14px auto 10px;max-width:330px}
+.or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
+.choices{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.choice{border:1px solid var(--line);border-radius:999px;background:none;padding:6px 14px;cursor:pointer}
+.choice[aria-pressed="true"]{border-color:var(--ok);color:var(--ok);background:var(--sel)}
+.foot{display:flex;align-items:center;gap:14px;margin-top:22px}.foot .sp{flex:1}
+.link{background:none;border:0;cursor:pointer;color:var(--text);padding:6px 4px}
+.primary{background:var(--button);color:var(--on-button);border:0;border-radius:999px;padding:10px 22px;font-weight:600;cursor:pointer}
+
+/* La rose : la station au milieu ; autour, dégagé (bleu), gêné (pointillé gris) ou la maison (pointillé gris + maison). */
+svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.rose{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:330px;margin:0 auto 12px}
+.rose button,.rose .mid{aspect-ratio:1.25;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:600;padding:0}
+.rose button{border:1px solid var(--ok);background:var(--sel);color:var(--ok);cursor:pointer}
+.rose button small{font-size:var(--nw-fs-label);font-weight:500;color:var(--muted)}
+.rose button.shut{border:1.5px dashed var(--faint);background:none;color:var(--faint)}
+.rose button.house{color:var(--text)}
+.rose button svg{width:22px;height:22px}
+.rose .mid{border:1px dashed var(--line);color:var(--muted);font-weight:500;font-size:var(--nw-fs-small)}
+.rose .mid svg{width:30px;height:30px}
+.rose.off button{opacity:.35;pointer-events:none}
+.rose.small{grid-template-columns:repeat(3,46px);gap:4px;margin:0}
+.rose.small button,.rose.small .mid{width:46px;height:32px;aspect-ratio:auto;border-radius:10px;font-size:var(--nw-fs-small)}
+.rose.small .mid{font-size:0}.rose.small svg,.rose.small .mid svg{width:18px;height:18px}
+
+/* Station › Emplacement */
+.sec-h{display:flex;align-items:center;margin:0 4px 8px;font-size:var(--nw-fs-small);font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.sec-h .sp{flex:1}.sec-h .link{text-transform:none;letter-spacing:0;font-weight:600;color:var(--ok)}
+.list{background:var(--row);border:1px solid var(--line);border-radius:16px}
+.row{display:flex;align-items:center;gap:16px;padding:14px 16px;border-top:1px solid var(--line)}
+.list>.row:first-child{border-top:0}
+.row .lab{flex:1;min-width:0}.row .lab small{display:block;color:var(--muted);font-size:var(--nw-fs-small)}
+.row .ctl{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.row .ctl .s{font-size:var(--nw-fs-small);color:var(--muted);text-align:right;max-width:260px}
+.row .val{color:var(--muted)}
+.row .ctl .link{font-size:var(--nw-fs-small);color:var(--muted)}
+@media (max-width:560px){.quiz{padding:20px 16px}.row{flex-direction:column;align-items:stretch}.row .ctl{align-items:flex-start}.row .ctl .s{text-align:left}}
+</style>
+</head>
+<body>
+<div class="mock"><b>Maquette</b><span>Rien n'est enregistré.</span>
+ <label><input type="checkbox" id="anemo" checked> La station a un anémomètre</label>
+ <label><input type="checkbox" id="light"> Thème clair</label>
+ <button class="link" id="reset">Recommencer</button></div>
+<main>
+ <h2 class="part">1 · Le questionnaire : une seule question pour la maison et le vent</h2>
+ <div id="quiz"></div>
+ <p class="note"><b>Ce qui change.</b> « Où est la station ? » et « D'où le vent arrive-t-il librement ? » ne font plus qu'un écran.
+  La station est au milieu ; on touche d'abord le côté de la maison, puis les côtés gênés (haie, mur, arbre).
+  Le côté de la maison compte toujours comme gêné pour le vent. Sans anémomètre, seule la maison se place.
+  Le questionnaire perd une question. Les réponses restent rangées comme aujourd'hui : rien à migrer.</p>
+
+ <h2 class="part">2 · Ensuite, dans Station › Emplacement</h2>
+ <div id="station"></div>
+ <p class="note"><b>Ce qui change.</b> Le menu « Côté nord-est » disparaît : la même petite rose montre la maison et les côtés gênés, et « Modifier » rouvre cet écran.
+  « Refaire le questionnaire » reste toujours là, en haut de la section, même une fois tout répondu.</p>
+</main>
+<script>
+const DIRS=['nw','n','ne','w',null,'e','sw','s','se'];
+const SHORT={n:'N',ne:'NE',e:'E',se:'SE',s:'S',sw:'SO',w:'O',nw:'NO'};
+const NAME={n:'nord',ne:'nord-est',e:'est',se:'sud-est',s:'sud',sw:'sud-ouest',w:'ouest',nw:'nord-ouest'};
+const OPP={n:'s',ne:'sw',e:'w',se:'nw',s:'n',sw:'ne',w:'e',nw:'se'};
+const ORDER=['n','ne','e','se','s','sw','w','nw'];
+const HOUSE='<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>';
+const STATION='<svg viewBox="0 0 24 24"><path d="M12 21V8"/><path d="M8 21h8"/><rect x="8" y="3" width="8" height="5" rx="1.5"/></svg>';
+const SHUT='<svg viewBox="0 0 24 24"><path d="M5 20V9M10 20V6M15 20V9M20 20V6"/></svg>';
+// L'exemple de Frank : la station côté nord-est de la maison (la maison au sud-ouest), l'ouest gêné.
+let S,tool;
+function reset(){S={house:'sw',place:'side',shut:['w']};tool='shut';draw();}
+const anemo=()=>document.getElementById('anemo').checked;
+
+function tap(d){
+ if(tool==='house'||!anemo()){S.house=S.house===d?null:d;S.place=S.house?'side':null;S.shut=S.shut.filter(x=>x!==d);if(S.house&&anemo())tool='shut';}
+ else if(d!==S.house)S.shut=S.shut.includes(d)?S.shut.filter(x=>x!==d):[...S.shut,d];
+ draw();}
+function word(d){return d===S.house?'la maison':S.shut.includes(d)?'gêné':'dégagé';}
+function rose(small){
+ return `<div class="rose${small?' small':''}">${DIRS.map(d=>{
+  if(!d)return `<span class="mid">${STATION}${small?'':'la station'}</span>`;
+  const h=d===S.house,shut=h||(anemo()&&S.shut.includes(d));
+  const inner=h?(small?HOUSE:`${HOUSE}<small>${SHORT[d]} · la maison</small>`):`${SHORT[d]}${small?'':`<small>${anemo()?word(d):''}</small>`}`;
+  return `<button class="${shut?'shut':''}${h?' house':''}" data-d="${d}" aria-label="Côté ${NAME[d]} : ${anemo()?word(d):h?'la maison':'—'}">${inner}</button>`;}).join('')}</div>`;}
+function sentence(){
+ const parts=[];
+ if(S.place==='roof')parts.push('Sur le toit.');
+ else if(S.place==='open')parts.push('Loin de la maison, au jardin.');
+ else if(S.house)parts.push(`La maison au ${NAME[S.house]} : la station est côté ${NAME[OPP[S.house]]}.`);
+ else parts.push('Touchez le côté de la maison.');
+ if(anemo()){const shut=ORDER.filter(d=>d===S.house||S.shut.includes(d)),open=ORDER.filter(d=>!shut.includes(d));
+  parts.push(shut.length?(open.length?`Dégagée : ${open.map(d=>SHORT[d]).join(', ')} · gênée : ${shut.map(d=>SHORT[d]).join(', ')}`:'Gênée de tous côtés'):'Dégagée de tous côtés');}
+ return parts.join('<br>');}
+function quiz(){
+ const n=anemo()?6:5;
+ return `<div class="quiz"><p class="step">Votre station · 1 sur ${n}</p><div class="bar"><i style="width:0"></i></div>
+ <h3>${anemo()?'Qu’y a-t-il autour de la station ?':'Où est la maison, vue de la station ?'}</h3>
+ <p class="muted">${anemo()?'La maison, une haie ou un mur gênent le vent : Hestia-FB y prendra le vent prévu. Près d’un mur au soleil, il saura quand le thermomètre chauffe.':'Hestia-FB saura quand le soleil chauffe le mur près d’elle.'}</p>
+ ${anemo()?`<div class="seg" role="group" aria-label="Je place"><button data-tool="house" aria-pressed="${tool==='house'}">${HOUSE} la maison</button><button data-tool="shut" aria-pressed="${tool==='shut'}">${SHUT} une gêne</button></div>
+ <p class="hint">${tool==='house'?'Touchez le côté où se trouve la maison.':'Touchez un côté pour le passer de dégagé à gêné.'}</p>`:'<p class="hint">Touchez le côté où se trouve la maison.</p>'}
+ ${rose(false)}<p class="sum">${sentence()}</p>
+ <div class="or">ou, sans maison à côté</div>
+ <div class="choices"><button class="choice" data-place="roof" aria-pressed="${S.place==='roof'}">Sur le toit</button><button class="choice" data-place="open" aria-pressed="${S.place==='open'}">Loin de la maison, au jardin</button></div>
+ <div class="foot"><span class="sp"></span><button class="link">Je ne sais pas</button><button class="primary">Suivant</button></div></div>`;}
+function station(){
+ const row=(lab,sub,ctl)=>`<div class="row"><div class="lab">${lab}<small>${sub}</small></div><div class="ctl">${ctl}</div></div>`;
+ return `<div class="sec-h">Emplacement<span class="sp"></span><button class="link">Refaire le questionnaire</button></div><div class="list">
+ ${row(anemo()?'Autour de la station':'La maison',anemo()?'Hestia-FB compare chaque nuit avec la prévision.<br>Vent du sud-ouest, de l’ouest : Hestia-FB prend le vent prévu. Vérifié sur 24 heures de vent.':'Hestia-FB compare chaque nuit avec la prévision.',
+   `${rose(true)}<span class="s">${sentence()}</span><button class="link">Modifier</button>`)}
+ ${S.place==='side'&&S.house?row('Distance de la maison','Contre un mur au soleil, le thermomètre monte trop.','<span class="val">De 1 à 3 m</span>'):''}
+ ${row('Hauteur','Près du sol, les nuits claires paraissent plus froides.','<span class="val">De 1,5 à 2 m</span>')}
+ ${row('Le pluviomètre','À l’abri, il recueille moins de pluie.','<span class="val">À découvert</span>')}</div>`;}
+function draw(){
+ document.getElementById('quiz').innerHTML=quiz();document.getElementById('station').innerHTML=station();
+ document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>tap(b.dataset.d));
+ document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;draw();});
+ document.querySelectorAll('[data-place]').forEach(b=>b.onclick=()=>{const p=b.dataset.place;if(S.place===p){S.place=null}else{S.place=p;S.house=null;if(anemo())tool='shut';}draw();});}
+document.getElementById('anemo').onchange=draw;
+document.getElementById('light').onchange=e=>{document.documentElement.dataset.theme=e.target.checked?'light':'dark';};
+document.getElementById('reset').onclick=reset;
+reset();
+</script>
+</body>
+</html>

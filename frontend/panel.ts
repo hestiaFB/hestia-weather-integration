@@ -4,7 +4,7 @@ import {LitElement,html,unsafeCSS,nothing,type TemplateResult,type PropertyValue
 import {customElement,property,state} from 'lit/decorators.js';
 import styles from './styles.css';
 import {frame,hubStyles,modernStyles,helpTip,pageHead,todoLists,listSection,listRow,moreRow,tabBar,saveBar,toggle,kpis,stepFooter,leaveNotice,detectedFrame,removeBlock,pageStyles,aboutPage,hassChanged,SOCLE,setLanguage,addDictionary,wordsReady,t,fr,type NkLine,type NkLevel} from './socle/ui';
-import {placeSection,quizScreen,trustSection,questions as placeQuestions} from './emplacement';
+import {placeSection,quizScreen,trustSection,questions as placeQuestions,type PlaceTool} from './emplacement';
 import {NONE,stages,intros,extensionGroups,extensionSwitch,enabledKeys,provenance,sameSet,entityLine,grouped,capital,type Change,type Choice,type DraftReply,type Entity,type Field,type Hass,type Place,type Places,type Sources,type View,type Extension,type Official,type RenamePreview,type RenameReply,type RenameUse} from './model';
 
 // Weather's words beside the hub's (socle 1.13): French in the code, English for any language without a dictionary.
@@ -49,6 +49,8 @@ export class WeatherSetup extends LitElement {
  @state() private confirmRemove=false;
  // The questionnaire of Station › Emplacement, one question a screen; null when not open.
  @state() private quizStep:number|null=null;
+ // What a tap on the rose of the questionnaire places (the house or a hindered side); undefined: as the answers say.
+ @state() private placeTool?:PlaceTool;
  // Where the questionnaire was opened: the overview (saved at its end, back to the overview) or the Station tab.
  private quizFrom:'home'|'station'='station';
  // Renaming the entities « hestia_weather » (Réglages généraux): read when the page opens, shown only to a home that has old ids.
@@ -251,7 +253,7 @@ export class WeatherSetup extends LitElement {
    ${folded.length?listSection(t('Autres mesures'),folded.map(g=>moreRow(g.title,filled(g),g.fields.map(f=>this.field(f))))):nothing}
    ${listSection(t('Historique de la station'),[listRow({name:t('Calculer depuis l’historique'),label:html`${t('Calculer depuis l’historique')}${helpTip(t('Calculer depuis l’historique'),s.history_help,'')}`,
     value:toggle(t('Calculer depuis l’historique'),s.history,on=>this.set('station_history',on),this.busy)})])}
-   ${place?placeSection({...place,quiz:()=>{this.quizFrom='station';this.quizStep=this.firstQuestion();}}):nothing}
+   ${place?placeSection({...place,quiz:(step?:number)=>{this.quizFrom='station';this.placeTool=undefined;this.quizStep=step??this.firstQuestion();}}):nothing}
    <button class="link" ?disabled=${this.busy} @click=${()=>void this.change({op:'redetect',value:'station'})}>${t('Rechercher à nouveau les capteurs')}</button>${this.bottom()}`;
  }
  private air(v:View){const a=v.air;
@@ -505,7 +507,7 @@ export class WeatherSetup extends LitElement {
  private async openQuiz(entryId:string,route=true){
   await this.open(entryId,1,false);
   if(!this.view?.station.place||this.entryId!==entryId)return;
-  this.quizFrom='home';this.quizStep=this.firstQuestion();
+  this.quizFrom='home';this.placeTool=undefined;this.quizStep=this.firstQuestion();
   if(route)this.path(entryId+'/emplacement');
  }
  /** Leaving the questionnaire: opened from the overview, what was answered is saved and the overview comes back. */
@@ -517,7 +519,7 @@ export class WeatherSetup extends LitElement {
  private quizPage(){const place=this.view!.station.place!,home=this.quizFrom==='home';
   return html`<main>${pageHead({back:{label:home?t('Vue d’ensemble'):t('Station'),onClick:()=>this.exitQuiz()},title:t('Votre station'),subtitle:this.placeTitle||this.view!.title})}
    ${this.error?html`<p class="notice error" role="alert">${this.error}</p>`:nothing}
-   ${quizScreen({view:place,busy:this.busy,answer:(key:string,value:unknown)=>void this.change({op:'place',key,value}),step:this.quizStep!,go:n=>{this.quizStep=n;},
+   ${quizScreen({view:place,busy:this.busy,answer:(key:string,value:unknown)=>void this.change({op:'place',key,value}),step:this.quizStep!,go:n=>{this.quizStep=n;this.placeTool=undefined;},tool:this.placeTool,setTool:x=>{this.placeTool=x;},
     close:home?undefined:()=>{this.quizStep=null;},saves:!!this.entryId,finish:()=>{if(this.entryId)void this.save();else this.quizStep=null;}})}</main>
    ${this.busy?html`<p class="busy" role="status">${t('Un instant…')}</p>`:nothing}`;
  }

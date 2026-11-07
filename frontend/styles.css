@@ -105,6 +105,15 @@ ul{padding-left:22px}
 .pl-mid{border:1px dashed var(--nk-border);color:var(--nk-muted);font-weight:500;font-size:var(--nw-fs-small,12px)}
 .pl-rose.pl-small{grid-template-columns:repeat(3,46px);max-width:none;gap:4px;margin:0}.pl-small button,.pl-small .pl-mid{width:46px;height:32px;aspect-ratio:auto;border-radius:10px;font-size:var(--nw-fs-small,12px)}
 .pl-small .pl-mid{font-size:0}
+.pl-mid svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;display:block}
+.pl-small .pl-mid svg{width:20px;height:20px}
+.pl-rose button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;display:block}
+.pl-small button svg{width:18px;height:18px}
+.pl-rose button.pl-house{color:var(--primary-text-color)}
+.pl-rose button:disabled{cursor:default}
+/* The house and the small rose's fixed cells are not « off »: they keep their colours. */
+.pl-rose button.pl-house:disabled,.pl-small button:disabled{opacity:1;filter:none}
+.pl-tool{margin:0 0 10px}
 .pl-quiz{max-width:520px;margin:8px auto 0}
 .pl-step{margin:0;font-size:var(--nw-fs-label,11px);font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--nk-muted)}
 .pl-progress{height:4px;border-radius:99px;background:var(--nk-border);overflow:hidden;margin:10px 0 24px}

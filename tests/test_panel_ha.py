@@ -418,6 +418,24 @@ class PanelTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status([overview])['level'], 'ok')
         self.assertEqual(overview.needs, [])
 
+    async def test_placing_the_house_answers_the_wind_too(self):
+        draft = Draft(self.hass, {"weather_entity": "weather.maison", "wind_speed_entity": "sensor.v"})
+        place = lambda key, value: draft.change({"op": "place", "key": key, "value": value})
+        self.assertEqual(place("wind_shelter", ["sw", "w"]), "")
+        # The house south-west of the station: it leaves the list, the hedge stays.
+        self.assertEqual(place("station_side", "ne"), "")
+        self.assertEqual(draft.sources["wind_shelter"], ["w"])
+        place("station_side", "open")
+        self.assertEqual(draft.sources["wind_shelter"], ["w"])
+        place("station_side", "")
+        self.assertEqual(draft.sources["wind_shelter"], "")
+        place("station_side", "s")
+        self.assertEqual(draft.sources["wind_shelter"], [])
+        # Without an anemometer, the wind is not asked: nothing written for it.
+        calm = Draft(self.hass, {"weather_entity": "weather.maison"})
+        calm.change({"op": "place", "key": "station_side", "value": "ne"})
+        self.assertNotIn("wind_shelter", calm.sources)
+
     async def test_entity_settings_describe_station_sources_as_optional(self):
         from types import SimpleNamespace
         from unittest.mock import patch
