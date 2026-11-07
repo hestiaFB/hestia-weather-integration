@@ -1,3 +1,14 @@
+## 3.2.1 — Prête pour la liste officielle du Marketplace
+
+### Améliorations
+
+- Hestia Weather se range dans la catégorie « Météo et alertes » du Marketplace.
+- Mise à jour refusée pour changement de nom (« changed its domain… ») : un guide pas à pas, lié depuis le README, explique quoi faire sans rien perdre.
+
+### Corrections
+
+- La réparation « Reprendre les mises à jour » respecte les règles de Home Assistant.
+
 ## 3.2.0 — Le nom Hestia, une nouvelle carte, une station mieux comprise, et bien plus léger
 
 ### Avant de mettre à jour
