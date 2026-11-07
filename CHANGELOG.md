@@ -1,3 +1,13 @@
+## À venir
+
+### Nouveautés
+
+- Hestia Énergie peut lire les degrés-jours de chauffage et de climatisation, passés et prévus.
+
+### Améliorations
+
+- Emplacement de la station : une seule rose pour la maison et le vent. Placer la maison suffit, son côté compte toujours comme gêné pour le vent.
+
 ## 3.2.1 — Prête pour la liste officielle du Marketplace
 
 ### Améliorations
