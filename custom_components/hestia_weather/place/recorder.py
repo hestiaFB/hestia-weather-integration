@@ -1,7 +1,7 @@
 """What a place reads from the Recorder: hours and weeks of its sensors, its rain counters' statistics, the lightning of the hour and of the month."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from homeassistant.components.recorder import get_instance, history, statistics
@@ -137,6 +137,26 @@ class RecorderMixin:
             self._statistics_failed("Statistics unavailable for %s: %s", entity_id, err)
             return None
         return hourly_changes([(_seconds(r["start"]), _seconds(r["end"]), r.get(statistic)) for r in rows]) if rows else None
+
+    async def station_day(self, day: date, zone: ZoneInfo) -> list[tuple[float, float | None, float | None]] | None:
+        """The station temperature's hourly minima and maxima (°C) over a local day, from its long-term statistics:
+        (start in seconds, min, max). None without a temperature sensor or when the Recorder does not answer."""
+        entity_id = self.settings.temperature_entity
+        if not entity_id:
+            return None
+        start = datetime(day.year, day.month, day.day, tzinfo=zone)
+        end = datetime.combine(day + timedelta(days=1), datetime.min.time(), zone)
+
+        def during() -> list[Any]:
+            rows = statistics.statistics_during_period(self.hass, start, end, {entity_id}, "hour", {"temperature": "°C"}, {"min", "max"})
+            return list(rows.get(entity_id, []))
+
+        try:
+            rows = await get_instance(self.hass).async_add_executor_job(during)
+        except Exception as err:  # noqa: BLE001 - a missing day says None, it never stops the weather
+            self._statistics_failed("Statistics unavailable for %s: %s", entity_id, err)
+            return None
+        return [(_seconds(r["start"]), r.get("min"), r.get("max")) for r in rows]
 
     async def _load_strikes(self) -> None:
         """The last hour of strikes from the Recorder, after a restart: their distance only, the Recorder keeps no position."""

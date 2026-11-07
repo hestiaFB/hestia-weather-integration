@@ -47,7 +47,7 @@ Corrections de la 2.3.1 (15 octobre 2026) : sans station, les courbes de vent et
 ## 4. Interfaces publiées (contrat pour les autres briques)
 
 Ces interfaces sont stables ; un changement incompatible change la version majeure.
-- **Interface Python versionnée** `hass.data["hestia_weather_api"]` (version 1) : `places()`, `station()`, `hourly()`, `add_listener(…, brick=)`, `linked()` — détail dans [technique.md](technique.md). Une brique qui écoute un lieu donne son domaine (`brick`) : elle apparaît alors « reliée » dans **Configurer → Écosystème Hestia-FB**, qui montre aussi les briques installées non reliées, absentes ou à venir (règle 4 de l'écosystème).
+- **Interface Python versionnée** `hass.data["hestia_weather_api"]` (version 1) : `places()`, `station()`, `hourly()`, `degree_days(date)` (degrés-jours passés et prévus, pour Hestia Énergie), `add_listener(…, brick=)`, `linked()` — détail dans [technique.md](technique.md). Une brique qui écoute un lieu donne son domaine (`brick`) : elle apparaît alors « reliée » dans **Configurer → Écosystème Hestia-FB**, qui montre aussi les briques installées non reliées, absentes ou à venir (règle 4 de l'écosystème).
 - **Entités** : `sensor.hestia_weather_<clé>` et `binary_sensor.hestia_weather_<clé>` (deuxième lieu : `hestia_weather_<lieu>_<clé>`). Identifiant interne stable : `<entrée>_<clé>`. Les autres briques les reconnaissent par cet identifiant, jamais par le nom. Liste et attributs communs (`raison`, `source`, `debut`, `fin`, `partiel`, `niveau`) : [capteurs.md](capteurs.md).
 - **Entité météo** `weather.hestia_weather` (désactivée par défaut) : prévisions horaires et journalières.
 - **Action** `hestia_weather.prevision` (`debut`, `fin`, `lieu`) : la météo d'une fenêtre de temps.

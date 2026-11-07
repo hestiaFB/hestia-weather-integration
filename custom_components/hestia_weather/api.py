@@ -5,6 +5,7 @@ They never read Hestia Weather's own settings: this object is the contract, and 
 compatibly within a major version.
 """
 from __future__ import annotations
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
@@ -19,6 +20,10 @@ API_VERSION = 1
 STATION = {"temperature": "temperature_entity", "humidity": "humidity_entity", "rain_rate": "rain_rate_entity",
            "wind_speed": "wind_speed_entity", "wind_gust": "wind_gust_entity", "wind_bearing": "wind_bearing_entity",
            "solar_radiation": "solar_radiation_entity", "uv_index": "uv_index_entity", "pressure": "pressure_entity"}
+
+
+def _today(zone: Any) -> date:
+    return datetime.now(zone).date()
 
 
 class HestiaWeatherApi:
@@ -205,6 +210,38 @@ class HestiaWeatherApi:
                 "state": item.value if extra else None, "label": extra.get("libelle"), "restricted": level is not None and level >= 2,
                 "watering_restricted": bool(extra.get("arrosage_restreint")), "usages": list(extra.get("usages") or []),
                 "order": extra.get("arrete"), "at": data.computed.isoformat()}
+
+    async def degree_days(self, day: date, entry_id: str | None = None) -> dict[str, Any] | None:
+        """The heating and cooling degree-days of a day, counted as the Bâtiment sensors count them: (high + low) / 2,
+        bases 18 °C (`heating`) and 22 °C (`cooling`), in DJU to a tenth.
+
+        Today and the days ahead come from the forecast, exactly like the sensors (`source` « prevision »); a past day from
+        the station's own temperature, its long-term statistics (`source` « station », as far back as they are kept).
+        `mean` is the day's mean temperature (°C). None without a place, beyond the forecast, for a past day without a
+        temperature sensor, or with fewer than 20 hours of it: never an invented value. A coroutine: the past is read
+        from the Recorder."""
+        entry = self._entry(entry_id)
+        if entry is None:
+            return None
+        if isinstance(day, datetime):
+            day = day.date()
+        from zoneinfo import ZoneInfo
+        try:
+            from .engine.catalogue import COOLING_BASE, HEATING_BASE, _day_mean, degree_days, measured_day_mean
+        except ImportError:  # loaded on its own, as by the tests
+            from engine.catalogue import COOLING_BASE, HEATING_BASE, _day_mean, degree_days, measured_day_mean
+        zone = ZoneInfo(self.hass.config.time_zone)
+        runtime = entry.runtime_data
+        if day >= _today(zone):
+            mean, source = _day_mean(runtime.hours, runtime.days, day, zone), "prevision"
+        else:
+            rows = await runtime.station_day(day, zone)
+            mean, source = (measured_day_mean(rows, day, zone) if rows else None), "station"
+        if mean is None:
+            return None
+        heating, cooling = degree_days(mean)
+        return {"entry_id": entry.entry_id, "date": day.isoformat(), "heating": heating, "cooling": cooling,
+                "mean": round(mean, 1), "heating_base": HEATING_BASE, "cooling_base": COOLING_BASE, "source": source}
 
     def add_listener(self, entry_id: str | None, update: Callable[[], None], brick: str | None = None) -> Callable[[], None]:
         """Calls `update` whenever this place is recomputed (new measures or forecasts).

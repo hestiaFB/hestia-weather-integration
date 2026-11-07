@@ -124,6 +124,24 @@ def _day_mean(hours: Sequence[Hour], days: Sequence[Day], day: date, zone: ZoneI
     return sum(temps) / len(temps) if len(temps) >= 20 else None
 
 
+def degree_days(mean: float | None) -> tuple[float | None, float | None]:
+    """The heating and cooling degree-days of a day's mean temperature, bases 18 and 22 °C, as the Bâtiment sensors count them."""
+    if mean is None:
+        return None, None
+    return round(max(0.0, HEATING_BASE - mean), 1), round(max(0.0, mean - COOLING_BASE), 1)
+
+
+def measured_day_mean(rows: Sequence[tuple[float, float | None, float | None]], day: date, zone: ZoneInfo) -> float | None:
+    """A past day's mean temperature from the station's hourly statistics (start in seconds, min, max), counted like the
+    forecast one: (high + low) / 2. None below 20 hours measured that day: an incomplete day would give a false mean."""
+    start = datetime(day.year, day.month, day.day, tzinfo=zone)
+    end = datetime.combine(day + timedelta(days=1), datetime.min.time(), zone)
+    kept = [(low, high) for t, low, high in rows if start.timestamp() <= t < end.timestamp() and low is not None and high is not None]
+    if len(kept) < 20:
+        return None
+    return (max(high for _, high in kept) + min(low for low, _ in kept)) / 2
+
+
 def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, settings: Settings, get: Callable[[str], Any],
                     hours: Sequence[Hour], days: Sequence[Day], now: datetime, zone: ZoneInfo,
                     platforms: Mapping[str, str] | None = None, lightning: Lightning | None = None) -> dict[str, Item]:
@@ -379,10 +397,8 @@ def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, sett
     # ---- Bâtiment ----
     today = now.astimezone(zone).date()
     mean_today, mean_tomorrow = _day_mean(hours, days, today, zone), _day_mean(hours, days, tomorrow, zone)
-    for key, base, sign in (("degres_jours_chauffe", HEATING_BASE, 1), ("degres_jours_clim", COOLING_BASE, -1)):
-        def degrees(mean: float | None) -> float | None:
-            return None if mean is None else round(max(0.0, sign * (base - mean)), 1)
-        value, next_day = degrees(mean_today), degrees(mean_tomorrow)
+    for index, (key, base) in enumerate((("degres_jours_chauffe", HEATING_BASE), ("degres_jours_clim", COOLING_BASE))):
+        value, next_day = degree_days(mean_today)[index], degree_days(mean_tomorrow)[index]
         if value is None:
             items[key] = Item(None, "Prévision du jour indisponible", "prevision")
         else:

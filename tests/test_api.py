@@ -181,3 +181,52 @@ def test_station_shade_is_shared_only_with_a_sun_sensor():
     with_sun = entry("b", "Maison", Settings.from_options({"weather_entity": "weather.home", "solar_radiation_entity": "sensor.sun"}))
     with_sun.runtime_data.shade_view = lambda: view
     assert HestiaWeatherApi(hass_with(with_sun)).station_shade() == view
+
+
+def test_degree_days_come_from_the_station_for_the_past_and_the_forecast_ahead(monkeypatch):
+    """Hestia Énergie reads them for the heating explained by the cold (INTERFACE.md § 2). Real data of the house, read on
+    7 November 2026: the GW2000A's hourly statistics and Météo-France's daily forecast for Gardanne."""
+    import asyncio
+    import json
+    from datetime import date
+    from engine.forecast import parse_days
+    real = json.loads((Path(__file__).parent / "fixtures" / "gw2000a-temperature-degree-days.json").read_text())
+
+    monkeypatch.setattr(_api, "_today", lambda zone: date(2026, 11, 7))
+
+    asked = []
+
+    async def station_day(day, zone):
+        asked.append(day)
+        return [tuple(r) for r in real["hourly"]]
+    e = entry("e1", "Gardanne", Settings(weather_entity="weather.gardanne", temperature_entity="sensor.gw2000a_outdoor_temperature"))
+    e.runtime_data.days, e.runtime_data.station_day = parse_days(real["daily"]), station_day
+    hass = hass_with(e)
+    hass.config = SimpleNamespace(time_zone=real["time_zone"])
+    api = HestiaWeatherApi(hass)
+
+    def read(day):
+        return asyncio.run(api.degree_days(day))
+
+    # Yesterday, measured: 14.5 °C at most, 5.3 °C at least → 9.9 °C, 8.1 DJU of heating.
+    assert read(date(2026, 11, 6)) == {"entry_id": "e1", "date": "2026-11-06", "heating": 8.1, "cooling": 0.0, "mean": 9.9,
+                                       "heating_base": 18, "cooling_base": 22, "source": "station"}
+    # The hottest day of the year (13 July 2026): 38.3 / 22.8 °C → 30.55 °C, 8.5 DJU of cooling (rounded like the sensors).
+    hot = read(date(2026, 7, 13))
+    assert (hot["heating"], hot["cooling"], hot["mean"]) == (0.0, 8.5, 30.5)
+    # The spring change of hour: 23 hours are a whole day.
+    assert read(date(2026, 3, 29))["source"] == "station"
+    # The first day of the statistics, 14 hours only: no invented mean.
+    assert read(date(2025, 12, 16)) is None
+    # Today and tomorrow, forecast like the Bâtiment sensors: 17.1 / 4.1 °C → 7.4 DJU ; 15.6 / 6.5 °C → 6.9 DJU.
+    assert read(date(2026, 11, 7))["heating"] == 7.4 and read(date(2026, 11, 7))["source"] == "prevision"
+    assert read(datetime(2026, 11, 8, 12, tzinfo=timezone.utc))["heating"] == 6.9
+    # Beyond the forecast: nothing.
+    assert read(date(2026, 11, 30)) is None
+    assert asked == [date(2026, 11, 6), date(2026, 7, 13), date(2026, 3, 29), date(2025, 12, 16)]
+    # A past day without a temperature sensor, and no place at all.
+    async def no_sensor(day, zone):
+        return None
+    e.runtime_data.station_day = no_sensor
+    assert read(date(2026, 11, 6)) is None
+    assert asyncio.run(HestiaWeatherApi(hass_with()).degree_days(date(2026, 11, 6))) is None
