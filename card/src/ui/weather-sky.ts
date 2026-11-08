@@ -344,7 +344,11 @@ export class HestiaWeatherSky extends LitElement {
     .cloud {position:absolute;width:190px;height:120px;overflow:visible;filter:drop-shadow(0 5px 7px #172d4317);animation:clouds var(--cloud-duration,32s) ease-in-out infinite alternate;}
     /* Animated artwork is wrapped in a div: Chrome can only hand HTML boxes to the GPU, an animated <svg> restyles every frame. */
     :is(.cloud,.fog-band,.heat-plume,.leaf,.bolt)>svg {display:block;width:100%;height:100%;overflow:visible;}
-    .cloud-rear {fill:#d6dde3;}.cloud-near {fill:#f4f7f8;}
+    /* Day clouds take a little of the theme's text colour: a grey back and a soft shadow on a light card (white on white vanished),
+       unchanged on a dark one. The shadow fades as the text gets lighter (relative colour; older browsers keep the faint one). */
+    .cloud {--cloud-shade:oklch(from var(--primary-text-color,#253047) .3 .03 250 / calc((1 - l) * .42));}
+    .cloud {filter:drop-shadow(0 5px 7px #172d4317);filter:drop-shadow(0 6px 10px var(--cloud-shade));}
+    .cloud-rear {fill:color-mix(in srgb,var(--primary-text-color,#253047) 30%,#dce3e9);}.cloud-near {fill:color-mix(in srgb,var(--primary-text-color,#253047) 5%,#fbfcfd);}
     .cloud.back {left:55%;top:15px;width:220px;height:140px;opacity:.62;animation-delay:-12s;}
     .cloud.front {left:73%;top:90px;animation-delay:-4s;}
     .cloud.small {left:93%;top:6px;width:150px;height:95px;opacity:.7;animation-delay:-22s;}
@@ -515,8 +519,11 @@ export class HestiaWeatherSky extends LitElement {
     @container(max-width:650px) {
       /* The artwork fills the whole card height: leaves, rain and snow fall to the bottom on every format. */
       .weather-art {display:block;position:absolute;top:0;right:0;width:100%;height:100%;overflow:hidden;}
-      .cloud.heavy-left {left:auto;right:30%;width:220px;}.cloud.heavy-right {left:auto;right:-20%;width:240px;}
-      .orb {left:var(--nw-orb-x,auto);right:12%;top:var(--nw-orb-y,36px);}.cloud.back {left:auto;right:22%;top:20px;width:170px;}.cloud.front {left:auto;right:0;top:90px;width:150px;}.cloud.small {left:auto;right:-12%;top:6px;width:120px;}
+      .cloud.heavy-left {left:auto;right:28%;width:300px;height:187px;}.cloud.heavy-right {left:auto;right:-22%;width:320px;height:200px;}
+      /* Small cards: what the weather carries is drawn larger, so it still reads at a glance. */
+      .petal {width:20px;height:20px;}.plane {width:34px;height:34px;}.moon {width:72px;height:72px;}
+      .leaf {width:28px;height:20px;}.leaf.k-dry {width:24px;height:17px;}.leaf.k-plane {width:36px;height:36px;}.leaf.k-petal {width:17px;height:17px;}.leaf.k-seed {width:25px;height:32px;}
+      .orb {left:var(--nw-orb-x,auto);right:12%;top:var(--nw-orb-y,36px);}.cloud.back {left:auto;right:20%;top:8px;width:235px;height:146px;}.cloud.front {left:auto;right:-4%;top:96px;width:210px;height:131px;}.cloud.small {left:auto;right:-16%;top:0;width:165px;height:103px;}
       .bolt.b1 {left:auto;right:18%;}.bolt.b2 {left:auto;right:2%;}.bolt.b3 {left:auto;right:42%;}
       .flash.f1 {--fx:70%;}.flash.f2 {--fx:94%;}.flash.f3 {--fx:48%;}
       .fog-sun {left:auto;right:14%;}
