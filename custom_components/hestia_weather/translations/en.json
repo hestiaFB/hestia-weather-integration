@@ -304,6 +304,7 @@
           "batiment": "Building",
           "energie": "Energy",
           "vie_pratique": "Everyday",
+          "records": "Records",
           "meteo": "Weather entity"
         }
       },
@@ -375,6 +376,7 @@
         "batiment": "Building — heating and cooling degree days",
         "energie": "Energy — tomorrow’s sunshine",
         "vie_pratique": "Everyday — laundry, frost, air, pollen",
+        "records": "Records — heat, cold, gust, rain, frost and hot days",
         "meteo": "Weather entity — for weather cards and voice"
       }
     },
@@ -398,7 +400,7 @@
         "vent_fort": "Strong wind — yes/no",
         "pluie_forte": "Heavy rain — yes/no",
         "gel": "Frost — yes/no",
-        "canicule": "Heatwave — yes/no",
+        "canicule": "Heatwave — yes/no; in France, Météo-France's vigilance",
         "uv_fort": "High UV — yes/no",
         "bulletin": "Today’s bulletin — the forecast text, to read aloud or send",
         "next_rain": "Rain in — hours before the next rain",
@@ -417,6 +419,21 @@
         "givre_pare_brise": "Windscreen frost — yes/no",
         "qualite_air": "Air quality — Atmo index",
         "pollens": "Pollen — today’s index",
+        "record_chaleur": "Heat record — measured by the station, with the year and the month",
+        "record_froid": "Cold record — measured by the station",
+        "record_rafale": "Gust record — measured by the station",
+        "record_pluie": "Wettest day record — measured by the station",
+        "jours_gel": "Frost days — low ≤ 0 °C, this year",
+        "jours_chauds": "Hot days — high ≥ 30 °C, this year",
+        "nuits_tropicales": "Tropical nights — low ≥ 20 °C, this year",
+        "jours_canicule": "Heatwave vigilance days — Météo-France, this year",
+        "record_chaleur_lieu": "Heat record of the place — since 1940 (Open-Meteo)",
+        "record_froid_lieu": "Cold record of the place — since 1940 (Open-Meteo)",
+        "record_rafale_lieu": "Gust record of the place — since 1940 (Open-Meteo)",
+        "record_pluie_lieu": "Wettest day record of the place — since 1940 (Open-Meteo)",
+        "jours_gel_lieu": "Frost days of the place — this year, Open-Meteo",
+        "jours_chauds_lieu": "Hot days of the place — this year, Open-Meteo",
+        "nuits_tropicales_lieu": "Tropical nights of the place — this year, Open-Meteo",
         "weather": "Hestia Weather weather entity — for weather cards and voice"
       }
     }
@@ -554,6 +571,58 @@
           "alerte_renforcee": "Reinforced alert",
           "crise": "Crisis"
         }
+      },
+      "record_chaleur": {
+        "name": "Heat record"
+      },
+      "record_froid": {
+        "name": "Cold record"
+      },
+      "record_rafale": {
+        "name": "Gust record"
+      },
+      "record_pluie": {
+        "name": "Wettest day record"
+      },
+      "jours_gel": {
+        "name": "Frost days",
+        "unit_of_measurement": "days"
+      },
+      "jours_chauds": {
+        "name": "Hot days",
+        "unit_of_measurement": "days"
+      },
+      "nuits_tropicales": {
+        "name": "Tropical nights",
+        "unit_of_measurement": "days"
+      },
+      "jours_canicule": {
+        "name": "Heatwave vigilance days",
+        "unit_of_measurement": "days"
+      },
+      "record_chaleur_lieu": {
+        "name": "Heat record of the place"
+      },
+      "record_froid_lieu": {
+        "name": "Cold record of the place"
+      },
+      "record_rafale_lieu": {
+        "name": "Gust record of the place"
+      },
+      "record_pluie_lieu": {
+        "name": "Wettest day record of the place"
+      },
+      "jours_gel_lieu": {
+        "name": "Frost days of the place",
+        "unit_of_measurement": "days"
+      },
+      "jours_chauds_lieu": {
+        "name": "Hot days of the place",
+        "unit_of_measurement": "days"
+      },
+      "nuits_tropicales_lieu": {
+        "name": "Tropical nights of the place",
+        "unit_of_measurement": "days"
       }
     },
     "binary_sensor": {

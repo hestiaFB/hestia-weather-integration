@@ -304,6 +304,7 @@
           "batiment": "Gebäude",
           "energie": "Energie",
           "vie_pratique": "Alltag",
+          "records": "Rekorde",
           "meteo": "Wetter-Entität"
         }
       },
@@ -375,6 +376,7 @@
         "batiment": "Gebäude — Heiz- und Kühlgradtage",
         "energie": "Energie — Sonnenschein morgen",
         "vie_pratique": "Alltag — Wäsche, Frost, Luft, Pollen",
+        "records": "Rekorde — Hitze, Kälte, Böen, Regen, Frost- und heiße Tage",
         "meteo": "Wetter-Entität — für Wetterkarten und Sprachsteuerung"
       }
     },
@@ -398,7 +400,7 @@
         "vent_fort": "Starker Wind — ja/nein",
         "pluie_forte": "Starkregen — ja/nein",
         "gel": "Frost — ja/nein",
-        "canicule": "Hitzewelle — ja/nein",
+        "canicule": "Hitzewelle — ja/nein; in Frankreich die Warnung von Météo-France",
         "uv_fort": "Hohe UV-Strahlung — ja/nein",
         "bulletin": "Tagesbericht — der Vorhersagetext, zum Vorlesen oder Versenden",
         "next_rain": "Regen in — Stunden bis zum nächsten Regen",
@@ -417,6 +419,21 @@
         "givre_pare_brise": "Frost an der Windschutzscheibe — ja/nein",
         "qualite_air": "Luftqualität — Atmo-Index",
         "pollens": "Pollen — Index von heute",
+        "record_chaleur": "Hitzerekord — von der Station gemessen, mit Jahr und Monat",
+        "record_froid": "Kälterekord — von der Station gemessen",
+        "record_rafale": "Böenrekord — von der Station gemessen",
+        "record_pluie": "Regenrekord an einem Tag — von der Station gemessen",
+        "jours_gel": "Frosttage — Tiefstwert ≤ 0 °C, dieses Jahr",
+        "jours_chauds": "Heiße Tage — Höchstwert ≥ 30 °C, dieses Jahr",
+        "nuits_tropicales": "Tropennächte — Tiefstwert ≥ 20 °C, dieses Jahr",
+        "jours_canicule": "Tage mit Hitzewarnung — Météo-France, dieses Jahr",
+        "record_chaleur_lieu": "Hitzerekord des Ortes — seit 1940 (Open-Meteo)",
+        "record_froid_lieu": "Kälterekord des Ortes — seit 1940 (Open-Meteo)",
+        "record_rafale_lieu": "Böenrekord des Ortes — seit 1940 (Open-Meteo)",
+        "record_pluie_lieu": "Regenrekord des Ortes an einem Tag — seit 1940 (Open-Meteo)",
+        "jours_gel_lieu": "Frosttage des Ortes — dieses Jahr, Open-Meteo",
+        "jours_chauds_lieu": "Heiße Tage des Ortes — dieses Jahr, Open-Meteo",
+        "nuits_tropicales_lieu": "Tropennächte des Ortes — dieses Jahr, Open-Meteo",
         "weather": "Wetter-Entität von Hestia Weather — für Wetterkarten und Sprachsteuerung"
       }
     }
@@ -554,6 +571,58 @@
           "alerte_renforcee": "Erhöhte Warnung",
           "crise": "Krise"
         }
+      },
+      "record_chaleur": {
+        "name": "Hitzerekord"
+      },
+      "record_froid": {
+        "name": "Kälterekord"
+      },
+      "record_rafale": {
+        "name": "Böenrekord"
+      },
+      "record_pluie": {
+        "name": "Regenrekord an einem Tag"
+      },
+      "jours_gel": {
+        "name": "Frosttage",
+        "unit_of_measurement": "Tage"
+      },
+      "jours_chauds": {
+        "name": "Heiße Tage",
+        "unit_of_measurement": "Tage"
+      },
+      "nuits_tropicales": {
+        "name": "Tropennächte",
+        "unit_of_measurement": "Tage"
+      },
+      "jours_canicule": {
+        "name": "Tage mit Hitzewarnung",
+        "unit_of_measurement": "Tage"
+      },
+      "record_chaleur_lieu": {
+        "name": "Hitzerekord des Ortes"
+      },
+      "record_froid_lieu": {
+        "name": "Kälterekord des Ortes"
+      },
+      "record_rafale_lieu": {
+        "name": "Böenrekord des Ortes"
+      },
+      "record_pluie_lieu": {
+        "name": "Regenrekord des Ortes an einem Tag"
+      },
+      "jours_gel_lieu": {
+        "name": "Frosttage des Ortes",
+        "unit_of_measurement": "Tage"
+      },
+      "jours_chauds_lieu": {
+        "name": "Heiße Tage des Ortes",
+        "unit_of_measurement": "Tage"
+      },
+      "nuits_tropicales_lieu": {
+        "name": "Tropennächte des Ortes",
+        "unit_of_measurement": "Tage"
       }
     },
     "binary_sensor": {

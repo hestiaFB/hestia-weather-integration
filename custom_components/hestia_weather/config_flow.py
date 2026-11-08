@@ -496,7 +496,9 @@ def key_name(key: str) -> str:
 
 
 FAMILY_NAMES = {"maintenant": "Maintenant", "alertes": "Alertes", "prochaines_heures": "Prochaines heures", "jardin": "Jardin",
-                "batiment": "Bâtiment", "energie": "Énergie", "vie_pratique": "Vie pratique", "meteo": "Entité météo"}
+                "batiment": "Bâtiment", "energie": "Énergie", "vie_pratique": "Vie pratique", "records": "Records", "meteo": "Entité météo"}
 KEY_NAMES = {"vigilance": "Vigilance", "uv_fort": "UV forts", "pluie_7j": "Pluie des 7 jours", "rain_24h": "Pluie sur 24 h",
              "pressure_trend": "Tendance de la pression", "max_gust_today": "Rafale maximale du jour", "temperature_trend": "Tendance de la température",
-             "qualite_air": "Qualité de l’air", "pollens": "Pollens"}
+             "qualite_air": "Qualité de l’air", "pollens": "Pollens", "record_chaleur": "Record de chaleur", "record_froid": "Record de froid",
+             "record_rafale": "Record de rafale", "record_pluie": "Record de pluie", "jours_gel": "Jours de gel", "jours_chauds": "Jours chauds",
+             "nuits_tropicales": "Nuits tropicales", "jours_canicule": "Jours de vigilance canicule"}

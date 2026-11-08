@@ -4,10 +4,13 @@
 
 - Hestia Énergie peut lire les degrés-jours de chauffage et de climatisation, passés et prévus.
 - Nouvelle carte à la pièce « Événements » : la frise des prochaines heures, seule, pour les petits écrans (#15).
+- Records en entités (#16) : chaleur, froid, rafale et pluie en un jour, avec l’année et le mois en attributs. Deux sources à part : votre station, et le lieu depuis 1940 (Open-Meteo).
+- Jours de gel, jours chauds (30 °C et plus), nuits tropicales (20 °C et plus) et jours de vigilance canicule, cette année et ce mois.
 
 ### Améliorations
 
 - Emplacement de la station : une seule rose pour la maison et le vent. Placer la maison suffit, son côté compte toujours comme gêné pour le vent.
+- En France, l’entité Canicule suit la vigilance de Météo-France : orange = canicule, rouge = canicule extrême.
 
 ## 3.2.1 — Prête pour la liste officielle du Marketplace
 

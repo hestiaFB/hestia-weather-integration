@@ -776,6 +776,7 @@ DE: dict[str, str] = {
     "Aucun service choisi": "Kein Dienst gewählt",
     "Compléter : {name}": "Ergänzen: {name}",
     "la vigilance officielle": "die amtlichen Wetterwarnungen",
+    "la vigilance de Météo-France": "die Wetterwarnungen von Météo-France",
     "l’intégration Vigieau": "die Integration Vigieau",
     "un capteur UV (OpenUV, station…)": "einen UV-Sensor (OpenUV, Station…)",
     "un pluviomètre et l’historique de la station": "einen Regenmesser und den Verlauf der Station",

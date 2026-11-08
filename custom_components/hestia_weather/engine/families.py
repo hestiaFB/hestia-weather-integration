@@ -14,13 +14,17 @@ FAMILIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("batiment", ("degres_jours_chauffe", "degres_jours_clim")),
     ("energie", ("ensoleillement_demain",)),
     ("vie_pratique", ("sechage_linge", "givre_pare_brise", "qualite_air", "pollens")),
+    ("records", ("record_chaleur", "record_froid", "record_rafale", "record_pluie", "jours_gel", "jours_chauds", "nuits_tropicales", "jours_canicule",
+                 "record_chaleur_lieu", "record_froid_lieu", "record_rafale_lieu", "record_pluie_lieu", "jours_gel_lieu", "jours_chauds_lieu",
+                 "nuits_tropicales_lieu")),
     ("meteo", ("weather",)),
 )
 DEFAULT_FAMILIES = ("maintenant", "alertes", "prochaines_heures")
 _FAMILY = {key: family for family, keys in FAMILIES for key in keys}
 # These enrichments need optional local measurements. Enabling their entities
 # does not make a station mandatory, including after a station is removed.
-STATION_DEPENDENT = frozenset({"uv_fort", "pluie_7j", "rain_24h", "pressure_trend", "max_gust_today", "temperature_trend"})
+STATION_DEPENDENT = frozenset({"uv_fort", "pluie_7j", "rain_24h", "pressure_trend", "max_gust_today", "temperature_trend",
+                               "record_chaleur", "record_froid", "record_rafale", "record_pluie", "jours_gel", "jours_chauds", "nuits_tropicales"})
 
 
 def family_of(key: str) -> str | None:
@@ -41,6 +45,11 @@ def needs(settings: Settings) -> dict[str, str]:
         "pressure_trend": not settings.pressure_entity and N_("un capteur de pression"),
         "max_gust_today": not (settings.max_daily_gust_entity or settings.wind_gust_entity) and N_("un capteur de rafales"),
         "temperature_trend": not (settings.temperature_trend_entity or settings.temperature_entity) and N_("un thermomètre extérieur"),
+        **dict.fromkeys(("record_chaleur", "record_froid", "jours_gel", "jours_chauds", "nuits_tropicales"),
+                        not settings.temperature_entity and N_("un thermomètre extérieur")),
+        "record_rafale": not settings.wind_gust_entity and N_("un capteur de rafales"),
+        "record_pluie": not (settings.rain_total_entity or settings.daily_rain_entity) and N_("un pluviomètre"),
+        "jours_canicule": not settings.vigilance_entity and N_("la vigilance de Météo-France"),
         "qualite_air": not (settings.waqi.get("waqi_air_entity") if settings.air_source == "waqi" else settings.atmo.get("atmo_air_entity")) and (
             N_("une station WAQI qui donne l’indice de qualité de l’air") if settings.air_source == "waqi" else
             N_("une zone Atmo France fournissant l’indice de qualité de l’air") if settings.atmo_area else N_("Atmo France ou WAQI")),

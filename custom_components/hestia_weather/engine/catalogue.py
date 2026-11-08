@@ -11,7 +11,7 @@ from typing import Any, Callable, Mapping, Sequence
 from zoneinfo import ZoneInfo
 
 from . import atmo, polleninfo, water
-from .brief import COLOR_NAMES, Brief, number, read_vigilance
+from .brief import COLOR_NAMES, Brief, Vigilance, number, read_vigilance
 from .feel import STORMY, normalise_condition
 from .forecast import Day, Hour
 from .lightning import NEAR_KM, Lightning
@@ -52,6 +52,13 @@ class Item:
 
 
 Catalogue = Mapping[str, Item]
+
+
+def heatwave_level(official: Vigilance | None) -> int | None:
+    """Météo-France's heatwave vigilance, 0 green to 3 red; None outside Météo-France (another country, no vigilance, too old)."""
+    if official is None or official.source != "Météo-France":
+        return None
+    return max((level for name, level in official.phenomena if atmo.normal(name).strip() == "canicule"), default=0)
 
 
 def hour_text(moment: datetime, zone: ZoneInfo) -> str:
@@ -206,6 +213,7 @@ def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, sett
         items["brouillard"] = Item(False, "Pas de brouillard attendu", "station" if w.humidity_source == "station" else "bulletin")
 
     # ---- Alertes ----
+    official = None
     if not settings.vigilance_entity:
         items["vigilance"] = Item(None, "Vigilance officielle non configurée", "vigilance")
     else:
@@ -302,6 +310,8 @@ def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, sett
                             extra={"minimale": low18})
 
     feels = w.feel.value
+    # In France, the heatwave is Météo-France's: orange vigilance is a heatwave, red an extreme one (issue #16).
+    heat_vigilance = heatwave_level(official)
     day_ahead = [h for h in within(timedelta(hours=24)) if h.temperature is not None]
     hot_hour = max(day_ahead, key=lambda h: h.temperature or 0) if day_ahead else None
     tomorrow = now.astimezone(zone).date() + timedelta(days=1)
@@ -311,7 +321,13 @@ def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, sett
     if tomorrow_day and tomorrow_day.high is not None:
         candidates.append((tomorrow_day.high, "demain", tomorrow_day.time))
     hottest = max(candidates, key=lambda c: c[0] or 0) if candidates else None
-    if feels is None and hottest is None:
+    if heat_vigilance is not None:
+        color = {"vigilance": VIGILANCE[heat_vigilance]}
+        items["canicule"] = (Item(True, "Vigilance rouge canicule : canicule extrême", "vigilance", level=3, extra=color) if heat_vigilance >= 3 else
+                             Item(True, "Vigilance orange canicule", "vigilance", level=2, extra=color) if heat_vigilance == 2 else
+                             Item(False, "Vigilance jaune canicule : pic de chaleur" if heat_vigilance == 1 else "Pas de vigilance canicule", "vigilance",
+                                  extra=color))
+    elif feels is None and hottest is None:
         items["canicule"] = Item(None, "Ressenti et prévisions indisponibles")
     elif (feels is not None and feels >= 34) or (hottest and (hottest[0] or 0) >= 35):
         parts = [f"{number(feels)} °C ressentis"] if feels is not None and feels >= 34 else []

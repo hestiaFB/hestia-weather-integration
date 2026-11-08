@@ -17,10 +17,11 @@ from homeassistant.util import slugify
 from .engine import legacy
 from .const import DOMAIN
 from .coordinator import HestiaWeatherConfigEntry, HestiaWeatherCoordinator, Snapshot
-from .engine import families, water
+from .engine import families, records, water
 from .engine.catalogue import CONDITIONS, DRYING, VIGILANCE, Item
 from .engine.feel import Alert
 from .engine.moisture import humidex
+from .place.records import HEATWAVE_KEY
 
 ALERTS = ["none", *(a.value for a in Alert)]
 # Entity ids that say what they are, the same in every home: sensor.hestia_weather_ressenti, sensor.hestia_weather_pluie_24h…
@@ -179,6 +180,40 @@ CATALOGUE_SENSORS: tuple[CatalogueSensorDescription, ...] = (
 )
 
 
+@dataclass(frozen=True, kw_only=True)
+class RecordSensorDescription(SensorEntityDescription):
+    """A record (issue #16): `record` is one of records.MARKS or records.COUNTS, `source` the station, the place (Open-Meteo since 1940)
+    or Météo-France's vigilance. The key is also its entity id: sensor.hestia_weather_<key>."""
+
+    record: str
+    source: str
+
+
+_RECORD_UNITS: dict[str, dict[str, Any]] = {
+    "chaleur": _CELSIUS | {"suggested_display_precision": 1}, "froid": _CELSIUS | {"suggested_display_precision": 1},
+    "rafale": {"device_class": SensorDeviceClass.WIND_SPEED, "native_unit_of_measurement": UnitOfSpeed.KILOMETERS_PER_HOUR,
+               "suggested_display_precision": 0, "state_class": SensorStateClass.MEASUREMENT},
+    "pluie": _MM}
+# Counted days: the unit is a word, translated with the entity's name (« jours », « days », « Tage »).
+_DAYS: dict[str, Any] = {"state_class": SensorStateClass.MEASUREMENT, "suggested_display_precision": 0}
+
+
+def _record_descriptions() -> tuple[RecordSensorDescription, ...]:
+    out = []
+    for suffix, source in (("", "station"), ("_lieu", "lieu")):
+        out += [RecordSensorDescription(key=f"record_{k}{suffix}", translation_key=f"record_{k}{suffix}", record=k, source=source,
+                                        entity_registry_enabled_default=False, **_RECORD_UNITS[k]) for k in records.MARKS]
+        out += [RecordSensorDescription(key=f"{k}{suffix}", translation_key=f"{k}{suffix}", record=k, source=source,
+                                        entity_registry_enabled_default=False, **_DAYS) for k in records.COUNTS]
+    out.append(RecordSensorDescription(key=HEATWAVE_KEY, translation_key=HEATWAVE_KEY, record=HEATWAVE_KEY, source="vigilance",
+                                       entity_registry_enabled_default=False, **_DAYS))
+    return tuple(out)
+
+
+RECORD_SENSORS = _record_descriptions()
+SOURCES = {"station": "station", "lieu": "Open-Meteo", "vigilance": "vigilance"}
+
+
 ID_ROOT = "hestia_weather"
 
 
@@ -215,7 +250,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: HestiaWeatherConfigEntry
     rename_place_ids(hass, entry)
     place, device = prefix(hass, entry), device_name(hass, entry)
     async_add_entities([*(HestiaWeatherSensor(entry.runtime_data, description, place, device) for description in SENSORS),
-                        *(CatalogueSensor(entry.runtime_data, description, place, device) for description in CATALOGUE_SENSORS)])
+                        *(CatalogueSensor(entry.runtime_data, description, place, device) for description in CATALOGUE_SENSORS),
+                        *(RecordSensor(entry.runtime_data, description, place, device) for description in RECORD_SENSORS)])
 
 
 def first_enabled(coordinator: HestiaWeatherCoordinator, key: str, default: bool) -> bool:
@@ -288,3 +324,54 @@ class CatalogueSensor(CoordinatorEntity[HestiaWeatherCoordinator], SensorEntity)
     def extra_state_attributes(self) -> dict[str, Any] | None:
         item = self._item
         return item_attributes(item) if item else None
+
+
+def _day(day: Any) -> str | None:
+    return day.isoformat() if day is not None else None
+
+
+class RecordSensor(CoordinatorEntity[HestiaWeatherCoordinator], SensorEntity):
+    """A record of all time, with this year's and this month's in its attributes; or the days counted this year, with this month's.
+    Records change once a day: they read what the coordinator keeps (place/records.py), not the minute's calculation."""
+
+    _attr_has_entity_name = True
+    _unrecorded_attributes = frozenset({"jours", "depuis", "source"})
+    entity_description: RecordSensorDescription
+
+    def __init__(self, coordinator: HestiaWeatherCoordinator, description: RecordSensorDescription, prefix: str, device: str) -> None:
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{description.key}"
+        self.entity_id = f"sensor.{prefix}_{description.key}"
+        self._attr_device_info = device_info(coordinator, device)
+        self._attr_entity_registry_enabled_default = first_enabled(coordinator, description.key, description.entity_registry_enabled_default)
+
+    def _read(self) -> tuple[Any, dict[str, Any]]:
+        d, coordinator = self.entity_description, self.coordinator
+        source = {"source": SOURCES[d.source]}
+        if d.source == "vigilance":
+            count = coordinator.heatwave.count(coordinator._today())
+            if count.since is None:
+                return None, source
+            return count.year, {"ce_mois": count.month, "depuis": _day(count.since),
+                                "jours": sorted(day.isoformat() for day in coordinator.heatwave.days if day.year == coordinator._today().year), **source}
+        found = coordinator.records_of("station" if d.source == "station" else "lieu")
+        if d.record in records.MARKS:
+            mark = found.marks[d.record]
+            if mark.ever is None:
+                return None, source
+            return mark.ever.value, {"date": _day(mark.ever.day), "cette_annee": mark.year.value if mark.year else None,
+                                     "date_cette_annee": _day(mark.year.day if mark.year else None), "ce_mois": mark.month.value if mark.month else None,
+                                     "date_ce_mois": _day(mark.month.day if mark.month else None), "depuis": _day(mark.since), **source}
+        count = found.counts[d.record]
+        if count.year is None:
+            return None, source
+        return count.year, {"ce_mois": count.month, "moyenne_par_an": count.mean, "partiel": count.partial, "depuis": _day(count.since), **source}
+
+    @property
+    def native_value(self) -> Any:
+        return self._read()[0]
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        return self._read()[1]

@@ -59,7 +59,7 @@ Des oui/non prêts à déclencher, et la vigilance officielle. Une alerte s’al
 | `binary_sensor.hestia_weather_vent_fort` | Vent ≥ 30 km/h ou rafales ≥ 40 km/h | Rentrer les stores et le parasol |
 | `binary_sensor.hestia_weather_pluie_forte` | ≥ 4 mm/h mesurés, ou forte pluie prévue dans les 6 h | Surveiller gouttières et pompe de relevage |
 | `binary_sensor.hestia_weather_gel` | Gel mesuré, ou gel au sol possible cette nuit (≤ 3 °C prévus) | Rentrer les plantes, hors-gel |
-| `binary_sensor.hestia_weather_canicule` | Ressenti ≥ 34 °C, ou 35 °C prévus dans les 24 h ou demain | Fermer les volets côté soleil |
+| `binary_sensor.hestia_weather_canicule` | En France, la vigilance canicule de Météo-France : orange = canicule, rouge = canicule extrême (niveau 3). Ailleurs : ressenti ≥ 34 °C, ou 35 °C prévus dans les 24 h ou demain | Fermer les volets côté soleil |
 | `binary_sensor.hestia_weather_uv_fort` · *à activer* | Indice UV ≥ 6 (capteur UV nécessaire) | Rappel crème solaire |
 
 ## Prochaines heures
@@ -107,6 +107,32 @@ L’évapotranspiration et le bilan hydrique arriveront avec le chantier de l’
 | `binary_sensor.hestia_weather_givre_pare_brise` · *à activer* | Givre attendu au plus froid de la nuit | Rappel la veille du trajet |
 | `sensor.hestia_weather_qualite_air` · *à activer* | L’indice Atmo du jour (1 à 6), le polluant principal en attribut | Ne pas aérer, purificateur |
 | `sensor.hestia_weather_pollens` · *à activer* | L’indice pollens du jour : Atmo (1 à 6), Polleninformation ou IRM KMI (0 à 4, l’échelle est en attribut) | Fermer les fenêtres, prévenir les allergiques |
+
+## Records
+
+Deux sources, affichées à part :
+
+- **La station** : ce que vos capteurs ont mesuré chez vous, depuis leur installation (les statistiques de Home Assistant).
+- **Le lieu** (`…_lieu`) : l’archive Open-Meteo depuis 1940, disponible dès le premier jour. Ses valeurs sont un peu adoucies (moyenne sur une zone d’une dizaine de km) : un record de chaleur y est souvent 1 à 2 °C sous celui d’une station.
+
+Un record donne la valeur de tous les temps ; ceux de l’année et du mois sont en attributs. Exemple : `sensor.hestia_weather_record_chaleur` = 38,2 °C, avec `date` = 2003-08-12, `cette_annee` = 35,1 et `ce_mois` = 18,4.
+Un compte de jours donne le nombre de cette année, celui du mois en attribut (`ce_mois`), et pour le lieu la moyenne des années complètes (`moyenne_par_an`).
+Les journées comptent une fois finies : celle d’aujourd’hui entre demain.
+
+| Entité | Ce qu’elle donne | Exemple d’usage |
+| --- | --- | --- |
+| `sensor.hestia_weather_record_chaleur` · *à activer* | La plus haute température mesurée, et sa date | Fêter un record, comparer les étés |
+| `sensor.hestia_weather_record_froid` · *à activer* | La plus basse, et sa date | Protéger les plantes fragiles |
+| `sensor.hestia_weather_record_rafale` · *à activer* | La plus forte rafale (km/h), et sa date | Vérifier le jardin après un coup de vent |
+| `sensor.hestia_weather_record_pluie` · *à activer* | La plus forte pluie en une journée (mm), et sa date | Surveiller les gouttières |
+| `sensor.hestia_weather_jours_gel` · *à activer* | Jours de gel cette année (minimale ≤ 0 °C) | Hiverner les plantes |
+| `sensor.hestia_weather_jours_chauds` · *à activer* | Jours chauds cette année (maximale ≥ 30 °C) | Bilan de l’été |
+| `sensor.hestia_weather_nuits_tropicales` · *à activer* | Nuits tropicales cette année (minimale ≥ 20 °C) | Ventiler la nuit |
+| `sensor.hestia_weather_jours_canicule` · *à activer* | Jours en vigilance canicule orange ou rouge cette année (Météo-France), comptés depuis la mise à jour ; la liste des jours en attribut | Bilan de l’été |
+| `sensor.hestia_weather_record_chaleur_lieu`, `…_froid_lieu`, `…_rafale_lieu`, `…_pluie_lieu` · *à activer* | Les mêmes records pour le lieu, depuis 1940 | Situer un été dans l’histoire |
+| `sensor.hestia_weather_jours_gel_lieu`, `…_jours_chauds_lieu`, `…_nuits_tropicales_lieu` · *à activer* | Les mêmes comptes pour le lieu, avec la moyenne par an | Comparer l’année à la normale |
+
+L’archive du lieu n’est demandée à Open-Meteo que si une entité `…_lieu` est activée : environ 1 Mo la première fois, puis les deux derniers mois toutes les 6 heures. Seule la position de la maison, arrondie à une centaine de mètres, est envoyée.
 
 ## L’évènement `hestia_weather_alerte`
 

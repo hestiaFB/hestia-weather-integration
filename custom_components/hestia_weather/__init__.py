@@ -11,6 +11,7 @@ from homeassistant.loader import async_get_integration
 from .api import API_KEY, HestiaWeatherApi
 from .const import DOMAIN
 from .coordinator import HestiaWeatherConfigEntry, HestiaWeatherCoordinator, alert_store
+from .place.records import records_store
 from .domain_migration import async_setup_migration
 from .draft import async_load_labels
 from .former_api import async_setup_former_api
@@ -57,8 +58,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: HestiaWeatherConfigEntr
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: HestiaWeatherConfigEntry) -> None:
-    """The place is removed: its alerts in progress go with it; with the last place, the card's dashboard resource."""
+    """The place is removed: its alerts in progress and its records go with it; with the last place, the card's dashboard resource."""
     await alert_store(hass, entry.entry_id).async_remove()
+    await records_store(hass, entry.entry_id).async_remove()
     if not [e for e in hass.config_entries.async_entries(DOMAIN) if e.entry_id != entry.entry_id]:
         await async_remove_card(hass, CARD_URL)
 

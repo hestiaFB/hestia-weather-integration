@@ -68,6 +68,26 @@ def test_summer_heat() -> None:
             SUMMER_HOURS, SUMMER_DAYS)
     assert c["canicule"].value is True and c["canicule"].level == 2
     assert "°C ressentis" in c["canicule"].reason and "38 °C prévus demain" in c["canicule"].reason
+
+
+@pytest.mark.parametrize(("color", "value", "level", "reason"), [
+    (None, False, 0, "Pas de vigilance canicule"), ("Jaune", False, 0, "Vigilance jaune canicule : pic de chaleur"),
+    ("Orange", True, 2, "Vigilance orange canicule"), ("Rouge", True, 3, "Vigilance rouge canicule : canicule extrême")])
+def test_in_france_the_heatwave_follows_meteo_france_vigilance(color: str | None, value: bool, level: int, reason: str) -> None:
+    """Issue #16: orange vigilance is a heatwave, red an extreme one, whatever the station feels; yellow is a peak of heat, not a heatwave."""
+    attributes = {"attribution": "Data provided by Météo-France", "Orages": "Vert", **({"Canicule": color} if color else {})}
+    extra = {"sensor.vigilance": State(color or "Vert", attributes)}
+    c = run(SUMMER, {"sensor.t": 37, "sensor.h": 30, "sensor.wind": 8, "sensor.gust": 22, "sensor.rate": 0, "sensor.uv": 9, "sensor.solar": 820},
+            SUMMER_HOURS, SUMMER_DAYS, options={"vigilance_entity": "sensor.vigilance"}, extra=extra)
+    item = c["canicule"]
+    assert (item.value, item.level, item.reason, item.source) == (value, level, reason, "vigilance")
+
+
+def test_without_meteo_france_the_heatwave_keeps_its_own_calculation() -> None:
+    extra = {"sensor.vigilance": State("unknown", {"attribution": "Autre service"})}
+    c = run(SUMMER, {"sensor.t": 37, "sensor.h": 30, "sensor.wind": 8, "sensor.gust": 22, "sensor.rate": 0, "sensor.uv": 9, "sensor.solar": 820},
+            SUMMER_HOURS, SUMMER_DAYS, options={"vigilance_entity": "sensor.vigilance"}, extra=extra)
+    assert c["canicule"].value is True and c["canicule"].source != "vigilance"
     assert c["uv_fort"].value is True and c["uv_fort"].level == 2
     assert (c["orage"].value, c["vent_fort"].value, c["pluie_forte"].value, c["gel"].value) == (False, False, False, False)
     assert c["pluie_en_cours"].value is False and c["pluie_6h"].value == 0 and c["pluie_6h"].reason == "Sec"

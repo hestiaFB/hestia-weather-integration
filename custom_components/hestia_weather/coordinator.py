@@ -40,6 +40,7 @@ from .place.shared import FORECAST_KINDS, RAIN_UNITS, _ready, _seconds, blitzort
 from .place.recorder import RecorderMixin
 from .place.forecasts import ForecastsMixin
 from .place.shade import ShadeMixin
+from .place.records import RecordsMixin
 
 ALERT_EVENT = f"{DOMAIN}_alerte"
 
@@ -183,7 +184,7 @@ def alert_store(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
 
 
 
-class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUpdateCoordinator[Snapshot]):
+class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, RecordsMixin, DataUpdateCoordinator[Snapshot]):
     config_entry: HestiaWeatherConfigEntry
 
     def __init__(self, hass: HomeAssistant, entry: HestiaWeatherConfigEntry) -> None:
@@ -237,6 +238,7 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         self._place_store = None
         self.retained: dict[str, dict[str, Any]] = {}
         """What was retained at the last calculation when it is not the station's own reading (api.py `station_trust`)."""
+        self._records_init()
 
     async def async_start(self) -> None:
         """First fetches, then listen to the sensors and keep each source fresh."""
@@ -245,16 +247,17 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
         self.platforms = {e.entity_id: e.platform for e in registry.entities.values() if e.entity_id in ids}
         entry = self.config_entry
         self.watch = AlertWatch(await self._store.async_load())
+        await self._load_records_store()
         # Listen first: a weather service that starts while the first fetches run is caught at once.
         entry.async_on_unload(async_track_state_change_event(self.hass, sorted(ids), self._on_state_change))
         entry.async_on_unload(self.hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, self._registry_changed))
         # Beside them, in a worker thread: where the sun can be over a year here (8 784 positions), which the station's shade
         # reads; computed on the event loop at the first calculation, it held Home Assistant up at start (point 5 of the plan).
         await asyncio.gather(self._load_forecasts(), self._load_history(), self._load_rain(), self._load_week(), self._load_air_forecast(),
-                             self._load_strikes(), self._load_lightning_month(), self.hass.async_add_executor_job(self.shade_cells))
+                             self._load_strikes(), self._load_lightning_month(), self._load_records(), self.hass.async_add_executor_job(self.shade_cells))
         for interval, load in ((FORECAST_INTERVAL, self._load_forecasts), (HISTORY_INTERVAL, self._load_history), (RAIN_INTERVAL, self._load_rain),
                                (WEEK_INTERVAL, self._load_week), (AIR_INTERVAL, self._load_air_forecast), (AIR_INTERVAL, self._load_pressure_forecast), (RAIN_INTERVAL, self._load_lightning_month),
-                               (WEEK_INTERVAL, self._load_shade)):
+                               (WEEK_INTERVAL, self._load_shade), (WEEK_INTERVAL, self._load_records)):
             entry.async_on_unload(async_track_time_interval(self.hass, self._in_background(load), interval))
         # The station's shade: what was kept now, learned again in the background (92 days of statistics, Open-Meteo).
         self._in_background(self._load_shade)(dt_util.utcnow())
@@ -361,6 +364,8 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, DataUp
             # The former name keeps firing, so that an automation written by hand keeps working.
             hass.bus.async_fire(legacy.ALERT_EVENT, payload)
         result = french.result
+        # The days in Météo-France's heatwave vigilance, for the records.
+        self._count_heatwave(result.catalogue.get("canicule"), now.astimezone(inputs.zone).date())
         return Snapshot(result.local, result.brief, result.derived, french.view, result.catalogue, self.watch.states(), now,
                         french.rain_ahead, views)
 

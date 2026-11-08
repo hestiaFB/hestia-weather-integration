@@ -304,6 +304,7 @@
           "batiment": "Bâtiment",
           "energie": "Énergie",
           "vie_pratique": "Vie pratique",
+          "records": "Records",
           "meteo": "Entité météo"
         }
       },
@@ -375,6 +376,7 @@
         "batiment": "Bâtiment — degrés-jours de chauffe et de climatisation",
         "energie": "Énergie — ensoleillement de demain",
         "vie_pratique": "Vie pratique — séchage du linge, givre, air, pollens",
+        "records": "Records — chaleur, froid, rafale, pluie, jours de gel et de chaleur",
         "meteo": "Entité météo — pour les cartes météo et l’assistant vocal"
       }
     },
@@ -398,7 +400,7 @@
         "vent_fort": "Vent fort — oui/non",
         "pluie_forte": "Pluie forte — oui/non",
         "gel": "Gel — oui/non",
-        "canicule": "Canicule — oui/non",
+        "canicule": "Canicule — oui/non ; en France, la vigilance Météo-France",
         "uv_fort": "UV forts — oui/non",
         "bulletin": "Bulletin du jour — le texte de la prévision, à lire ou envoyer",
         "next_rain": "Pluie dans — heures avant la prochaine pluie",
@@ -417,6 +419,21 @@
         "givre_pare_brise": "Givre sur le pare-brise — oui/non",
         "qualite_air": "Qualité de l’air — indice Atmo",
         "pollens": "Pollens — indice du jour",
+        "record_chaleur": "Record de chaleur — mesuré par la station, avec l’année et le mois",
+        "record_froid": "Record de froid — mesuré par la station",
+        "record_rafale": "Record de rafale — mesuré par la station",
+        "record_pluie": "Record de pluie en un jour — mesuré par la station",
+        "jours_gel": "Jours de gel — mini ≤ 0 °C, cette année",
+        "jours_chauds": "Jours chauds — maxi ≥ 30 °C, cette année",
+        "nuits_tropicales": "Nuits tropicales — mini ≥ 20 °C, cette année",
+        "jours_canicule": "Jours de vigilance canicule — Météo-France, cette année",
+        "record_chaleur_lieu": "Record de chaleur du lieu — depuis 1940 (Open-Meteo)",
+        "record_froid_lieu": "Record de froid du lieu — depuis 1940 (Open-Meteo)",
+        "record_rafale_lieu": "Record de rafale du lieu — depuis 1940 (Open-Meteo)",
+        "record_pluie_lieu": "Record de pluie du lieu en un jour — depuis 1940 (Open-Meteo)",
+        "jours_gel_lieu": "Jours de gel du lieu — cette année, Open-Meteo",
+        "jours_chauds_lieu": "Jours chauds du lieu — cette année, Open-Meteo",
+        "nuits_tropicales_lieu": "Nuits tropicales du lieu — cette année, Open-Meteo",
         "weather": "Entité météo Hestia Weather — pour les cartes météo et l’assistant vocal"
       }
     }
@@ -554,6 +571,58 @@
           "alerte_renforcee": "Alerte renforcée",
           "crise": "Crise"
         }
+      },
+      "record_chaleur": {
+        "name": "Record de chaleur"
+      },
+      "record_froid": {
+        "name": "Record de froid"
+      },
+      "record_rafale": {
+        "name": "Record de rafale"
+      },
+      "record_pluie": {
+        "name": "Record de pluie en un jour"
+      },
+      "jours_gel": {
+        "name": "Jours de gel",
+        "unit_of_measurement": "jours"
+      },
+      "jours_chauds": {
+        "name": "Jours chauds",
+        "unit_of_measurement": "jours"
+      },
+      "nuits_tropicales": {
+        "name": "Nuits tropicales",
+        "unit_of_measurement": "jours"
+      },
+      "jours_canicule": {
+        "name": "Jours de vigilance canicule",
+        "unit_of_measurement": "jours"
+      },
+      "record_chaleur_lieu": {
+        "name": "Record de chaleur du lieu"
+      },
+      "record_froid_lieu": {
+        "name": "Record de froid du lieu"
+      },
+      "record_rafale_lieu": {
+        "name": "Record de rafale du lieu"
+      },
+      "record_pluie_lieu": {
+        "name": "Record de pluie du lieu en un jour"
+      },
+      "jours_gel_lieu": {
+        "name": "Jours de gel du lieu",
+        "unit_of_measurement": "jours"
+      },
+      "jours_chauds_lieu": {
+        "name": "Jours chauds du lieu",
+        "unit_of_measurement": "jours"
+      },
+      "nuits_tropicales_lieu": {
+        "name": "Nuits tropicales du lieu",
+        "unit_of_measurement": "jours"
       }
     },
     "binary_sensor": {
