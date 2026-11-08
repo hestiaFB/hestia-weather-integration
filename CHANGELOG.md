@@ -1,4 +1,4 @@
-## À venir
+## 3.3.0 — Les records, la frise seule et la canicule de Météo-France
 
 ### Nouveautés
 
@@ -6,6 +6,7 @@
 - Nouvelle carte à la pièce « Événements » : la frise des prochaines heures, seule, pour les petits écrans (#15).
 - Records en entités (#16) : chaleur, froid, rafale et pluie en un jour, avec l’année et le mois en attributs. Deux sources à part : votre station, et le lieu depuis 1940 (Open-Meteo).
 - Jours de gel, jours chauds (30 °C et plus), nuits tropicales (20 °C et plus) et jours de vigilance canicule, cette année et ce mois.
+- Les records sont à activer : panneau Hestia-FB → Météo → Réglages généraux, Modifier le lieu, étape Entités, famille « Records ».
 
 ### Améliorations
 
