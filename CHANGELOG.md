@@ -1,3 +1,10 @@
+## 3.5.0 — Un ciel animé plus lisible
+
+### Améliorations
+
+- En mode clair, les nuages se voient : un nuage gris derrière, un nuage blanc devant avec une ombre douce.
+- Sur les petites cartes et le téléphone, le décor est plus grand : nuages, feuilles, pétales et graines environ 40 % plus grands, lune un peu plus grande.
+
 ## 3.4.0 — La carte Records
 
 ### Nouveautés
