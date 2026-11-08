@@ -39,9 +39,9 @@ export interface WeatherCardConfig {
   entry_id?: string;
   /** full (default): the weather page. tile: one band that unfolds on tap. intermediate: the same tile, unfolded at first.
    *  mini: one line. forecast: the hours and the days alone. rain: the rain to come and the rain that fell.
-   *  comfort, wind, pressure, air: that part of the full card alone. alert: only while there is a vigilance or an alert, hidden otherwise.
+   *  comfort, wind, pressure, air: that part of the full card alone. events: the timeline (« frise ») alone. alert: only while there is a vigilance or an alert, hidden otherwise.
    *  On the small formats a long press (a tap on mini and alert) does what hold_action says. */
-  format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'comfort' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'alert';
+  format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'comfort' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'events' | 'alert';
   /** The cards on their own: what they show, in this order. Unset, everything their format has. */
   card_blocks?: CardBlock[];
   /** The lightning card: hidden while no storm is within 30 km (shown while the dashboard is edited). */

@@ -1,4 +1,4 @@
-// The cards on their own: one part of the full card (the feel, the rain, the wind, the pressure, the air and pollens, the forecasts),
+// The cards on their own: one part of the full card (the feel, the rain, the wind, the pressure, the air and pollens, the forecasts, the events),
 // showing only the parts chosen for it. The panels are the full card's, without their frame: the card is the frame.
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { t } from '../i18n';
@@ -12,8 +12,9 @@ import { airPanel } from './air';
 import { pressureComing, rainComing, renderForecastCard, stormComing, windComing } from './compact';
 import { around, comfortPanel, leftExtras, pressurePanel, rainPanel, windPanel } from './today';
 import { lightningPanel } from './lightning';
+import '../ui/frise';
 
-export type SingleFormat = 'comfort' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast';
+export type SingleFormat = 'comfort' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'events';
 export interface SingleOptions {
   uid: string; entity: string;
   /** A local thermometer: the feel is compared with it rather than with the bulletin. */
@@ -32,6 +33,7 @@ export function airPanels(v: WeatherView, blocks: CardBlock[]): AirPanel[] {
 
 export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardBlock[], o: SingleOptions): TemplateResult {
   if (format === 'forecast') return renderForecastCard(v, o.tab, o.onTab, o.entity, o.uid, blocks);
+  if (format === 'events') return html`<div class="nw-single events">${eventsPanel(v)}</div>`;
   const parts = new Set<string>(blocks);
   const empty = (text: string) => html`<p class="nw-empty">${text}</p>`;
   let body: TemplateResult;
@@ -68,6 +70,14 @@ export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardB
   return html`<div class=${`nw-single ${format}`}>${body}</div>`;
 }
 
+/** The banner's timeline alone (issue #15): the forecast sky of the coming hours and its points, for small screens. */
+function eventsPanel(v: WeatherView): TemplateResult {
+  // The card is the frame: no title nor glass around the timeline, whose sentence already says what comes.
+  return html`<section aria-label=${t('Événements')}>${v.points.length || v.alerts.length || v.hours.length || v.timeline?.length
+    ? html`<hestia-frise bare .points=${v.points} .alerts=${v.alerts} .hours=${v.hours} .timeline=${v.timeline}></hestia-frise>`
+    : html`<p class="nw-empty">${t('Événements indisponibles pour le moment.')}</p>`}</section>`;
+}
+
 export const singleStyles = css`
   .nw-single { padding:14px 16px 16px; color:var(--nw-fg); }
   .nw-single .nw-panel { border:0; padding:0; background:none; }
@@ -77,5 +87,7 @@ export const singleStyles = css`
   .lz-missing a { display:inline-block; padding:6px 14px; border-radius:var(--nw-radius-pill); background:var(--nw-accent); color:var(--nw-bg); font-weight:600; text-decoration:none; font-size:var(--nw-fs-small); }
   .lz-missing a.second { background:none; color:var(--nw-accent); box-shadow:inset 0 0 0 1px var(--nw-line); }
   .nw-single.air .panels-two { gap:24px 20px; }
+  .nw-single.events { padding:2px 0; }
+  .nw-single.events .nw-empty { padding:12px 16px; margin:0; }
   .nw-single .lz-radar { max-width:210px; }
 `;

@@ -46,7 +46,7 @@ type Kind = 'large' | 'piece' | 'small';
 type Format = NonNullable<WeatherCardConfig['format']>;
 const KINDS: Record<Kind, Format[]> = {
   large: ['full', 'tile', 'intermediate'],
-  piece: ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast'],
+  piece: ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events'],
   small: ['mini', 'alert'],
 };
 const kindOf = (format: Format = 'full'): Kind => (Object.keys(KINDS) as Kind[]).find(k => KINDS[k].includes(format)) ?? 'large';
@@ -104,7 +104,7 @@ export class HestiaWeatherCardEditor extends LitElement {
     const group = (title: string, icon: string, schema: unknown[], expanded = false) => ({ type: 'expandable', name: '', title, icon, flatten: true, expanded, schema });
     const kinds = { name: 'kind', title: t('Type de carte'), required: true, selector: { select: { mode: 'list', options: [
       { value: 'large', label: t('Grandes cartes : la page météo et la tuile') },
-      { value: 'piece', label: t('Cartes à la pièce : ressenti, pluie, vent, pression, éclairs, air, prévisions') },
+      { value: 'piece', label: t('Cartes à la pièce : ressenti, pluie, vent, pression, éclairs, air, prévisions, événements') },
       { value: 'small', label: t('Petites cartes : une ligne ou une alerte') }] } } };
     const all = [
       { value: 'full', label: t('Complète : la page météo') },
@@ -118,6 +118,7 @@ export class HestiaWeatherCardEditor extends LitElement {
       { value: 'lightning', label: t('Éclairs : le radar des orages (Blitzortung)') },
       { value: 'air', label: t('Air et pollens : aujourd’hui et demain') },
       { value: 'forecast', label: t('Prévisions : les heures et les jours') },
+      { value: 'events', label: t('Événements : la frise des prochaines heures') },
       { value: 'alert', label: t('Alerte : visible seulement en cas de vigilance ou d’alerte') }];
     const listed = KINDS[kindOf(this.config?.format)];
     const format = [kinds, { name: 'format', required: true, selector: { select: { mode: 'dropdown',
@@ -165,6 +166,8 @@ export class HestiaWeatherCardEditor extends LitElement {
       ['air_tomorrow', t('Air extérieur demain')], ['pollen_tomorrow', t('Pollens demain')]], true), ...toggles('show_atmo_details'));
     if (kind === 'forecast') return content(parts([['hours', t('Les 18 prochaines heures')], ['days', t('Les 7 prochains jours')]]),
       ...(shown.includes('hours') && shown.includes('days') ? [tab] : []));
+    // The timeline alone: nothing to choose, its sky and its points are the banner's.
+    if (kind === 'events') return [...place, ...format];
     if (this.small) return [...place, ...format, look,
       group(t('Contenu'), 'mdi:view-list-outline', [blocks, ...((this.config?.tile_blocks ?? []).includes('forecast') ? [tab] : [])], true),
       group(t('Fonctionnalités'), 'mdi:tune-variant', path)];

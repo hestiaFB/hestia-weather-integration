@@ -3,6 +3,7 @@
 ### Nouveautés
 
 - Hestia Énergie peut lire les degrés-jours de chauffage et de climatisation, passés et prévus.
+- Nouvelle carte à la pièce « Événements » : la frise des prochaines heures, seule, pour les petits écrans (#15).
 
 ### Améliorations
 

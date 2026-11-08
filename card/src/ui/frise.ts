@@ -28,6 +28,8 @@ export class HestiaFrise extends LitElement {
   @property({ attribute: false }) hours: Slot[] = [];
   /** The integration's own list for the timeline (2.0.5 and later). */
   @property({ attribute: false }) timeline?: TickerPoint[];
+  /** Without its glass frame: the « Événements » card on its own, whose frame is the card (issue #15). */
+  @property({ type: Boolean }) bare = false;
   /** The point on show. */
   @state() private index = 0;
   /** The point sliding out, for the length of its transition. */
@@ -152,7 +154,7 @@ export class HestiaFrise extends LitElement {
     const { items, groups, segments, marks, band } = this.frise;
     if (!items.length && !segments.length) return nothing;
     const when = (i: FriseItem) => i.now || !i.clock ? i.label : `${i.label} · ${i.clock}`;
-    return html`<div class=${`panel nw-glass${this.paused ? ' paused' : ''}`} @pointerenter=${this.pause} @pointerleave=${this.resume} @focusin=${this.pause} @focusout=${this.resume}>
+    return html`<div class=${`panel${this.bare ? '' : ' nw-glass'}${this.paused ? ' paused' : ''}`} @pointerenter=${this.pause} @pointerleave=${this.resume} @focusin=${this.pause} @focusout=${this.resume}>
       ${items.length ? html`<div class="head" aria-hidden="true">
         <div class="say" @nw-marquee=${this.measured} @animationiteration=${this.lap}>${items.map((i, n) => html`<div class=${`item${n === this.index ? ' on' : n === this.leaving ? ' off' : ''}${i.alert ? ' al' : ''}`}
           style=${`${tone(i)}${i.alert ? `;--al:var(--nw-level${i.alert})` : ''}`}>

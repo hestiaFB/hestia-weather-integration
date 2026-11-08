@@ -108,7 +108,7 @@ export class HestiaWeatherCard extends LitElement {
     if (this.config.format === 'mini') return 1;
     if (this.config.format === 'alert') return this.view && this.hasAlert(this.view) ? 2 : 0;
     if (this.config.format === 'forecast' || this.config.format === 'rain' || this.config.format === 'air') return 5;
-    if (this.single) return this.config.format === 'comfort' ? 3 : 4;
+    if (this.single) return this.config.format === 'comfort' || this.config.format === 'events' ? 3 : 4;
     if (this.tile) return this.unfolded ? 7 : 2;
     return Math.max(1, (this.config.show_synthesis === false ? 0 : 4) + (this.config.show_today === false ? 0 : 5) + (this.config.show_predictions === false ? 0 : 4));
   }
@@ -117,8 +117,8 @@ export class HestiaWeatherCard extends LitElement {
     if (format === 'mini') return { columns: 12, rows: 1, min_columns: 3 };
     return this.tile || this.single || format === 'alert' ? { columns: 12, rows: 'auto', min_columns: 6 } : { columns: 'full', rows: 'auto' };
   }
-  /** One part of the full card on its own: the feel, the rain, the wind, the pressure, the air and pollens, the forecasts. */
-  private get single(): boolean { return ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast'].includes(this.config?.format ?? ''); }
+  /** One part of the full card on its own: the feel, the rain, the wind, the pressure, the air and pollens, the forecasts, the events. */
+  private get single(): boolean { return ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events'].includes(this.config?.format ?? ''); }
   /** The lightning card set to show only storms, while none is within 30 km. */
   private calm(v: WeatherView): boolean { return this.config?.format === 'lightning' && this.config.hide_when_calm === true && !!v.lightning && v.lightning.step === 0; }
 
@@ -402,7 +402,7 @@ export class HestiaWeatherCard extends LitElement {
 // Each format has its own element (`hestia-weather-<format>-card`, intermediate → `hestia-weather-tile-open-card`): a card written by hand
 // with that type keeps its format. Home Assistant's « Add card » window offers three of them, one per kind of card, as the editor
 // classes them; the picker takes the type from getStubConfig, so dashboards never depend on these extra names.
-const FORMATS: Array<NonNullable<WeatherCardConfig['format']>> = ['full', 'tile', 'intermediate', 'mini', 'comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'alert'];
+const FORMATS: Array<NonNullable<WeatherCardConfig['format']>> = ['full', 'tile', 'intermediate', 'mini', 'comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events', 'alert'];
 const elementOf = (format: NonNullable<WeatherCardConfig['format']>) => format === 'full' ? 'hestia-weather-card' : `hestia-weather-${format === 'intermediate' ? 'tile-open' : format}-card`;
 for (const format of FORMATS) {
   const type = elementOf(format);
@@ -415,7 +415,7 @@ for (const format of FORMATS) {
 // The list is written once, at load: in the language the page was opened in.
 const PICKER: Array<[NonNullable<WeatherCardConfig['format']>, string, string]> = [
   ['full', fr('Hestia-FB - Météo'), fr('La page météo complète ou la tuile qui se déplie. Le format se choisit dans les réglages.')],
-  ['comfort', fr('Hestia-FB - À la pièce'), fr('Une seule partie : ressenti, pluie, vent, pression, éclairs, air et pollens ou prévisions.')],
+  ['comfort', fr('Hestia-FB - À la pièce'), fr('Une seule partie : ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions ou événements.')],
   ['mini', fr('Hestia-FB - Petite carte'), fr('Une seule ligne, ou une alerte visible seulement en cas de vigilance.')],
 ];
 guessLanguage();
