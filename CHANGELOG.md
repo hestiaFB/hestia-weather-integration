@@ -1,4 +1,4 @@
-## À venir
+## 3.4.0 — La carte Records
 
 ### Nouveautés
 
