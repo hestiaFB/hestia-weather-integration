@@ -168,6 +168,17 @@ class Count:
     mean: float | None
     since: date | None
     partial: bool
+    best: tuple[int, int] | None = None
+    """The most days counted in one year, and that year (the first one on a tie); None before any day counted."""
+
+
+def best_year(by_year: Mapping[int, int]) -> tuple[int, int] | None:
+    """The year with the most days, the first one on a tie; None when no day was counted."""
+    best = None
+    for year in sorted(by_year):
+        if by_year[year] > 0 and (best is None or by_year[year] > best[0]):
+            best = (by_year[year], year)
+    return best
 
 
 @dataclass(frozen=True)
@@ -216,7 +227,7 @@ def compute(months: Mapping[str, Month], today: date) -> Records:
     for key in COUNTS:
         mean = round(sum(sum(getattr(m, key) for m in ms) for ms in complete) / len(complete), 1) if complete else None
         counts[key] = Count(sum(getattr(m, key) for m in year) if year else 0, getattr(current, key) if current else 0, mean, thermometer,
-                            measured < expected)
+                            measured < expected, best_year({y: sum(getattr(m, key) for m in ms) for y, ms in by_year.items()}))
     return Records(marks, counts, since)
 
 
@@ -241,6 +252,21 @@ def station_days(temperature: Sequence[tuple[float, float | None, float | None]]
         row = days.setdefault(local_day(end - 1, zone), {})
         row["rain"] = (row.get("rain") or 0.0) + max(0.0, mm)
     return [DayValues(day, row.get("high"), row.get("low"), row.get("gust"), row.get("rain")) for day, row in days.items()]
+
+
+def hour_of(rows: Sequence[tuple[float, float | None]], lowest: bool, zone: ZoneInfo) -> int | None:
+    """The local hour of a day's highest (or lowest) hourly statistic, (start of the hour, value): when the record was set, to the hour.
+    The first hour on a tie; None without any value."""
+    best: tuple[float, float] | None = None
+    for start, value in sorted(rows):
+        number = finite(value)
+        if number is not None and (best is None or (number < best[1] if lowest else number > best[1])):
+            best = (start, number)
+    return datetime.fromtimestamp(best[0], zone).hour if best else None
+
+
+HOURLY = {"chaleur": "max", "froid": "min", "rafale": "max"}
+"""The station's records whose hour is looked up, and the hourly statistic that sets it. The rain is a day's total: it has no hour."""
 
 
 def hourly_rain(sums: Sequence[tuple[float, float | None]]) -> list[tuple[float, float]]:
@@ -328,7 +354,10 @@ class Heatwave:
 
     def count(self, today: date) -> Count:
         year = [d for d in self.days if d.year == today.year]
-        return Count(len(year), sum(1 for d in year if d.month == today.month), None, self.since, False)
+        by_year: dict[int, int] = {}
+        for d in self.days:
+            by_year[d.year] = by_year.get(d.year, 0) + 1
+        return Count(len(year), sum(1 for d in year if d.month == today.month), None, self.since, False, best_year(by_year))
 
     def as_dict(self) -> dict[str, Any]:
         return {"days": sorted(d.isoformat() for d in self.days), "since": self.since.isoformat() if self.since else None}
@@ -341,3 +370,27 @@ class Heatwave:
             return cls(frozenset(date.fromisoformat(str(d)) for d in data.get("days") or ()), date.fromisoformat(str(since)) if since else None)
         except (TypeError, ValueError):
             return cls(frozenset(), None)
+
+
+# ---- What the Records card receives (issue #17) ----
+
+def card_source(found: Records, hours: Mapping[tuple[str, date], int] | None = None, heatwave: Count | None = None) -> dict[str, Any] | None:
+    """One source for the card: each record of all time, of the year and of the month as [value, day, hour or None], each count with
+    its year, month, mean of the full years and best year. None while nothing is known."""
+    if found.since is None:
+        return None
+    hours = hours or {}
+
+    def mark(key: str, m: Mark | None) -> list[Any] | None:
+        return None if m is None else [m.value, m.day.isoformat(), hours.get((key, m.day))]
+
+    def count(c: Count) -> dict[str, Any]:
+        return {"year": c.year, "month": c.month, "mean": c.mean, "best": list(c.best) if c.best else None, "partial": c.partial,
+                "since": c.since.isoformat() if c.since else None}
+
+    counts = {key: count(c) for key, c in found.counts.items()}
+    if heatwave is not None and heatwave.since is not None:
+        counts["jours_canicule"] = count(heatwave)
+    return {"since": found.since.isoformat(),
+            "marks": {key: {"ever": mark(key, r.ever), "year": mark(key, r.year), "month": mark(key, r.month)} for key, r in found.marks.items()},
+            "counts": counts}

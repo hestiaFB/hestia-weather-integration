@@ -1,4 +1,4 @@
-"""What the Hestia Weather card asks for: the configured places, and a live view of one of them."""
+"""What the Hestia Weather card asks for: the configured places, a live view of one of them, and its records (the Records card)."""
 from __future__ import annotations
 
 from typing import Any
@@ -9,7 +9,7 @@ from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 
-from .const import DOMAIN, VIEW_VERSION
+from .const import DOMAIN, RECORDS_VERSION, VIEW_VERSION
 from .coordinator import HestiaWeatherConfigEntry
 
 # This integration's version (manifest.json), sent with every view.
@@ -21,6 +21,7 @@ def async_setup_websocket(hass: HomeAssistant, version: str) -> None:
     hass.data[VERSION_KEY] = version
     websocket_api.async_register_command(hass, ws_entries)
     websocket_api.async_register_command(hass, ws_subscribe)
+    websocket_api.async_register_command(hass, ws_records)
 
 
 @callback
@@ -35,11 +36,8 @@ def ws_entries(hass: HomeAssistant, connection: websocket_api.ActiveConnection, 
     connection.send_result(msg["id"], [{"entry_id": e.entry_id, "title": e.title} for e in _loaded(hass)])
 
 
-@websocket_api.websocket_command({vol.Required("type"): "hestia_weather/subscribe", vol.Optional("entry_id"): str,
-                                  vol.Optional("language"): str, vol.Optional("changes"): bool})
-@callback
-def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    """The view of one place, now and after every change. Without `entry_id`, the only configured place."""
+def _entry(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> HestiaWeatherConfigEntry | None:
+    """The place a card asks for (`entry_id`, or the only one); None after an error was sent."""
     entries = _loaded(hass)
     wanted = msg.get("entry_id")
     entry = next((e for e in entries if e.entry_id == wanted), None) if wanted else entries[0] if len(entries) == 1 else None
@@ -48,6 +46,16 @@ def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection
                          ("choose_entry", "Plusieurs lieux Hestia Weather : choisissez-en un") if entries else
                          ("not_configured", "L’intégration Hestia Weather n’est pas configurée"))
         connection.send_error(msg["id"], code, message)
+    return entry
+
+
+@websocket_api.websocket_command({vol.Required("type"): "hestia_weather/subscribe", vol.Optional("entry_id"): str,
+                                  vol.Optional("language"): str, vol.Optional("changes"): bool})
+@callback
+def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """The view of one place, now and after every change. Without `entry_id`, the only configured place."""
+    entry = _entry(hass, connection, msg)
+    if entry is None:
         return
     coordinator = entry.runtime_data
     sent: dict[str, Any] = {}
@@ -87,6 +95,40 @@ def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection
         remove_view()
         remove_stop()
         remove_language()
+
+    connection.subscriptions[msg["id"]] = unsubscribe
+    connection.send_result(msg["id"])
+    send()
+
+
+@websocket_api.websocket_command({vol.Required("type"): "hestia_weather/records", vol.Optional("entry_id"): str,
+                                  vol.Required("sources"): [vol.In(("station", "lieu"))]})
+@callback
+def ws_records(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """The records of one place for the Records card (issue #17), now and each time they are read again (at most hourly).
+    The sources asked for are read even while their entities are disabled."""
+    entry = _entry(hass, connection, msg)
+    if entry is None:
+        return
+    coordinator = entry.runtime_data
+    sent: dict[str, Any] = {}
+
+    @callback
+    def send() -> None:
+        records = coordinator.records_for_card()
+        if sent.get("records") == records:
+            return
+        sent["records"] = records
+        connection.send_message(websocket_api.event_message(msg["id"], {"version": RECORDS_VERSION, **records}))
+
+    leave = coordinator.async_follow_records(list(msg["sources"]), send)
+    # A new day: this year's and this month's records change with the date, without any new reading.
+    remove_day = coordinator.async_add_listener(send)
+
+    @callback
+    def unsubscribe() -> None:
+        leave()
+        remove_day()
 
     connection.subscriptions[msg["id"]] = unsubscribe
     connection.send_result(msg["id"])

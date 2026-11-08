@@ -59,7 +59,7 @@ Le panneau s’adapte au téléphone. Dans **Accueil Hestia-FB → Réglages**, 
 
 ## La carte
 
-Douze cartes, rangées en trois types dans **Ajouter une carte** : **Hestia-FB - Météo** (complète, tuile, tuile dépliée), **Hestia-FB - À la pièce** (ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions) et **Hestia-FB - Petite carte** (mini, alerte). Chacune montre les parties que vous cochez. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change. [La carte en détail : formats, réglages, visuel](docs/carte/README.md).
+Quatorze cartes, rangées en trois types dans **Ajouter une carte** : **Hestia-FB - Météo** (complète, tuile, tuile dépliée), **Hestia-FB - À la pièce** (ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions, événements, records) et **Hestia-FB - Petite carte** (mini, alerte). Chacune montre les parties que vous cochez. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change. [La carte en détail : formats, réglages, visuel](docs/carte/README.md).
 
 ![Hestia Weather — tuile pleine et demi-largeur repliées, puis tuile dépliée, par temps d’orage avec vigilance jaune](docs/carte/images/hestia-weather-formats.png)
 

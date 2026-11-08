@@ -10,6 +10,8 @@ LOGGER = logging.getLogger(__package__)
 CARD_TYPE = "custom:hestia-weather-card"
 VIEW_VERSION = 1
 """Version of the view sent to the card: raised when its shape changes in a way an older card cannot read."""
+RECORDS_VERSION = 1
+"""Version of the records sent to the Records card (websocket hestia_weather/records)."""
 
 FORECAST_INTERVAL = timedelta(minutes=15)
 FORECAST_RETRY = timedelta(minutes=1)

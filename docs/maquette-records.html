@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte Records</title>
+<meta name="description" content="Maquette de la carte « Records » (issues #16 et #17) : records de l'année et de tous les temps, station et lieu. Données de démonstration.">
+<style>
+/* Charte Hestia : échelle C (11·12·14·17·21·34), palette Aube, Manrope. Couleurs de sens seulement : chaleur, froid, vent, pluie. */
+@font-face{font-family:Manrope;font-weight:400;src:url(../../hestia-ecosysteme/socle/fonts/manrope-400.woff2)}
+@font-face{font-family:Manrope;font-weight:500;src:url(../../hestia-ecosysteme/socle/fonts/manrope-500.woff2)}
+@font-face{font-family:Manrope;font-weight:600;src:url(../../hestia-ecosysteme/socle/fonts/manrope-600.woff2)}
+@font-face{font-family:Manrope;font-weight:700;src:url(../../hestia-ecosysteme/socle/fonts/manrope-700.woff2)}
+:root{color-scheme:light;--page:#f1f3f6;--nw-fg:#253047;--nw-fg2:#606b7c;--nw-bg:#fff;--note:#7a4bb5;--nw-accent:#308ddd}
+:root[data-theme="dark"]{color-scheme:dark;--page:#151c25;--nw-fg:#edf1f7;--nw-fg2:#a8b3c3;--nw-bg:#222932;--note:#c7a6ef}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--page:#151c25;--nw-fg:#edf1f7;--nw-fg2:#a8b3c3;--nw-bg:#222932;--note:#c7a6ef}}
+:root{
+  --nw-line:color-mix(in srgb,var(--nw-fg) 13%,transparent);--nw-line-soft:color-mix(in srgb,var(--nw-fg) 6%,transparent);
+  --nw-fs-label:11px;--nw-fs-small:12px;--nw-fs-text:14px;--nw-fs-title:17px;--nw-fs-case:21px;--nw-fs-value:34px;
+  --nw-rain:oklch(.8 .07 190);--nw-wind:oklch(.79 .075 280);--nw-heat:oklch(.83 .085 42);--nw-cold:oklch(.85 .05 220);
+  --nw-ink:34%;--nw-radius-pill:999px;
+  --nw-surface:color-mix(in srgb,var(--nw-fg) 3.5%,var(--nw-bg));
+}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--page);color:var(--nw-fg);font:400 var(--nw-fs-text)/1.5 Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:2px solid var(--nw-accent);outline-offset:2px}
+
+/* Barre de la maquette (pas dans la carte) : elle simule les réglages de l'éditeur. */
+.mock{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:10px 16px;font-size:var(--nw-fs-small);color:var(--nw-fg2);
+  border-bottom:1px dashed var(--note);background:var(--nw-bg)}
+.mock b{color:var(--note);font-weight:700}
+.mock .grp{display:inline-flex;align-items:center;gap:6px}
+.seg{display:inline-flex;padding:2px;border-radius:var(--nw-radius-pill);border:1px solid var(--nw-line)}
+.seg button{font-size:var(--nw-fs-small);line-height:1;font-weight:600;border:0;background:none;color:var(--nw-fg2);padding:6px 10px;border-radius:var(--nw-radius-pill);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--nw-surface);color:var(--nw-fg);box-shadow:0 1px 3px #0002}
+main{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+.stage{display:flex;justify-content:center}
+.slot{width:100%;max-width:440px}
+.slot.phone{max-width:360px}
+.note{border:1px dashed var(--note);border-radius:14px;padding:10px 14px;color:var(--nw-fg2);font-size:var(--nw-fs-small);margin:18px auto 0;max-width:440px}
+.note b{color:var(--note)}
+.note ul{margin:6px 0 0;padding-left:18px}
+
+/* ---------- La carte ---------- */
+ha-card{display:block;background:var(--nw-bg);border-radius:22px;padding:16px;box-shadow:0 1px 2px #0000000d,0 0 0 1px var(--nw-line-soft);container-type:inline-size}
+.nw-title{margin:0 2px 12px;font-size:var(--nw-fs-title);line-height:1.25;font-weight:700;letter-spacing:-.02em}
+.nw-label{font-size:var(--nw-fs-label);line-height:14px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--nw-fg2);white-space:nowrap}
+.nw-panel{padding:14px 16px;border-radius:16px;background:var(--nw-surface);min-width:0}
+.nw-panel + .nw-panel{margin-top:10px}
+.nw-panel-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0;margin-bottom:10px}
+.nw-panel-icon{display:grid;place-items:center;color:var(--nw-fg2)}
+.nw-panel-icon svg{width:18px;height:18px}
+.nw-panel-head h3{display:flex;align-items:center;gap:8px;margin:0;font-size:var(--nw-fs-text);line-height:1.3;font-weight:650;white-space:nowrap}
+.nw-panel-head .aside{margin-left:auto;font-size:var(--nw-fs-small);font-weight:500;color:var(--nw-fg2)}
+.nw-info{display:inline-grid;place-items:center;width:18px;height:18px;padding:0;border-radius:50%;border:0;background:color-mix(in srgb,var(--nw-fg) 6%,transparent);
+  color:var(--nw-fg2);cursor:pointer;font:700 var(--nw-fs-label)/1 Manrope,system-ui,sans-serif}
+.nw-info::before{content:'i'}
+.nw-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:var(--nw-radius-pill);font-size:var(--nw-fs-label);line-height:16px;font-weight:650;white-space:nowrap;
+  background:color-mix(in oklab,var(--c) 24%,transparent);color:color-mix(in oklab,var(--c) var(--nw-ink),var(--nw-fg))}
+svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.tint{color:color-mix(in oklab,var(--c) 70%,var(--nw-fg))}
+
+/* A · Liste : une ligne par record ; « les deux » = deux colonnes. */
+.rec{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--nw-line-soft)}
+.rec.two{grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1fr)}
+.cols{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1fr);gap:12px;padding:0 0 6px}
+.cols .nw-label{text-align:right}
+.rec:first-of-type{border-top:0}
+.what{display:flex;align-items:center;gap:8px;min-width:0;font-weight:600}
+.what span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell{text-align:right;min-width:0}
+.v{font-size:var(--nw-fs-case);font-weight:600;letter-spacing:-.015em;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
+.v small{font-size:var(--nw-fs-small);font-weight:500;color:var(--nw-fg2);margin-left:2px;letter-spacing:0}
+.d{font-size:var(--nw-fs-small);color:var(--nw-fg2);line-height:1.35}
+.d .h{white-space:nowrap}
+.rec .nw-chip{margin-top:3px}
+
+/* B · Cases : 2 × 2 ; « les deux » = l'année en grand, le record de tous les temps dessous. */
+.nw-cases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.case{background:var(--nw-bg);border-radius:12px;padding:10px 12px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.case .top{display:flex;align-items:center;gap:6px;min-width:0}
+.case .top .nw-label{overflow:hidden;text-overflow:ellipsis}
+.case .vrow{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin-top:4px}
+.case .sub{margin-top:6px;padding-top:6px;border-top:1px solid var(--nw-line-soft);font-size:var(--nw-fs-small);color:var(--nw-fg2);line-height:1.35}
+.case .sub b{color:var(--nw-fg);font-weight:650;font-variant-numeric:tabular-nums}
+
+/* Les jours comptés. */
+.nw-stats{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--nw-line-soft)}
+.nw-stats > div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.nw-stats .k{font-size:var(--nw-fs-label);line-height:1.35;font-weight:500;color:var(--nw-fg2)}
+.nw-stats b{font-size:var(--nw-fs-text);line-height:1.35;font-weight:650;font-variant-numeric:tabular-nums}
+.nw-stats .s{font-size:var(--nw-fs-label);line-height:1.35;color:var(--nw-fg2)}
+@container (max-width:340px){.nw-stats{--n:2 !important}.rec.two,.cols{grid-template-columns:minmax(0,.62fr) minmax(0,1fr) minmax(0,1fr);gap:8px}.v{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="mock" role="toolbar" aria-label="Réglages de la maquette">
+  <b>Maquette</b>
+  <span class="grp">Période <span class="seg" data-k="period"><button data-v="year">Cette année</button><button data-v="all">Depuis toujours</button><button data-v="both">Les deux</button></span></span>
+  <span class="grp">Source <span class="seg" data-k="source"><button data-v="station">Station</button><button data-v="place">Lieu</button><button data-v="both">Les deux</button></span></span>
+  <span class="grp">Disposition <span class="seg" data-k="layout"><button data-v="A">A · Liste</button><button data-v="B">B · Cases</button></span></span>
+  <span class="grp">Largeur <span class="seg" data-k="width"><button data-v="wide">Tableau</button><button data-v="phone">Téléphone</button></span></span>
+  <span class="grp">Thème <span class="seg" data-k="theme"><button data-v="light">Clair</button><button data-v="dark">Sombre</button></span></span>
+</div>
+<main>
+  <div class="stage"><div class="slot" id="slot"><ha-card id="card"></ha-card></div></div>
+  <div class="note"><b>À lire</b> · Données de démonstration.
+    <ul>
+      <li><b>Période</b>, <b>Source</b> et <b>Disposition</b> (Liste ou Cases) sont des réglages de la carte, dans l'éditeur (issue #17).</li>
+      <li><b>Station</b> : l'heure est connue à l'heure près (« vers 15 h »). <b>Lieu</b> : la date seulement, valeurs un peu adoucies (archive Open-Meteo).</li>
+      <li>La pastille <b>Nouveau</b> apparaît 7 jours après un record battu.</li>
+      <li>Les jours de canicule suivent la vigilance Météo-France, comptés à partir de la mise à jour.</li>
+    </ul>
+  </div>
+</main>
+<script>
+const ICON = {
+  heat: '<path d="M10 14.5V5a2 2 0 1 1 4 0v9.5a4 4 0 1 1-4 0Z"/><path d="M12 11v6"/>',
+  cold: '<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/><path d="m9.5 4.5 2.5 2 2.5-2M9.5 19.5l2.5-2 2.5 2"/>',
+  wind: '<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/>',
+  rain: '<path d="M12 3.5s6 6.4 6 10.5a6 6 0 0 1-12 0c0-4.1 6-10.5 6-10.5Z"/>',
+  trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4v3h-4z"/>',
+  map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/>',
+};
+const ic = (k, c) => `<svg class="ic${c ? ' tint' : ''}" viewBox="0 0 24 24" ${c ? `style="--c:var(--nw-${c})"` : ''} aria-hidden="true">${ICON[k]}</svg>`;
+const KINDS = [['heat', 'Chaleur', '°C', 'heat'], ['cold', 'Froid', '°C', 'cold'], ['gust', 'Rafale', 'km/h', 'wind'], ['rain', 'Pluie', 'mm/j', 'rain']];
+const KICON = { heat: 'heat', cold: 'cold', gust: 'wind', rain: 'rain' };
+// [valeur, date, heure ou null, nouveau ?]
+const DATA = {
+  station: {
+    since: 'depuis nov. 2024',
+    year: { heat: [35.8, '11 août', 16], cold: [-6.4, '9 janv.', 7], gust: [87, '3 févr.', 14], rain: [42, '6 nov.', null, true] },
+    all:  { heat: [37.1, '13 août 2025', 15], cold: [-7.9, '20 janv. 2025', 6], gust: [94, '27 janv. 2025', 3], rain: [42, '6 nov. 2026', null, true] },
+    days: { year: { gel: 31, hot: 12, tropical: 3, heatwave: 4 }, all: { gel: [38, '2025'], hot: [19, '2025'], tropical: [5, '2025'], heatwave: [4, '2026'] } },
+  },
+  place: {
+    since: 'archive depuis 1940',
+    year: { heat: [34.9, '11 août'], cold: [-5.1, '9 janv.'], gust: [74, '3 févr.'], rain: [38, '6 nov.', null, true] },
+    all:  { heat: [39.6, '25 juil. 2019'], cold: [-17.2, '16 janv. 1985'], gust: [128, '26 déc. 1999'], rain: [71, '3 oct. 1988'] },
+    days: { year: { gel: 27, hot: 10, tropical: 2 }, all: { gel: [79, '1956'], hot: [31, '2003'], tropical: [14, '2003'] }, normal: { gel: 41, hot: 8, tropical: 1 } },
+  },
+};
+const nf = (v, u) => (u === '°C' ? v.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : v.toLocaleString('fr-FR')).replace('-', '−');
+const when = (r) => `${r[1]}${r[2] != null ? `<br><span class="h">vers ${r[2]} h</span>` : ''}`;
+const fresh = (r, c) => r[3] ? `<span class="nw-chip" style="--c:var(--nw-${c})">Nouveau</span>` : '';
+const value = (r, u) => `<div class="v">${nf(r[0], u)}<small>${u}</small></div>`;
+
+const state = { period: 'both', source: 'station', layout: 'A', width: 'wide', theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' };
+try { Object.assign(state, JSON.parse(localStorage.getItem('maquette-records') || '{}')); } catch {}
+
+function listView(src, period) {
+  const s = DATA[src];
+  if (period === 'both') {
+    return `<div class="cols"><span></span><span class="nw-label">Cette année</span><span class="nw-label">Depuis toujours</span></div>` +
+      KINDS.map(([k, name, u, c]) => `<div class="rec two"><div class="what">${ic(KICON[k], c)}<span>${name}</span></div>
+        <div class="cell">${value(s.year[k], u)}<div class="d">${when(s.year[k])}</div>${fresh(s.year[k], c)}</div>
+        <div class="cell">${value(s.all[k], u)}<div class="d">${when(s.all[k])}</div>${fresh(s.all[k], c)}</div></div>`).join('');
+  }
+  const p = s[period];
+  return KINDS.map(([k, name, u, c]) => `<div class="rec"><div class="what">${ic(KICON[k], c)}<span>${name}</span></div>
+    <div class="cell">${value(p[k], u)}<div class="d">${when(p[k])}</div>${fresh(p[k], c)}</div></div>`).join('');
+}
+
+function casesView(src, period) {
+  const s = DATA[src], main = period === 'all' ? s.all : s.year;
+  return `<div class="nw-cases">${KINDS.map(([k, name, u, c]) => `<div class="case">
+    <div class="top">${ic(KICON[k], c)}<span class="nw-label">${name}</span></div>
+    <div class="vrow">${value(main[k], u)}${fresh(main[k], c)}</div><div class="d">${when(main[k])}</div>
+    ${period === 'both' ? `<div class="sub">Record : <b>${nf(s.all[k][0], u)} ${u}</b><br>${s.all[k][1]}</div>` : ''}</div>`).join('')}</div>`;
+}
+
+function days(src, period) {
+  const d = DATA[src].days;
+  const items = [['gel', 'Jours de gel'], ['hot', 'Jours ≥ 30 °C'], ['tropical', 'Nuits ≥ 20 °C']];
+  if (src === 'station') items.push(['heatwave', 'Vigilance canicule']);
+  const cell = ([k, name]) => {
+    const y = d.year[k], a = d.all[k];
+    const main = period === 'all' ? `<b>${a[0]} j</b><span class="s">en ${a[1]}</span>` : `<b>${y} j</b>`;
+    const extra = period === 'both' ? `<span class="s">record ${a[0]} j (${a[1]})</span>` : (period === 'year' && d.normal ? `<span class="s">normale ${d.normal[k]} j</span>` : '');
+    return `<div><span class="k">${name}</span>${main}${extra}</div>`;
+  };
+  return `<div class="nw-stats" style="--n:${items.length}">${items.map(cell).join('')}</div>`;
+}
+
+function panel(src, period) {
+  const s = DATA[src];
+  const title = src === 'station' ? 'Votre station' : 'Le lieu';
+  const icon = src === 'station' ? 'trophy' : 'map';
+  const body = state.layout === 'A' ? listView(src, period) : casesView(src, period);
+  return `<section class="nw-panel" aria-label="${title}"><header class="nw-panel-head"><span class="nw-panel-icon">${ic(icon)}</span>
+    <h3><span>${title}</span><button class="nw-info" aria-label="D'où viennent ces records"></button></h3><span class="aside">${s.since}</span></header>
+    ${body}${days(src, period)}</section>`;
+}
+
+function render() {
+  document.documentElement.dataset.theme = state.theme;
+  document.getElementById('slot').className = `slot ${state.width === 'phone' ? 'phone' : ''}`;
+  const sources = state.source === 'both' ? ['station', 'place'] : [state.source];
+  const sub = state.period === 'year' ? ' · 2026' : '';
+  document.getElementById('card').innerHTML = `<h2 class="nw-title">Records${sub}</h2>${sources.map(s => panel(s, state.period)).join('')}`;
+  document.querySelectorAll('.seg').forEach(seg => seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(state[seg.dataset.k] === b.dataset.v))));
+  try { localStorage.setItem('maquette-records', JSON.stringify(state)); } catch {}
+}
+document.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; state[seg.dataset.k] = b.dataset.v; render();
+}));
+render();
+</script>
+</body>
+</html>

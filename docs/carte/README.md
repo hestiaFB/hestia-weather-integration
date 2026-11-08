@@ -14,7 +14,7 @@ Dans l’application Home Assistant, une carte reste invisible juste après une 
 
 ![Hestia Weather — votre station météo et les prévisions, réunies en une carte qui parle](images/hestia-weather-banner.png)
 
-## Douze cartes à choisir
+## Quatorze cartes à choisir
 
 Dans **Ajouter une carte**, cherchez « Hestia-FB » : trois entrées, une par type de carte — **Hestia-FB - Météo** (complète ou tuile), **Hestia-FB - À la pièce** (ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions) et **Hestia-FB - Petite carte** (mini ou alerte). Dans les réglages de la carte, choisissez d’abord le **type**, puis le **format**. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change.
 
@@ -31,6 +31,8 @@ Dans **Ajouter une carte**, cherchez « Hestia-FB » : trois entrées, une par t
 | **Éclairs** (`lightning`) | Avec l’extension [Blitzortung](https://github.com/mrk-its/homeassistant-blitzortung) : les éclairs de la dernière heure sur un radar autour de chez vous (anneaux à 10, 30 et 50 km, les plus récents en rouge), l’éclair le plus proche et sa direction, le niveau (calme, secteur, proche, sur vous), les comptes de l’heure, des 10 dernières minutes et du mois. Peut rester cachée tant qu’aucun orage n’est à moins de 30 km. Sans Blitzortung, elle explique comment l’installer. |
 | **Air et pollens** (`air`) | L’air extérieur et les pollens, aujourd’hui et demain. |
 | **Prévisions** (`forecast`) | La courbe des 18 prochaines heures et le tableau des 7 jours, avec le bouton **Heures / Jours** quand les deux sont gardés. |
+| **Événements** (`events`) | La frise des prochaines heures, seule : pour les petits écrans. |
+| **Records** (`records`) | Les records de chaleur, de froid, de rafale et de pluie en un jour, avec leur date (et l’heure pour la station), et les jours comptés : gel, 30 °C et plus, nuits à 20 °C et plus, vigilance canicule. Trois réglages : la période (cette année, depuis toujours, les deux), la source (votre station, le lieu depuis 1940, les deux) et la disposition (liste ou cases). Pas besoin d’activer les entités Records : la carte lit seule ce qu’elle montre. |
 | **Alerte** (`alert`) | Visible seulement en cas de vigilance, d’alerte mesurée chez vous ou de point sérieux à venir. Cachée quand tout est calme. Un appui ouvre la carte complète. |
 
 **Le contenu se choisit**, dans l’ordre voulu :
@@ -83,7 +85,8 @@ Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le fo
 | Bloc | Réglage | Par défaut | Rôle |
 | --- | --- | --- | --- |
 | En haut | `entry_id` | — | Le lieu à afficher, s’il y en a plusieurs dans l’intégration |
-| En haut | `format` | `full` | `full`, `tile`, `intermediate`, `mini`, `comfort`, `rain`, `wind`, `pressure`, `lightning`, `air`, `forecast` ou `alert` |
+| En haut | `format` | `full` | `full`, `tile`, `intermediate`, `mini`, `comfort`, `rain`, `wind`, `pressure`, `lightning`, `air`, `forecast`, `events`, `records` ou `alert` |
+| Records | `records_period`, `records_source`, `records_layout` | `both`, `station`, `list` | Période : `year`, `all`, `both`. Source : `station`, `lieu` (Open-Meteo depuis 1940), `both`. Disposition : `list`, `cases` |
 | Contenu (cartes seules) | `card_blocks` | tout | Ressenti : `feel`, `gauge`, `factors`, `extras`. Pluie : `ahead` (à venir), `now`, `chart`, `stats`. Vent et Pression : `now`, `chart`, `stats`. Éclairs : `now`, `radar`, `stats` (et `hide_when_calm: true` pour la cacher sans orage). Air et pollens, dans l’ordre voulu : `air_today`, `pollen_today`, `air_tomorrow`, `pollen_tomorrow`. Prévisions : `hours`, `days`. Les cartes Pluie, Vent et Pression suivent aussi `rain_span`, `wind_span` et `pressure_span` |
 | Bandeau intelligent (complète) | `banner_blocks` | `bulletin`, `events` | Sous le lieu, la vigilance et la météo du moment, dans l’ordre : `bulletin`, `events` (la frise), `moments`, `forecast` (les prévisions en tuiles). Le bandeau et son ciel animé restent toujours |
 | Bandeau intelligent (complète) | `clock` | `none` | L’heure de l’appareil dans le bandeau : `left` en grand sous le titre, `right` au-dessus de « En ce moment », `none` masquée |

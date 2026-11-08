@@ -99,6 +99,35 @@ class CalculationTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(all('view' in m['event'] for m in connections[False]))
         self.assertEqual(len(connections[False]), 2)
 
+    async def test_a_records_card_reads_its_sources_without_their_entities_and_hears_when_they_change(self):
+        from datetime import date
+        from types import SimpleNamespace
+        from custom_components.hestia_weather.engine import records
+        from custom_components.hestia_weather.place.records import STATION_KEYS
+        from custom_components.hestia_weather.websocket import ws_records
+        entry = self.coordinator.config_entry
+        entry.runtime_data = self.coordinator
+        entry._async_set_state(self.hass, ConfigEntryState.LOADED, None)
+        self.coordinator.data = await self.coordinator._async_update_data()
+        self.assertFalse(self.coordinator._wanted(STATION_KEYS))
+
+        async def station():
+            self.coordinator.station_months = records.summarise([records.DayValues(date(2025, 8, 13), high=37.1, low=19)])
+            self.coordinator._records_cache.pop('station', None)
+        sent = []
+        connection = SimpleNamespace(subscriptions={}, send_result=lambda *_: None, send_error=lambda *a: sent.append(a), send_message=sent.append)
+        with patch.object(self.coordinator, '_load_station_records', station):
+            ws_records(self.hass, connection, {'id': 7, 'type': 'hestia_weather/records', 'sources': ['station']})
+            self.assertTrue(self.coordinator._wanted(STATION_KEYS))
+            await self.hass.async_block_till_done(wait_background_tasks=True)
+        first, then = sent[0]['event'], sent[-1]['event']
+        # Nothing known at first: the card says it is being read, then shows it.
+        self.assertEqual((first['station'], first['loading']), (None, ['station']))
+        self.assertEqual(then['station']['marks']['chaleur']['ever'][:2], [37.1, '2025-08-13'])
+        self.assertEqual((then['lieu'], then['loading']), (None, []))
+        connection.subscriptions[7]()
+        self.assertFalse(self.coordinator._wanted(STATION_KEYS))
+
 
 if __name__ == '__main__':
     unittest.main()

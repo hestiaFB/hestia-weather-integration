@@ -123,3 +123,35 @@ def test_heatwave_days_are_counted_from_the_first_day_hestia_counted() -> None:
     assert (count.year, count.month, count.since) == (3, 2, date(2026, 6, 1))
     assert r.Heatwave.from_dict(h.as_dict()) == h
     assert r.Heatwave.from_dict({"days": ["pas une date"]}) == r.Heatwave(frozenset(), None)
+
+
+def test_counts_name_their_best_year_the_first_one_on_a_tie() -> None:
+    days = [DayValues(date(2024, 7, d), high=31, low=15) for d in range(1, 6)]
+    days += [DayValues(date(2025, 7, d), high=33, low=21) for d in range(1, 6)] + [DayValues(date(2026, 7, 1), high=30, low=12)]
+    out = r.compute(r.summarise(days), date(2026, 11, 8))
+    assert out.counts["jours_chauds"].best == (5, 2024)
+    assert out.counts["nuits_tropicales"].best == (5, 2025)
+    assert out.counts["jours_gel"].best is None
+    h = r.Heatwave(frozenset({date(2025, 7, 1), date(2025, 7, 2), date(2026, 7, 1)}), date(2025, 6, 1))
+    assert h.count(date(2026, 8, 1)).best == (2, 2025)
+
+
+def test_the_hour_of_a_record_is_the_local_hour_of_its_highest_or_lowest_hour() -> None:
+    start = datetime(2026, 8, 11, tzinfo=PARIS).timestamp()
+    rows = [(start + h * 3600, v) for h, v in ((6, 18.0), (15, 35.8), (16, 35.8), (23, None))]
+    assert r.hour_of(rows, False, PARIS) == 15
+    assert r.hour_of(rows, True, PARIS) == 6
+    assert r.hour_of([(start, None)], False, PARIS) is None
+
+
+def test_the_card_receives_each_record_with_its_day_and_hour_and_each_count() -> None:
+    months = r.summarise([DayValues(date(2025, 8, 13), high=37.1, low=19), DayValues(date(2026, 8, 11), high=35.8, low=21, rain=4)])
+    found = r.compute(months, date(2026, 11, 8))
+    heatwave = r.Heatwave(frozenset({date(2026, 8, 11)}), date(2026, 6, 1)).count(date(2026, 11, 8))
+    out = r.card_source(found, {("chaleur", date(2025, 8, 13)): 15}, heatwave)
+    assert out is not None and out["since"] == "2025-08-13"
+    assert out["marks"]["chaleur"] == {"ever": [37.1, "2025-08-13", 15], "year": [35.8, "2026-08-11", None], "month": None}
+    assert out["marks"]["rafale"] == {"ever": None, "year": None, "month": None}
+    assert out["counts"]["nuits_tropicales"] == {"year": 1, "month": 0, "mean": None, "best": [1, 2026], "partial": True, "since": "2025-08-13"}
+    assert out["counts"]["jours_canicule"]["year"] == 1
+    assert r.card_source(r.EMPTY) is None

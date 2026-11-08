@@ -13,6 +13,7 @@ import { todayStyles } from './views/today';
 import { forecastStyles } from './views/forecasts';
 import { airStyles } from './views/air';
 import { lightningStyles } from './views/lightning';
+import { recordSources, recordsStyles, renderRecords, RECORDS_VERSION, type RecordsMessage } from './views/records';
 import { traitStyles } from './ui/trait';
 import { marqueeStyles } from './ui/marquee';
 import { watchOffscreen } from './ui/offscreen';
@@ -70,6 +71,10 @@ export class HestiaWeatherCard extends LitElement {
   @state() private tab: 'hours' | 'days' = 'hours';
   /** What the integration computed, as it last sent it. */
   @state() private view?: WeatherView;
+  /** The Records card: the records as the integration last sent them (apart from the view). */
+  @state() private records?: RecordsMessage;
+  private recordsStop?: Promise<() => Promise<void>>;
+  private recordsFor?: string;
   @state() private problem?: Problem;
   /** The integration's own words when it answered with an error. */
   private failure = '';
@@ -100,6 +105,7 @@ export class HestiaWeatherCard extends LitElement {
     if (!old || old.forecast_tab !== next.forecast_tab || old.entry_id !== next.entry_id) this.tab = this.rememberedTab(next);
     // Another place: its own view, from a new subscription.
     if (old && old.entry_id !== next.entry_id) { this.unsubscribe(); this.view = undefined; this.problem = undefined; this.drawnView = undefined; }
+    if (old && (old.entry_id !== next.entry_id || old.records_source !== next.records_source || old.format !== next.format)) { this.stopRecords(); this.records = undefined; }
   }
   public static getStubConfig(): WeatherCardConfig { return { type: 'custom:hestia-weather-card' }; }
   public static getConfigElement(): HTMLElement { return document.createElement('hestia-weather-card-editor'); }
@@ -108,6 +114,7 @@ export class HestiaWeatherCard extends LitElement {
     if (this.config.format === 'mini') return 1;
     if (this.config.format === 'alert') return this.view && this.hasAlert(this.view) ? 2 : 0;
     if (this.config.format === 'forecast' || this.config.format === 'rain' || this.config.format === 'air') return 5;
+    if (this.config.format === 'records') return 6;
     if (this.single) return this.config.format === 'comfort' || this.config.format === 'events' ? 3 : 4;
     if (this.tile) return this.unfolded ? 7 : 2;
     return Math.max(1, (this.config.show_synthesis === false ? 0 : 4) + (this.config.show_today === false ? 0 : 5) + (this.config.show_predictions === false ? 0 : 4));
@@ -115,7 +122,7 @@ export class HestiaWeatherCard extends LitElement {
   public getGridOptions() {
     const format = this.config?.format;
     if (format === 'mini') return { columns: 12, rows: 1, min_columns: 3 };
-    return this.tile || this.single || format === 'alert' ? { columns: 12, rows: 'auto', min_columns: 6 } : { columns: 'full', rows: 'auto' };
+    return this.tile || this.single || format === 'records' || format === 'alert' ? { columns: 12, rows: 'auto', min_columns: 6 } : { columns: 'full', rows: 'auto' };
   }
   /** One part of the full card on its own: the feel, the rain, the wind, the pressure, the air and pollens, the forecasts, the events. */
   private get single(): boolean { return ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events'].includes(this.config?.format ?? ''); }
@@ -155,7 +162,7 @@ export class HestiaWeatherCard extends LitElement {
   }
   /** Being edited or chosen: the alert card shows what it would hide. */
   private get editing(): boolean { return this.editMode || this.preview || this.picker; }
-  public disconnectedCallback(): void { super.disconnectedCallback(); this.unwatch?.(); this.cancelPress(); this.unsubscribe(); }
+  public disconnectedCallback(): void { super.disconnectedCallback(); this.unwatch?.(); this.cancelPress(); this.unsubscribe(); this.stopRecords(); }
   /** The language this card was last drawn in: Home Assistant's changes, the card redraws in it. */
   private language?: string;
   protected shouldUpdate(changed: PropertyValues): boolean {
@@ -183,6 +190,7 @@ export class HestiaWeatherCard extends LitElement {
   private subscribe(): void {
     const connection = this.hass?.connection, config = this.config;
     if (!connection || !config || !this.isConnected) return;
+    if (config.format === 'records') this.followRecords();
     // The integration writes the view in this user's language: another language, another subscription.
     const place = `${config.entry_id ?? ''}|${this.hass?.language ?? ''}`;
     if (this.subscription && this.subscribedTo === place) return;
@@ -206,6 +214,27 @@ export class HestiaWeatherCard extends LitElement {
     this.problem = undefined;
     this.view = message.view;
   }
+  /** The Records card follows its place's records too: its sources are read even while their entities are disabled. */
+  private followRecords(): void {
+    const connection = this.hass?.connection, config = this.config;
+    if (!connection || !config) return;
+    const sources = recordSources(config), key = `${config.entry_id ?? ''}|${sources.join(',')}`;
+    if (this.recordsStop && this.recordsFor === key) return;
+    this.stopRecords();
+    this.recordsFor = key;
+    const stop = connection.subscribeMessage<RecordsMessage>(m => {
+      if (this.recordsStop !== stop) return;
+      if (m.version === RECORDS_VERSION) this.records = m;
+    }, { type: 'hestia_weather/records', sources, ...(config.entry_id ? { entry_id: config.entry_id } : {}) });
+    this.recordsStop = stop;
+    // An integration older than the card: it says so below the card (the main subscription's problems), and tries again later.
+    stop.catch(() => { if (this.recordsStop === stop) { this.recordsStop = undefined; this.recordsFor = undefined; } });
+  }
+  private stopRecords(): void {
+    const stop = this.recordsStop;
+    this.recordsStop = undefined; this.recordsFor = undefined;
+    void stop?.then(s => s()).catch(() => { /* already closed */ });
+  }
   private unsubscribe(): void {
     clearTimeout(this.retry);
     const stop = this.subscription;
@@ -220,6 +249,9 @@ export class HestiaWeatherCard extends LitElement {
   protected render() {
     if (!this.config) return nothing;
     if (this.problem && !this.view) return this.renderProblem(PROBLEMS[this.problem]);
+    // The Records card draws the records alone: it does not wait for the view.
+    if (this.config.format === 'records') return html`<ha-card>${this.records ? renderRecords(this.records, this.config, this.uid)
+      : html`<div class="nw-wait" role="status" aria-label=${t('Chargement des records')}><i class="dot"></i><i></i><i></i><i></i></div>`}</ha-card>`;
     // While the integration answers: the outline of a card, with a light sweeping over it.
     if (!this.view) return html`<ha-card><div class=${`nw-wait${this.config.format === 'mini' ? ' line' : ''}`} role="status" aria-label=${t('Chargement de la météo')}>
       <i class="dot"></i><i></i><i></i><i></i></div></ha-card>`;
@@ -354,7 +386,7 @@ export class HestiaWeatherCard extends LitElement {
     e.preventDefault(); this.openEntity(e);
   };
 
-  static styles = [tokens, shared, marqueeStyles, pieces, bubbles, tileStyles, compactStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, singleStyles, lightningStyles, traitStyles, css`
+  static styles = [tokens, shared, marqueeStyles, pieces, bubbles, tileStyles, compactStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, singleStyles, lightningStyles, recordsStyles, traitStyles, css`
     :host { display:block; }
     :host([hidden]) { display:none; }
     /* Animations switched off: the alert halo stays still too, in the tile, the window and the scrolling bubble. */
@@ -402,7 +434,7 @@ export class HestiaWeatherCard extends LitElement {
 // Each format has its own element (`hestia-weather-<format>-card`, intermediate → `hestia-weather-tile-open-card`): a card written by hand
 // with that type keeps its format. Home Assistant's « Add card » window offers three of them, one per kind of card, as the editor
 // classes them; the picker takes the type from getStubConfig, so dashboards never depend on these extra names.
-const FORMATS: Array<NonNullable<WeatherCardConfig['format']>> = ['full', 'tile', 'intermediate', 'mini', 'comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events', 'alert'];
+const FORMATS: Array<NonNullable<WeatherCardConfig['format']>> = ['full', 'tile', 'intermediate', 'mini', 'comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events', 'records', 'alert'];
 const elementOf = (format: NonNullable<WeatherCardConfig['format']>) => format === 'full' ? 'hestia-weather-card' : `hestia-weather-${format === 'intermediate' ? 'tile-open' : format}-card`;
 for (const format of FORMATS) {
   const type = elementOf(format);
@@ -415,7 +447,7 @@ for (const format of FORMATS) {
 // The list is written once, at load: in the language the page was opened in.
 const PICKER: Array<[NonNullable<WeatherCardConfig['format']>, string, string]> = [
   ['full', fr('Hestia-FB - Météo'), fr('La page météo complète ou la tuile qui se déplie. Le format se choisit dans les réglages.')],
-  ['comfort', fr('Hestia-FB - À la pièce'), fr('Une seule partie : ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions ou événements.')],
+  ['comfort', fr('Hestia-FB - À la pièce'), fr('Une seule partie : ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions, événements ou records.')],
   ['mini', fr('Hestia-FB - Petite carte'), fr('Une seule ligne, ou une alerte visible seulement en cas de vigilance.')],
 ];
 guessLanguage();

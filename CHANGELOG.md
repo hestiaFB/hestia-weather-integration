@@ -1,3 +1,15 @@
+## À venir
+
+### Nouveautés
+
+- Nouvelle carte à la pièce « Records » (#17) : chaleur, froid, rafale et pluie en un jour, avec leur date, et les jours comptés. Au choix : cette année, depuis toujours ou les deux ; votre station, le lieu depuis 1940 ou les deux ; en liste ou en cases.
+- Les records de votre station disent aussi l’heure : « 35,8 °C le 11 août, vers 16 h ».
+- Une pastille « Nouveau » pendant 7 jours après un record battu.
+
+### Améliorations
+
+- La carte Records marche sans activer les entités Records : elle lit seule ce qu’elle montre.
+
 ## 3.3.0 — Les records, la frise seule et la canicule de Météo-France
 
 ### Nouveautés

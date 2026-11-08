@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hestia Weather — Records</title>
+<style>
+  :root {font:14px/1.5 Roboto,system-ui,sans-serif;color-scheme:light;--primary-text-color:#253047;--secondary-text-color:#606b7c;--primary-color:#308ddd;--card-background-color:#fff;--divider-color:#e8ebef;--page:#f1f3f6;background:var(--page);color:var(--primary-text-color)}
+  :root.dark {color-scheme:dark;--primary-text-color:#edf1f7;--secondary-text-color:#a8b3c3;--card-background-color:#222932;--divider-color:#36404c;--page:#151c25}
+  body {margin:0;padding:16px 16px 60px}
+  .controls {display:flex;align-items:end;flex-wrap:wrap;gap:10px 16px;margin-bottom:20px}
+  label {display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--secondary-text-color)}
+  select {font:inherit;font-size:14px;padding:6px 24px 6px 8px;border:1px solid var(--divider-color);border-radius:7px;background:var(--card-background-color);color:var(--primary-text-color)}
+  #slot {width:440px;max-width:100%;margin:0 auto} body.phone #slot {width:360px}
+</style></head>
+<body>
+<div class="controls">
+  <label>Période<select id="period"><option value="both">Les deux</option><option value="year">Cette année</option><option value="all">Depuis toujours</option></select></label>
+  <label>Source<select id="source"><option value="station">Station</option><option value="lieu">Lieu</option><option value="both">Les deux</option></select></label>
+  <label>Disposition<select id="layout"><option value="list">Liste</option><option value="cases">Cases</option></select></label>
+  <label>État<select id="state"><option value="ok">Données</option><option value="loading">Lecture en cours</option><option value="missing">Sans capteur</option></select></label>
+  <label>Thème<select id="theme"><option value="light">Clair</option><option value="dark">Sombre</option></select></label>
+  <label>Largeur<select id="width"><option value="tablet">Tableau</option><option value="phone">Téléphone</option></select></label>
+</div>
+<div id="slot"></div>
+<script type="module">
+  const icons=await fetch('/icons.json').then(r=>r.json());
+  customElements.define('ha-icon',class extends HTMLElement {
+    static get observedAttributes(){return ['icon'];}
+    connectedCallback(){if(!this.shadowRoot)this.attachShadow({mode:'open'});this.draw();}
+    attributeChangedCallback(){if(this.shadowRoot)this.draw();}
+    draw(){const key='mdi'+(this.getAttribute('icon')?.split(':')[1]??'').split('-').map(s=>s[0]?.toUpperCase()+s.slice(1)).join('');
+      this.shadowRoot.innerHTML=`<style>:host{fill:currentcolor}span{display:var(--ha-icon-display,inline-flex);vertical-align:middle;width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px)}svg{width:100%;height:100%;fill:currentColor}</style><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icons[key]??''}"></path></svg></span>`;}
+  });
+  customElements.define('ha-card',class extends HTMLElement {connectedCallback(){if(!this.shadowRoot)this.attachShadow({mode:'open'}).innerHTML='<style>:host{display:block;border-radius:var(--ha-card-border-radius,12px);background:var(--card-background-color);border:1px solid var(--divider-color);overflow:hidden;container-type:inline-size}</style><slot></slot>';}});
+  if (!customElements.get('home-assistant')) customElements.define('home-assistant', class extends HTMLElement {});
+  await import('/card.js');
+  const $=id=>document.getElementById(id);
+  // Données de démonstration : un record de pluie battu il y a deux jours, pour voir « Nouveau ».
+  const ago=d=>{const x=new Date();x.setDate(x.getDate()-d);return x.toISOString().slice(0,10);};
+  const y=new Date().getFullYear();
+  const count=(year,month,mean,best)=>({year,month,mean,best,partial:false,since:'2024-11-03'});
+  const station={since:'2024-11-03',marks:{
+    chaleur:{ever:[37.1,'2025-08-13',15],year:[35.8,`${y}-08-11`,16],month:null},
+    froid:{ever:[-7.9,'2025-01-20',6],year:[-6.4,`${y}-01-09`,7],month:[1.2,ago(4),6]},
+    rafale:{ever:[94,'2025-01-27',3],year:[87,`${y}-02-03`,14],month:[52,ago(5),18]},
+    pluie:{ever:[42,ago(2),null],year:[42,ago(2),null],month:[42,ago(2),null]}},
+    counts:{jours_gel:count(31,0,38,[38,2025]),jours_chauds:count(12,0,19,[19,2025]),nuits_tropicales:count(3,0,5,[5,2025]),jours_canicule:count(4,0,null,[4,y])}};
+  const lieu={since:'1940-01-01',marks:{
+    chaleur:{ever:[39.6,'2019-07-25',null],year:[34.9,`${y}-08-11`,null],month:null},
+    froid:{ever:[-17.2,'1985-01-16',null],year:[-5.1,`${y}-01-09`,null],month:null},
+    rafale:{ever:[128,'1999-12-26',null],year:[74,`${y}-02-03`,null],month:null},
+    pluie:{ever:[71,'1988-10-03',null],year:[38,ago(2),null],month:null}},
+    counts:{jours_gel:count(27,0,41.2,[79,1956]),jours_chauds:count(10,0,8.4,[31,2003]),nuits_tropicales:count(2,0,1.1,[14,2003])}};
+  function hass(state){
+    const connection={subscribeMessage:async(callback,message)=>{
+      if(message.type==='hestia_weather/records') setTimeout(()=>callback({version:1,
+        station:state==='ok'?station:null,lieu:state==='ok'?lieu:null,loading:state==='loading'?message.sources:[]}),50);
+      // The main view never comes here: the Records card does not wait for it.
+      return async()=>{};
+    }};
+    const language=new URLSearchParams(location.search).get('lang')??'fr';
+    return {states:{},language,locale:{language},connection,callWS:async()=>[]};
+  }
+  function refresh(){
+    document.documentElement.classList.toggle('dark',$('theme').value==='dark');document.body.classList.toggle('phone',$('width').value==='phone');
+    const card=document.createElement('hestia-weather-card');$('slot').replaceChildren(card);
+    card.setConfig({type:'custom:hestia-weather-card',format:'records',records_period:$('period').value,records_source:$('source').value,records_layout:$('layout').value});
+    card.hass=hass($('state').value);
+  }
+  for(const id of ['period','source','layout','state','theme','width'])$(id).addEventListener('change',refresh);
+  refresh();
+</script>
+</body></html>
