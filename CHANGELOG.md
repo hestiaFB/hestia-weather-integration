@@ -1,17 +1,25 @@
-## À venir
+## 3.6.0 — La carte Température, une Mini à votre goût et des cartes qui répondent au doigt
 
-### Améliorations
+**En bref**
+
+- **Nouvelle carte à la pièce Température : la température et l'humidité, à venir, courbes et extrêmes.**
+- **La Mini montre les valeurs de votre choix, colorées selon le confort, et seulement les vigilances officielles.**
+- **Les cartes à la pièce s'ouvrent d'un appui sur ce que vous voulez, dont les prévisions de Home Assistant.**
+
+### Nouveautés
 
 - Nouvelle carte à la pièce « Température » (#21) : la température à venir (le maximum et le minimum des 18 heures), celle du moment, son ressenti et sa tendance, sa courbe et ses extrêmes ; puis l'humidité, avec sa courbe et ses extrêmes. Sur 6 h, 24 h, 2 jours ou 7 jours.
 - Sans capteur de température ou d'humidité, la carte Température prend les valeurs du service météo gardées par Home Assistant.
-- Cartes à la pièce : réglage « Titres » ; décoché, la carte ne montre que ses mesures (#21).
+- Carte Mini, comme celle de Hestia Confort (#22) : les valeurs de votre choix, dans l'ordre voulu : température, ressenti, vent, rafales, pluie du jour, humidité, pression, indice UV. Chacune prend la couleur de son sens quand elle sort du confort.
 - Cartes à la pièce : un appui et un appui long au choix (#24) : la météo complète par-dessus la page, une page, les prévisions de Home Assistant, ou rien (par défaut). Une valeur ouvre toujours son capteur.
-- Tuile, Mini et Alerte : « Ouvrir les prévisions de Home Assistant » parmi les choix d'appui.
-- Carte Mini, comme celle de Hestia Confort (#22) : un rond teinté avec le ciel, le lieu et le temps qu'il fait, les valeurs de votre choix, puis la température en grand.
-- Carte Mini : valeurs au choix et dans l'ordre voulu : température, ressenti, vent, rafales, pluie du jour, humidité, pression, indice UV. Chacune prend la couleur de son sens quand elle sort du confort.
-- Carte Mini : ce qui n'a pas la place défile au lieu d'être coupé, les valeurs comme le texte ; la température reste toujours entière.
-- Carte Mini : seulement les vigilances officielles par défaut ; une restriction d'eau ou un pollen restent sur la carte complète. Au choix : toutes les alertes, ou aucune.
 - Carte Records : période « Ce mois », avec les records et les jours comptés du mois en cours (#17).
+
+### Améliorations
+
+- Carte Mini : un rond teinté avec le ciel, le lieu et le temps qu'il fait, puis la température en grand. Ce qui n'a pas la place défile au lieu d'être coupé, les valeurs comme le texte.
+- Carte Mini : seulement les vigilances officielles par défaut ; une restriction d'eau ou un pollen restent sur la carte complète. Au choix : toutes les alertes, ou aucune.
+- Cartes à la pièce : réglage « Titres » ; décoché, la carte ne montre que ses mesures (#21).
+- Tuile, Mini et Alerte : « Ouvrir les prévisions de Home Assistant » parmi les choix d'appui.
 - Carte Records : l'heure d'un record de la station tient sur la ligne de sa date (« 24 juin · vers 16 h ») ; sur une carte étroite, elle passe dessous.
 - Carte Records : la carte prend toute la hauteur de sa rangée ; deux cartes côte à côte, station et lieu, finissent au même niveau, les jours comptés en bas (#17).
 
@@ -19,6 +27,7 @@
 
 - Sur le téléphone et en une colonne, le nuage le plus bas n'est plus blanc vif derrière le texte : il est plus pâle.
 - Tuile dépliée : le même voile léger que la carte complète sous le bulletin et la frise, le texte reste lisible quand un nuage passe derrière.
+- Une température sous zéro n'est plus prise pour un trou dans une courbe.
 
 ## 3.5.1 — Des nuages en relief
 
