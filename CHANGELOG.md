@@ -1,11 +1,8 @@
 ## À venir
 
-### Nouveautés
-
-- Carte Records : nouvelle période « Ce mois », avec les records et les jours comptés du mois en cours (#17).
-
 ### Améliorations
 
+- Carte Records : période « Ce mois », avec les records et les jours comptés du mois en cours (#17).
 - Carte Records : l'heure d'un record de la station tient sur la ligne de sa date (« 24 juin · vers 16 h ») ; sur une carte étroite, elle passe dessous.
 - Carte Records : la carte prend toute la hauteur de sa rangée ; deux cartes côte à côte, station et lieu, finissent au même niveau, les jours comptés en bas (#17).
 
