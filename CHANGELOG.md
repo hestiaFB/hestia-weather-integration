@@ -1,9 +1,10 @@
-## À venir
+## 3.5.1 — Des nuages en relief
 
-### Améliorations
+### Corrections
 
-- Des nuages en relief : base arrondie au lieu d'une coupe plate, éclairés dessus et ombrés dessous.
-- Sur le téléphone, les nuages s'étagent en hauteur au lieu de s'aligner en haut de la carte : le plus lointain plus bas et plus pâle, et les nuages d'orage ou de ciel couvert ne sont plus rognés par le bord.
+- Les nuages ne sont plus coupés à plat en dessous : base arrondie, éclairés dessus et ombrés dessous.
+- Sur le téléphone, les nuages ne sont plus écrasés en haut de la carte : ils s'étagent en hauteur, le plus lointain plus bas et plus pâle.
+- Les nuages d'orage et de ciel couvert ne sont plus rognés par le bord du haut.
 
 ## 3.5.0 — Un ciel animé plus lisible
 
