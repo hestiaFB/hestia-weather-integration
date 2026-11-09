@@ -5,6 +5,8 @@
 - Nouvelle carte à la pièce « Température » (#21) : la température à venir (le maximum et le minimum des 18 heures), celle du moment, son ressenti et sa tendance, sa courbe et ses extrêmes ; puis l'humidité, avec sa courbe et ses extrêmes. Sur 6 h, 24 h, 2 jours ou 7 jours.
 - Sans capteur de température ou d'humidité, la carte Température prend les valeurs du service météo gardées par Home Assistant.
 - Cartes à la pièce : réglage « Titres » ; décoché, la carte ne montre que ses mesures (#21).
+- Cartes à la pièce : un appui et un appui long au choix (#24) : la météo complète par-dessus la page, une page, les prévisions de Home Assistant, ou rien (par défaut). Une valeur ouvre toujours son capteur.
+- Tuile, Mini et Alerte : « Ouvrir les prévisions de Home Assistant » parmi les choix d'appui.
 - Carte Mini, comme celle de Hestia Confort (#22) : un rond teinté avec le ciel, le lieu et le temps qu'il fait, les valeurs de votre choix, puis la température en grand.
 - Carte Mini : valeurs au choix et dans l'ordre voulu : température, ressenti, vent, rafales, pluie du jour, humidité, pression, indice UV. Chacune prend la couleur de son sens quand elle sort du confort.
 - Carte Mini : ce qui n'a pas la place défile au lieu d'être coupé, les valeurs comme le texte ; la température reste toujours entière.

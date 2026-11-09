@@ -137,12 +137,17 @@ export class HestiaWeatherCardEditor extends LitElement {
     const tab = { name: 'forecast_tab', selector: { select: { mode: 'dropdown', options: [{ value: 'hours', label: t('Heures') }, { value: 'days', label: t('Jours') }] } } };
     // The tile's tap and long press (a tap on mini and alert, which do not fold): the popup, a page (then its path), fold or unfold, or nothing.
     const foldable = this.config?.format === 'tile' || this.config?.format === 'intermediate';
-    const hold = this.config?.hold_action ?? (this.config?.weather_path ? 'page' : 'popup'), tap = foldable ? this.config?.tap_action ?? 'toggle' : undefined;
+    // The cards on their own (issue #24): a tap and a long press elsewhere than on a value, nothing unless chosen.
+    const piece = KINDS.piece.includes(this.config?.format ?? 'full');
+    const hold = this.config?.hold_action ?? (piece ? 'none' : this.config?.weather_path ? 'page' : 'popup');
+    const tap = foldable ? this.config?.tap_action ?? 'toggle' : piece ? this.config?.tap_action ?? 'none' : undefined;
     const press = (name: 'tap_action' | 'hold_action') => ({ name, required: true, selector: { select: { mode: 'dropdown', options: [
       ...(foldable ? [{ value: 'toggle', label: t('Déplier ou replier la tuile') }] : []),
-      { value: 'popup', label: t('Ouvrir la météo complète en fenêtre') }, { value: 'page', label: t('Ouvrir une page') }, { value: 'none', label: t('Rien') }] } } });
-    const path = [...(foldable ? [press('tap_action')] : []), press('hold_action'),
+      { value: 'popup', label: t('Ouvrir la météo complète en fenêtre') }, { value: 'page', label: t('Ouvrir une page') },
+      { value: 'forecast', label: t('Ouvrir les prévisions de Home Assistant') }, { value: 'none', label: t('Rien') }] } } });
+    const path = [...(foldable || piece ? [press('tap_action')] : []), press('hold_action'),
       ...(hold === 'page' || tap === 'page' ? [{ name: 'weather_path', selector: { text: {} } }] : [])];
+    const presses = piece ? [group(t('Fonctionnalités'), 'mdi:tune-variant', path)] : [];
     const place = this.entries && this.entries.length > 1
       ? [{ name: 'entry_id', selector: { select: { options: this.entries.map(e => ({ value: e.entry_id, label: e.title })) } } }] : [];
     const look = group(t('Visuel et performance'), 'mdi:palette-outline', [...toggles('weather_animations'),
@@ -164,7 +169,7 @@ export class HestiaWeatherCardEditor extends LitElement {
     // The cards on their own: what each shows, then its own settings.
     const parts = (options: Array<[string, string]>, reorder = false) => ({ name: 'card_blocks', selector: { select: { multiple: true, reorder, mode: 'list',
       options: options.map(([value, label]) => ({ value, label })) } } });
-    const content = (list: unknown, ...more: unknown[]) => [...place, ...format, group(t('Contenu'), 'mdi:view-list-outline', [list, ...more, ...toggles('show_title')], true)];
+    const content = (list: unknown, ...more: unknown[]) => [...place, ...format, group(t('Contenu'), 'mdi:view-list-outline', [list, ...more, ...toggles('show_title')], true), ...presses];
     const shown = this.config ? cardBlocks(this.config) : [];
     if (kind === 'comfort') return content(parts([['feel', t('Le ressenti et son explication')], ['gauge', t('La jauge de −5 à 45 °C')],
       ['factors', t('Ce qui le fait varier (humidité, vent, soleil)')], ['extras', t('Pastilles (humidité, rosée, soleil…)')]]));
@@ -184,11 +189,11 @@ export class HestiaWeatherCardEditor extends LitElement {
     if (kind === 'forecast') return content(parts([['hours', t('Les 18 prochaines heures')], ['days', t('Les 7 prochains jours')]]),
       ...(shown.includes('hours') && shown.includes('days') ? [tab] : []));
     // The timeline alone: nothing to choose, its sky and its points are the banner's.
-    if (kind === 'events') return [...place, ...format];
+    if (kind === 'events') return [...place, ...format, ...presses];
     if (kind === 'records') return [...place, ...format, group(t('Contenu'), 'mdi:view-list-outline', [
       choice('records_period', [['month', t('Ce mois')], ['year', t('Cette année')], ['all', t('Depuis toujours')], ['both', t('Les deux')]]),
       choice('records_source', [['station', t('Votre station')], ['lieu', t('Le lieu (depuis 1940)')], ['both', t('Les deux')]]),
-      choice('records_layout', [['list', t('Liste')], ['cases', t('Cases')]])], true)];
+      choice('records_layout', [['list', t('Liste')], ['cases', t('Cases')]])], true), ...presses];
     if (this.small) return [...place, ...format, look,
       group(t('Contenu'), 'mdi:view-list-outline', [blocks, ...((this.config?.tile_blocks ?? []).includes('forecast') ? [tab] : [])], true),
       group(t('Fonctionnalités'), 'mdi:tune-variant', path)];
@@ -215,7 +220,8 @@ export class HestiaWeatherCardEditor extends LitElement {
     const s = sections(this.config);
     const blocks = { ...(this.config.show_bulletin === false ? { tile_blocks: ['events'] } : {}),
       banner_blocks: s.banner, today_blocks: s.today, forecast_blocks: s.forecasts, card_blocks: cardBlocks(this.config) };
-    const presses = { tap_action: 'toggle', hold_action: this.config.weather_path ? 'page' : 'popup' };
+    const presses = KINDS.piece.includes(this.config.format ?? 'full') ? { tap_action: 'none', hold_action: 'none' }
+      : { tap_action: 'toggle', hold_action: this.config.weather_path ? 'page' : 'popup' };
     const data = Object.fromEntries(Object.entries({ ...defaults, ...presses, ...blocks, ...this.config, kind: kindOf(this.config.format) }).filter(([key]) => key !== 'type'));
     const one = this.entries?.length === 1 ? this.entries[0] : undefined;
     return html`

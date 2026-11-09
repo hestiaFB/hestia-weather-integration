@@ -252,8 +252,12 @@ export class HestiaWeatherCard extends LitElement {
     if (!this.config) return nothing;
     if (this.problem && !this.view) return this.renderProblem(PROBLEMS[this.problem]);
     // The Records card draws the records alone: it does not wait for the view.
-    if (this.config.format === 'records') return html`<ha-card>${this.records ? renderRecords(this.records, this.config, this.uid)
-      : html`<div class="nw-wait" role="status" aria-label=${t('Chargement des records')}><i class="dot"></i><i></i><i></i><i></i></div>`}</ha-card>`;
+    // Records does not wait for the weather view; with it, its window (« météo complète ») can open over the page.
+    const records = (dialog: unknown = nothing) => html`<ha-card class=${this.pressable ? 'nw-pressable' : ''}
+        @pointerdown=${this.down} @pointermove=${this.move} @pointerup=${this.up} @pointercancel=${this.cancelPress} @pointerleave=${this.cancelPress}
+        @contextmenu=${this.pressable ? this.noMenu : nothing}>${this.records ? renderRecords(this.records, this.config!, this.uid)
+      : html`<div class="nw-wait" role="status" aria-label=${t('Chargement des records')}><i class="dot"></i><i></i><i></i><i></i></div>`}${dialog}</ha-card>`;
+    if (this.config.format === 'records' && !this.view) return records();
     // While the integration answers: the outline of a card, with a light sweeping over it.
     if (!this.view) return html`<ha-card><div class=${`nw-wait${this.config.format === 'mini' ? ' line' : ''}`} role="status" aria-label=${t('Chargement de la météo')}>
       <i class="dot"></i><i></i><i></i><i></i></div></ha-card>`;
@@ -275,6 +279,7 @@ export class HestiaWeatherCard extends LitElement {
     const dialog = () => this.dialogOpen ? html`<dialog class="nw-dialog" aria-label=${title} @close=${() => { this.dialogOpen = false; }} @click=${this.openEntity} @keydown=${this.entityKey}>
         <header><b>${title}</b><button type="button" @click=${this.closeDialog}>${t('Fermer')}</button></header>${full()}</dialog>` : nothing;
     const holdTarget = this.holdTarget;
+    if (config.format === 'records') return records(dialog());
     switch (config.format) {
       case 'mini':
         return html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget, config)}</div>${dialog()}</ha-card>`;
@@ -283,8 +288,10 @@ export class HestiaWeatherCard extends LitElement {
         return body === nothing ? nothing : html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${body}</div>${dialog()}</ha-card>`;
       }
     }
-    if (this.single) return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${renderSingle(view, config.format as SingleFormat, cardBlocks(config),
-      { uid: this.uid, entity: view.weatherEntity, station: view.station, tab: this.tab, onTab: this.setTab, title: config.show_title !== false })}</ha-card>`;
+    if (this.single) return html`<ha-card class=${this.pressable ? 'nw-pressable' : ''} @click=${this.openEntity} @keydown=${this.entityKey}
+        @pointerdown=${this.down} @pointermove=${this.move} @pointerup=${this.up} @pointercancel=${this.cancelPress} @pointerleave=${this.cancelPress}
+        @contextmenu=${this.pressable ? this.noMenu : nothing}>${renderSingle(view, config.format as SingleFormat, cardBlocks(config),
+      { uid: this.uid, entity: view.weatherEntity, station: view.station, tab: this.tab, onTab: this.setTab, title: config.show_title !== false })}${dialog()}</ha-card>`;
     if (!this.tile) return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${full()}</ha-card>`;
     const blocks = config.tile_blocks?.length ? config.tile_blocks : config.show_bulletin === false ? ['events' as const] : DEFAULT_BLOCKS;
     return html`<ha-card>
@@ -311,12 +318,18 @@ export class HestiaWeatherCard extends LitElement {
     window.dispatchEvent(new CustomEvent('location-changed', { bubbles: true, composed: true }));
   }
 
-  /** What a long press on the tile (a tap on mini and alert) does: the full card, the user's weather page, fold or unfold, or nothing. */
-  private get holdTarget(): PressTarget { return this.target(this.config?.hold_action ?? (this.weatherPath ? 'page' : 'popup')); }
-  /** What a tap on the tile does; unfolding unless chosen otherwise. */
-  private get tapTarget(): PressTarget { return this.target(this.config?.tap_action ?? 'toggle'); }
+  /** What a long press on the tile (a tap on mini and alert) does: the full card, the user's weather page, fold or unfold, or nothing.
+   *  On a card on its own, nothing unless chosen (issue #24). */
+  private get holdTarget(): PressTarget { return this.target(this.config?.hold_action ?? (this.piece ? 'none' : this.weatherPath ? 'page' : 'popup')); }
+  /** What a tap on the tile does; unfolding unless chosen otherwise. On a card on its own, nothing unless chosen. */
+  private get tapTarget(): PressTarget { return this.target(this.config?.tap_action ?? (this.piece ? 'none' : 'toggle')); }
+  /** The cards on their own, Records with them. */
+  private get piece(): boolean { return this.single || this.config?.format === 'records'; }
+  /** A card on its own with a tap or a long press to give. */
+  private get pressable(): boolean { return this.piece && (this.tapTarget !== 'none' || this.holdTarget !== 'none'); }
   private target(action: PressAction): PressTarget {
     if (action === 'none') return 'none';
+    if (action === 'forecast') return 'forecast';
     // Only the tile folds; a page without a valid path falls back to the full card rather than doing nothing.
     if (action === 'toggle') return this.tile ? 'toggle' : 'card';
     return action === 'page' && this.weatherPath ? 'page' : 'card';
@@ -325,11 +338,11 @@ export class HestiaWeatherCard extends LitElement {
     const path = this.config?.weather_path;
     return path?.startsWith('/') && !path.startsWith('//') ? path : undefined;
   }
-  private tileCard() { return this.renderRoot.querySelector<HTMLElement>('.nw-tilecard'); }
+  private tileCard() { return this.renderRoot.querySelector<HTMLElement>('.nw-tilecard, .nw-pressable'); }
   /** Tap and long press (½ s): what each is set to do. Sliding cancels both. */
   private down = (e: PointerEvent) => {
     const card = this.tileCard();
-    if (e.button !== 0 || !card) return;
+    if (e.button !== 0 || !card || this.ownPress(e)) return;
     this.cancelPress();
     const ring = card.querySelector<HTMLElement>('.press-ring'), r = card.getBoundingClientRect(), start = performance.now();
     ring?.style.setProperty('left', `${e.clientX - r.left}px`); ring?.style.setProperty('top', `${e.clientY - r.top}px`);
@@ -344,7 +357,12 @@ export class HestiaWeatherCard extends LitElement {
       timer: setTimeout(() => { if (!this.press || !holdable) return; this.press.long = true; this.stopRing(); this.act(this.holdTarget); }, HOLD_MS) };
   };
   private move = (e: PointerEvent) => { if (this.press && Math.hypot(e.clientX - this.press.x, e.clientY - this.press.y) > 10) this.cancelPress(); };
-  private up = () => { const press = this.press; this.cancelPress(); if (press && !press.long) this.act(this.tapTarget); };
+  private up = (e: PointerEvent) => { const press = this.press; this.cancelPress(); if (press && !press.long && !this.ownPress(e)) this.act(this.tapTarget); };
+  /** On a card on its own, what answers a press itself keeps it: a value (its sensor's details), a button, a link, a « i », the window. */
+  private ownPress(e: Event): boolean {
+    return !!this.renderRoot.querySelector('.nw-pressable') && e.composedPath().some(el => el instanceof HTMLElement
+      && (el.hasAttribute('data-entity') || el.matches('button, a, input, select, dialog, [popover], [role="button"]')));
+  }
   private stopRing() {
     if (!this.press) return;
     clearTimeout(this.press.timer); cancelAnimationFrame(this.press.frame);
@@ -373,6 +391,9 @@ export class HestiaWeatherCard extends LitElement {
     if (target === 'toggle') this.toggle();
     else if (target === 'page' && path) this.go(path);
     else if (target === 'card') this.dialogOpen = true;
+    // Home Assistant's window of the weather entity: its own forecasts, by the hour and by the day (issue #24).
+    else if (target === 'forecast' && this.view?.weatherEntity)
+      this.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: this.view.weatherEntity }, bubbles: true, composed: true }));
   }
   private closeDialog = () => { this.renderRoot.querySelector('dialog')?.close(); };
   /** A value of the full card opens its sensor's details, like the rest of Home Assistant. */
@@ -393,6 +414,9 @@ export class HestiaWeatherCard extends LitElement {
     :host([hidden]) { display:none; }
     :host([fill]) { height:100%; }
     :host([fill]) ha-card { height:100%; box-sizing:border-box; }
+    /* A card on its own with a tap or a long press to give (issue #24): it says so under the pointer, and a long press shows. */
+    ha-card.nw-pressable { cursor:pointer; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; transition:box-shadow .2s; }
+    ha-card.nw-pressable.pressing { box-shadow:inset 0 0 0 3px color-mix(in srgb, var(--nw-accent) 45%, transparent); }
     /* Animations switched off: the alert halo stays still too, in the tile, the window and the scrolling bubble. */
     :host([still]) { --nw-motion:paused; }
     /* Frosted glass switched off: no blur anywhere (it costs a lot on slow devices), a more opaque glass keeps the text readable. */

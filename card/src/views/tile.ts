@@ -10,7 +10,7 @@ import '../ui/ticker';
 import '../ui/frise';
 
 /** What a press does: the full card over the page, the user's weather page, fold or unfold the tile, or nothing. */
-export type PressTarget = 'card' | 'page' | 'toggle' | 'none';
+export type PressTarget = 'card' | 'page' | 'toggle' | 'forecast' | 'none';
 
 export interface TileState {
   open: boolean;

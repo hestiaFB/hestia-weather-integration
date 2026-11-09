@@ -422,4 +422,5 @@ export const EN: Record<string, string> = {
   '{what} des {period}': '{what} over the {period}',
   'Température indisponible pour le moment.': 'Temperature unavailable for now.',
   'Humidité indisponible pour le moment.': 'Humidity unavailable for now.',
+  'Ouvrir les prévisions de Home Assistant': 'Open Home Assistant’s forecast',
 };

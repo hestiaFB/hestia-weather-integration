@@ -31,7 +31,7 @@ export type CardBlock = 'now' | 'chart' | 'radar' | 'stats' | 'ahead' | 'feel' |
 
 /** The card's own settings: what it shows and how. Its sources (weather, station, air) are set in the Hestia Weather integration. */
 /** What a press does: the full weather over the page, the weather page, fold or unfold the tile, or nothing. */
-export type PressAction = 'popup' | 'page' | 'toggle' | 'none';
+export type PressAction = 'popup' | 'page' | 'toggle' | 'forecast' | 'none';
 
 export interface WeatherCardConfig {
   type: 'custom:hestia-weather-card';
@@ -82,6 +82,8 @@ export interface WeatherCardConfig {
   /** What a long press on the tile (a tap on mini and alert) does: popup, the full weather over the page; page, opens weather_path;
    *  toggle, folds or unfolds the tile (tile formats only); none, nothing. Default: page when weather_path is set, popup otherwise. */
   hold_action?: PressAction;
+  /* forecast: Home Assistant's own window of the weather entity, with its hourly and daily forecasts (issue #24).
+     On the cards on their own (comfort … records), a tap and a long press elsewhere than on a value: nothing by default. */
   /** What a tap on the tile does, with the same choices. Default: toggle. */
   tap_action?: PressAction;
   /** The forecasts open on the hours or on the days (the tile's « Prévisions » block and the forecast card). */

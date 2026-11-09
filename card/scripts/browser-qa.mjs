@@ -208,7 +208,7 @@ try {
   // The tile's own settings: its blocks and its long press (the page's path only shows once « Ouvrir une page » is chosen).
   assert.ok(editor.tile.includes('hold_action') && editor.tile.includes('tile_blocks') && !editor.tile.includes('collapse_today'), 'Tile settings');
   // The Temperature card's own settings (issue #21): its parts, its period, its titles.
-  assert.ok(['card_blocks', 'temperature_span', 'show_title'].every(n => editor.temperature.includes(n)), 'Temperature settings');
+  assert.ok(['card_blocks', 'temperature_span', 'show_title', 'tap_action', 'hold_action'].every(n => editor.temperature.includes(n)), 'Temperature settings');
   // The Mini's own settings: its values and its alerts (issue #22).
   assert.ok(editor.mini.includes('mini_values') && editor.mini.includes('mini_alerts') && editor.mini.includes('hold_action'), 'Mini settings');
   report.editor = editor;
@@ -418,6 +418,37 @@ try {
   assert.equal(await inCard(root => [...root.querySelectorAll('.nw-panel-head')].filter(h => getComputedStyle(h).display !== 'none').length), 0, 'Untitled');
   await page.locator('#stage').screenshot({ path: `${out}/temperature.png` });
   report.temperature = 'Temperature and humidity, curves and extremes, phone and computer, both themes, without titles';
+
+  // 12c. Cards on their own (issue #24): nothing by default; a tap set to « forecast » opens Home Assistant's window of the weather
+  //      entity; a value keeps opening its own sensor; a long press set to « popup » opens the full weather over the page.
+  const infos = [];
+  await page.exposeFunction('nwInfo', id => infos.push(id)).catch(() => {});
+  await page.evaluate(() => { if (!window.nwListening) { window.nwListening = true; document.addEventListener('hass-more-info', e => window.nwInfo(e.detail.entityId)); } });
+  // The timeline's own pins answer a press themselves (they show their point): the press is made on its lane, the sky to come.
+  const pressOn = async (selector, hold = false) => {
+    const box = await page.evaluate(sel => { const root = document.querySelector('hestia-weather-card').shadowRoot;
+      const el = sel === 'lane' ? root.querySelector('hestia-frise').shadowRoot.querySelector('.lane') : root.querySelector(sel); const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, selector);
+    await page.mouse.move(box.x, box.y); await page.mouse.down(); await sleep(hold ? 700 : 60); await page.mouse.up(); await sleep(150);
+  };
+  await show({ format: 'events', width: 380, condition: 'rainy', animated: false });
+  await pressOn('lane');
+  assert.deepEqual(infos, [], 'Nothing by default');
+  assert.equal(await inCard(root => root.querySelector('ha-card').classList.contains('nw-pressable')), false);
+  await page.evaluate(() => { const c = document.querySelector('hestia-weather-card'); c.setConfig({ ...c.config, tap_action: 'forecast', hold_action: 'popup' }); });
+  await sleep(200);
+  await pressOn('lane');
+  assert.deepEqual(infos, ['weather.demo'], 'A tap on the timeline opens the forecast');
+  await pressOn('lane', true);
+  assert.equal(await inCard(root => !!root.querySelector('dialog[open]')), true, 'A long press opens the full weather');
+  await inCard(root => root.querySelector('dialog').close());
+  await show({ format: 'pressure', width: 380, condition: 'rainy', animated: false });
+  await page.evaluate(() => { const c = document.querySelector('hestia-weather-card'); c.setConfig({ ...c.config, tap_action: 'forecast' }); });
+  await sleep(200); infos.length = 0;
+  await page.evaluate(() => document.querySelector('hestia-weather-card').shadowRoot.querySelector('[data-entity="sensor.pressure"]').scrollIntoView());
+  await pressOn('[data-entity="sensor.pressure"]');
+  assert.deepEqual(infos, ['sensor.pressure'], 'A value opens its sensor, not the forecast');
+  report.presses = 'Nothing by default; tap to the forecast; a value keeps its sensor; long press to the full weather';
 
   // 12. Records (issue #17): this month alone, the station's hour on the line of its day, two cards side by side ending level.
   await page.setViewportSize({ width: 1300, height: 1000 });
