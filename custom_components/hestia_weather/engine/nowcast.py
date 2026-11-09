@@ -23,8 +23,21 @@ HORIZON = timedelta(hours=1)
 _OFFSET = re.compile(r"^\s*(\d+)\s*min")
 
 
-def _radar(attributes: Mapping[str, Any] | None, now: datetime) -> tuple[datetime, list[tuple[datetime, bool]]] | None:
-    """The radar slots still to come, with the end of what it covers; None when absent, stale or unreadable."""
+def _strength(label: str) -> int:
+    """How hard a radar slot rains: 0 dry, 1 light (« Pluie faible », drizzle, snow…), 2 moderate, 3 heavy."""
+    text = label.strip().casefold()
+    if text == DRY:
+        return 0
+    if "fort" in text:
+        return 3
+    if "modér" in text or "moder" in text:
+        return 2
+    return 1
+
+
+def _radar(attributes: Mapping[str, Any] | None, now: datetime) -> tuple[datetime, list[tuple[datetime, int]]] | None:
+    """The radar slots still to come, each with how hard it rains (`_strength`), with the end of what it covers; None
+    when absent, stale or unreadable."""
     if not attributes:
         return None
     try:
@@ -38,7 +51,7 @@ def _radar(attributes: Mapping[str, Any] | None, now: datetime) -> tuple[datetim
     for key, label in table.items():
         match = _OFFSET.match(str(key))
         if match and isinstance(label, str):
-            slots.append((reference + timedelta(minutes=int(match.group(1))), label.strip().casefold() != DRY))
+            slots.append((reference + timedelta(minutes=int(match.group(1))), _strength(label)))
     if not slots:
         return None
     slots.sort()
@@ -46,18 +59,24 @@ def _radar(attributes: Mapping[str, Any] | None, now: datetime) -> tuple[datetim
     return reference + HORIZON, [(start, rainy) for start, rainy in slots if start + SLOT > now]
 
 
-def rain_ahead(radar: Mapping[str, Any] | None, hours: Sequence[Hour], now: datetime) -> dict[str, Any]:
+def rain_ahead(radar: Mapping[str, Any] | None, hours: Sequence[Hour], now: datetime,
+               chance: float | None = None) -> dict[str, Any]:
     """`minutes` before the next rain (0: it is due now), with `precision` « minute » (radar) or « hour » (hourly forecast).
 
-    `dry_until` is the end of the radar's dry hour, when it saw no rain. Nothing known stays None."""
-    result: dict[str, Any] = {"minutes": None, "precision": None, "source": None, "amount": None, "dry_until": None}
+    `dry_until` is the end of the radar's dry hour, when it saw no rain. `intensity`: the hardest the radar sees it rain
+    from then on in its hour, 1 light, 2 moderate, 3 heavy — « Pluie faible » two minutes away, then nothing, was most of
+    the rain announced on 8 and 9 November. `chance`: Météo-France's probability of rain (%), for its coming hours, as the
+    weather apps give it. Nothing known stays None."""
+    result: dict[str, Any] = {"minutes": None, "precision": None, "source": None, "amount": None, "dry_until": None,
+                              "intensity": None, "chance": round(chance) if chance is not None else None}
     seen = _radar(radar, now)
     after = now
     if seen is not None:
         end, slots = seen
         rainy = next((start for start, wet in slots if wet), None)
         if rainy is not None:
-            return {**result, "minutes": max(0, round((rainy - now).total_seconds() / 60)), "precision": "minute", "source": "radar"}
+            return {**result, "minutes": max(0, round((rainy - now).total_seconds() / 60)), "precision": "minute", "source": "radar",
+                    "intensity": max(wet for start, wet in slots if start >= rainy)}
         if slots:
             after = max(now, end)
             result["dry_until"] = end.isoformat()

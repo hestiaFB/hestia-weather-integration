@@ -1,3 +1,10 @@
+## 3.6.1 — La pluie annoncée, plus précise
+
+### Améliorations
+
+- « Pluie dans » donne deux nouvelles informations : la force de la pluie vue par le radar (1 faible, 2 modérée, 3 forte) et la probabilité de pluie de Météo-France en %. Exemple : « dans 2 min, pluie faible, 70 % ».
+- Hestia Confort s'en sert pour savoir si la pluie annoncée est sûre.
+
 ## 3.6.0 — La carte Température, une Mini à votre goût et des cartes qui répondent au doigt
 
 **En bref**

@@ -66,7 +66,8 @@ def _next_rain_hours(s: Snapshot) -> float | None:
 def _next_rain_attributes(s: Snapshot) -> dict[str, Any]:
     ahead = s.rain_ahead
     return {"amount": ahead.get("amount"), "minutes": ahead.get("minutes"), "precision": ahead.get("precision"),
-            "source": ahead.get("source"), "dry_until": ahead.get("dry_until")}
+            "source": ahead.get("source"), "dry_until": ahead.get("dry_until"), "intensity": ahead.get("intensity"),
+            "chance": ahead.get("chance")}
 
 
 def _temperature_trend(s: Snapshot) -> float | None:

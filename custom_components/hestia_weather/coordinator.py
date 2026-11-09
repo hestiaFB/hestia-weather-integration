@@ -30,6 +30,7 @@ from .engine.catalogue import Item
 from .engine.compute import Result, compute
 from .engine.forecast import Day, Hour
 from .engine.local import LocalWeather
+from .engine.units import finite
 from .engine.nowcast import rain_ahead
 from .engine.settings import Settings
 from .engine.station import Derived, Statistic
@@ -68,6 +69,15 @@ def radar_rain(registry: er.EntityRegistry, weather_entity: str) -> str | None:
         return None
     return next((entry.entity_id for entry in er.async_entries_for_config_entry(registry, weather.config_entry_id)
                  if entry.domain == "sensor" and not entry.disabled_by and str(entry.unique_id).endswith("_next_rain")), None)
+
+
+def rain_chance(registry: er.EntityRegistry, weather_entity: str) -> str | None:
+    """Météo-France's probability of rain (%) for its coming hours, beside the weather entity."""
+    weather = registry.async_get(weather_entity)
+    if weather is None or weather.platform != "meteo_france" or not weather.config_entry_id:
+        return None
+    return next((entry.entity_id for entry in er.async_entries_for_config_entry(registry, weather.config_entry_id)
+                 if entry.domain == "sensor" and not entry.disabled_by and str(entry.unique_id).endswith("_rain_chance")), None)
 
 
 @dataclass(frozen=True)
@@ -117,6 +127,7 @@ class Inputs:
     platforms: dict[str, str]
     original_condition: str | None
     radar_entity: str | None
+    chance_entity: str | None
     strikes: lightning.Lightning | None
     air_forecast: open_meteo.Data | None
     pressure_forecast: open_meteo_forecast.Data | None
@@ -165,7 +176,8 @@ def calculate(i: Inputs, language: str) -> Calculation:
         view = to_json(result.view)
         retained = retained_now(settings, get)
     radar = i.get(i.radar_entity) if i.radar_entity else None
-    return Calculation(result, view, retained, rain_ahead(radar.attributes if radar else None, i.hours, i.now))
+    chance = finite(i.get(i.chance_entity).state) if i.chance_entity and i.get(i.chance_entity) else None
+    return Calculation(result, view, retained, rain_ahead(radar.attributes if radar else None, i.hours, i.now, chance))
 
 
 def calculate_all(i: Inputs, languages: list[str]) -> tuple[Calculation, dict[str, dict[str, Any]]]:
@@ -224,8 +236,9 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, Record
         self._languages: dict[str, int] = {}
         """How many cards follow this place in each language other than French (websocket.py)."""
         self._inputs: Inputs | None = None
-        self._meteo_france: tuple[str | None, str | None] | None = None
-        """Météo-France's description and radar sensors beside the weather entity, looked up once per registry change."""
+        self._meteo_france: tuple[str | None, str | None, str | None] | None = None
+        """Météo-France's description, radar and rain probability sensors beside the weather entity, looked up once per
+        registry change."""
         self._statistics_warned = False
         self.shade: dict[str, float] = {}
         """The station's shade by the sun's position, learned at night (place/shade.py)."""
@@ -337,14 +350,14 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, Record
             sensor = hass.states.get(settings.lightning_entity)
             self.strikes = lightning.keep(self.strikes, now.timestamp())
             strikes = lightning.read(self.strikes, now.timestamp(), sensor is not None and sensor.state != STATE_UNAVAILABLE, self.lightning_month)
-        description, radar = self._meteo_france_sensors()
-        states = {entity_id: hass.states.get(entity_id) for entity_id in (*settings.entity_ids(), description, radar) if entity_id}
+        description, radar, chance = self._meteo_france_sensors()
+        states = {entity_id: hass.states.get(entity_id) for entity_id in (*settings.entity_ids(), description, radar, chance) if entity_id}
         config = hass.config
         self._inputs = Inputs(
             states=states, read=hass.states.get, settings=settings, hours=self.hours, days=self.days, history=self.history,
             rain_history=self.rain_history, statistics=self.statistics, statistics_unit=self.statistics_unit, now=now,
             zone=ZoneInfo(config.time_zone), latitude=config.latitude, longitude=config.longitude, elevation=config.elevation or 0,
-            platforms=self.platforms, original_condition=description, radar_entity=radar, strikes=strikes,
+            platforms=self.platforms, original_condition=description, radar_entity=radar, chance_entity=chance, strikes=strikes,
             air_forecast=self.air_forecast, pressure_forecast=self.pressure_forecast, place_learned=self.place_learned,
             # The shade only matters to a station declared against a wall or on the roof, before the nights have learned it.
             shade=self.shade_now() if settings.station_side else {})
@@ -369,10 +382,10 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, Record
         return Snapshot(result.local, result.brief, result.derived, french.view, result.catalogue, self.watch.states(), now,
                         french.rain_ahead, views)
 
-    def _meteo_france_sensors(self) -> tuple[str | None, str | None]:
+    def _meteo_france_sensors(self) -> tuple[str | None, str | None, str | None]:
         if self._meteo_france is None:
             registry, weather = er.async_get(self.hass), self.settings.weather_entity
-            self._meteo_france = (original_condition(registry, weather), radar_rain(registry, weather))
+            self._meteo_france = (original_condition(registry, weather), radar_rain(registry, weather), rain_chance(registry, weather))
         return self._meteo_france
 
     @callback
