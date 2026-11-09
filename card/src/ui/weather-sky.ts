@@ -19,6 +19,9 @@ const STRONG_WIND=40, STRONG_GUST=70;
 /** A steady breeze: a few slow, faint threads, no slanted rain. */
 const BREEZE_WIND=25, BREEZE_GUST=45;
 
+// The cumulus of every cloudy sky (viewBox 180 × 124): the back mass rises to a tall tower; its base and the front lump's are billowed.
+const CLOUD_REAR='M40 112C20 112 6 99 6 80C6 63 18 51 34 48C35 26 51 9 72 9C92 9 107 22 110 40C116 37 122 35 129 35C153 35 173 52 173 76C173 96 158 110 140 111C132 118 114 120 104 114C94 120 73 120 64 114C56 119 45 118 40 112Z';
+const CLOUD_NEAR='M38 114C25 114 17 105 17 93C17 81 26 73 37 72C39 58 50 49 63 49C77 49 88 59 89 72C105 69 121 79 121 93C121 105 112 113 98 114C90 120 76 121 68 116C60 121 45 120 38 114Z';
 /** Each sky's own gradient names: two cards on a page never paint with each other's (the browser QA's « unique gradient names »). */
 let skies = 0;
 /** Original vector/CSS weather scene. All artwork is bundled; no remote assets. */
@@ -47,10 +50,15 @@ export class HestiaWeatherSky extends LitElement {
     } else this.visible=true;
   }
   disconnectedCallback() {super.disconnectedCallback();this.observer?.disconnect();document.removeEventListener('visibilitychange',this.visibility);}
+  /** A cumulus: a back mass with a tall tower and a lower front lump, both with a billowed base (not a flat cut);
+   *  each is lit on top and shaded underneath, so the cloud has volume. */
   private cloud(layer:string) {
-    return html`<div class=${`cloud ${layer}`}><svg viewBox="0 0 180 112" aria-hidden="true">
-      <path class="cloud-rear" d="M42 103C21 103 7 90 7 70C7 53 17 40 33 36C35 16 50 5 69 5C91 5 107 19 109 40C116 37 123 36 130 36C154 36 172 51 172 73C172 92 157 103 137 103Z"/>
-      <path class="cloud-near" d="M38 103C26 103 19 95 19 84C19 73 27 65 36 64C38 52 47 45 59 45C72 45 82 54 83 65C99 62 116 72 116 85C116 96 108 103 94 103Z"/>
+    const id=`nw-cloud-${this.uid}-${layer}`;
+    return html`<div class=${`cloud ${layer}`}><svg viewBox="0 0 180 124" aria-hidden="true">
+      <defs><linearGradient id=${id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="lit"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/>
+        <stop offset=".58" stop-color="#1b2b3d" stop-opacity="0"/><stop offset="1" class="base"/></linearGradient></defs>
+      <path class="cloud-rear" d=${CLOUD_REAR}/><path fill=${`url(#${id})`} d=${CLOUD_REAR}/>
+      <path class="cloud-near" d=${CLOUD_NEAR}/><path fill=${`url(#${id})`} d=${CLOUD_NEAR}/>
     </svg></div>`;
   }
   /** Deterministic star field over the artwork side; each star twinkles on its own rhythm. */
@@ -237,7 +245,7 @@ export class HestiaWeatherSky extends LitElement {
     // Showers come and go: rain or snow in bursts, with the sun between them.
     const fall=html`${rain?particles('rain',hail&&!low?18:n):nothing}${snow?particles(hail?'hailstone':'snow',hail&&!low?(stormHail?22:30):n):nothing}
         ${rain?ground(heavy?18:hail?8:d==='showers-light'?6:14):nothing}`;
-    return html`<div class=${`scene ${this.phase} ${this.condition}${d?` detail-${d}`:''}${windy?' gale':''}${this.season?` season-${this.season}`:''}`} style=${`--play:${this.animated&&this.visible&&this.pageVisible?'running':'paused'};--cloud-duration:${windy?6:Math.max(11,28-Math.min(Math.max(this.wind,0),60)/2.5)}s`} ?data-still=${!this.animated}>
+    return html`<div class=${`scene ${this.phase} ${this.condition}${d?` detail-${d}`:''}${windy?' gale':''}${closed?' closed-sky':''}${this.season?` season-${this.season}`:''}`} style=${`--play:${this.animated&&this.visible&&this.pageVisible?'running':'paused'};--cloud-duration:${windy?6:Math.max(11,28-Math.min(Math.max(this.wind,0),60)/2.5)}s`} ?data-still=${!this.animated}>
       <div class="weather-art">${this.condition!=='unknown'&&this.condition!=='exceptional' ? html`
         ${this.phase==='night'&&clearSky?this.stars(this.quality==='low'?8:this.condition==='partlycloudy'&&d!=='few'?12:24):nothing}
         ${clearSky?(this.phase==='night'?html`<div class="orb moon"><i></i><b></b></div>`:html`<div class="orb sun"><i></i></div>`):nothing}
@@ -341,7 +349,7 @@ export class HestiaWeatherSky extends LitElement {
     .star.bright {width:calc(var(--ss) + 1px);height:calc(var(--ss) + 1px);box-shadow:0 0 6px 1px #fff;}
     .star.bright::before,.star.bright::after {content:'';position:absolute;left:50%;top:50%;width:11px;height:1px;translate:-50% -50%;background:linear-gradient(90deg,transparent,#fffe,transparent);}
     .star.bright::after {rotate:90deg;}
-    .cloud {position:absolute;width:190px;height:120px;overflow:visible;filter:drop-shadow(0 5px 7px #172d4317);animation:clouds var(--cloud-duration,32s) ease-in-out infinite alternate;}
+    .cloud {position:absolute;width:190px;aspect-ratio:180/124;overflow:visible;filter:drop-shadow(0 5px 7px #172d4317);animation:clouds var(--cloud-duration,32s) ease-in-out infinite alternate;}
     /* Animated artwork is wrapped in a div: Chrome can only hand HTML boxes to the GPU, an animated <svg> restyles every frame. */
     :is(.cloud,.fog-band,.heat-plume,.leaf,.bolt)>svg {display:block;width:100%;height:100%;overflow:visible;}
     /* Day clouds take a little of the theme's text colour: a grey back and a soft shadow on a light card (white on white vanished),
@@ -349,13 +357,16 @@ export class HestiaWeatherSky extends LitElement {
     .cloud {--cloud-shade:oklch(from var(--primary-text-color,#253047) .3 .03 250 / calc((1 - l) * .42));}
     .cloud {filter:drop-shadow(0 5px 7px #172d4317);filter:drop-shadow(0 6px 10px var(--cloud-shade));}
     .cloud-rear {fill:color-mix(in srgb,var(--primary-text-color,#253047) 30%,#dce3e9);}.cloud-near {fill:color-mix(in srgb,var(--primary-text-color,#253047) 5%,#fbfcfd);}
-    .cloud.back {left:55%;top:15px;width:220px;height:140px;opacity:.62;animation-delay:-12s;}
+    /* Volume: each mass lit on top and shaded at its base; a dark sky's clouds keep a fainter light. */
+    .cloud .lit {stop-color:#fff;stop-opacity:.32;}.cloud .base {stop-color:#1b2b3d;stop-opacity:.24;}
+    :is(.night,.pouring,.hail,.lightning,.lightning-rainy) .cloud .lit {stop-opacity:.16;}
+    .cloud.back {left:55%;top:15px;width:220px;opacity:.62;animation-delay:-12s;}
     .cloud.front {left:73%;top:90px;animation-delay:-4s;}
-    .cloud.small {left:93%;top:6px;width:150px;height:95px;opacity:.7;animation-delay:-22s;}
+    .cloud.small {left:93%;top:6px;width:150px;opacity:.7;animation-delay:-22s;}
     /* Storms and downpours: a dark ceiling and two extra banks of cloud, so the sky reads thick and closed. */
     .overcast {position:absolute;left:30%;right:0;top:0;height:46%;background:linear-gradient(180deg,rgba(28,38,52,.32),rgba(28,38,52,0));filter:blur(10px);}
-    .cloud.heavy-left {left:40%;top:-34px;width:300px;height:180px;opacity:.9;animation-delay:-8s;}
-    .cloud.heavy-right {left:80%;top:-40px;width:320px;height:190px;opacity:.85;animation-delay:-17s;}
+    .cloud.heavy-left {left:40%;top:-34px;width:300px;opacity:.9;animation-delay:-8s;}
+    .cloud.heavy-right {left:80%;top:-40px;width:320px;opacity:.85;animation-delay:-17s;}
     .night .cloud-rear {fill:#73869f;}.night .cloud-near {fill:#a0aec1;}
     .rainy .cloud-rear {fill:#7d90a5;}.pouring .cloud-rear,.hail .cloud-rear {fill:#56677c;}.lightning .cloud-rear,.lightning-rainy .cloud-rear {fill:#46566a;}
     .rainy .cloud-near {fill:#b0c0cf;}.pouring .cloud-near,.hail .cloud-near {fill:#8496aa;}
@@ -519,11 +530,14 @@ export class HestiaWeatherSky extends LitElement {
     @container(max-width:650px) {
       /* The artwork fills the whole card height: leaves, rain and snow fall to the bottom on every format. */
       .weather-art {display:block;position:absolute;top:0;right:0;width:100%;height:100%;overflow:hidden;}
-      .cloud.heavy-left {left:auto;right:28%;width:300px;height:187px;}.cloud.heavy-right {left:auto;right:-22%;width:320px;height:200px;}
+      /* Small cards: the clouds stand at several heights, the farthest lowest and palest, down the card as it grows:
+         a sky with depth rather than one band along the top (9 November, « écrasé en haut de la carte »). Storm banks no longer start above the edge. */
+      .cloud.heavy-left {left:auto;right:30%;top:-8px;width:290px;}.cloud.heavy-right {left:auto;right:-24%;top:clamp(26px,9%,80px);width:300px;}
       /* Small cards: what the weather carries is drawn larger, so it still reads at a glance. */
       .petal {width:20px;height:20px;}.plane {width:34px;height:34px;}.moon {width:72px;height:72px;}
       .leaf {width:28px;height:20px;}.leaf.k-dry {width:24px;height:17px;}.leaf.k-plane {width:36px;height:36px;}.leaf.k-petal {width:17px;height:17px;}.leaf.k-seed {width:25px;height:32px;}
-      .orb {left:var(--nw-orb-x,auto);right:12%;top:var(--nw-orb-y,36px);}.cloud.back {left:auto;right:20%;top:8px;width:235px;height:146px;}.cloud.front {left:auto;right:-4%;top:96px;width:210px;height:131px;}.cloud.small {left:auto;right:-16%;top:0;width:165px;height:103px;}
+      .orb {left:var(--nw-orb-x,auto);right:12%;top:var(--nw-orb-y,36px);}.cloud.back {left:auto;right:20%;top:6px;width:235px;}.cloud.front {left:auto;right:-4%;top:clamp(100px,24%,210px);width:210px;}.cloud.small {left:auto;right:-16%;top:clamp(0px,7%,60px);width:165px;}
+      .closed-sky .cloud.back {right:8%;top:clamp(150px,36%,300px);width:200px;opacity:.5;}
       .bolt.b1 {left:auto;right:18%;}.bolt.b2 {left:auto;right:2%;}.bolt.b3 {left:auto;right:42%;}
       .flash.f1 {--fx:70%;}.flash.f2 {--fx:94%;}.flash.f3 {--fx:48%;}
       .fog-sun {left:auto;right:14%;}
