@@ -2,21 +2,69 @@
 // A tap on Mini and Alerte opens the full card, like a long press on the tile.
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { colon, hourText, t } from '../i18n';
-import type { TickerPoint, WeatherView } from '../view';
-import { alertBubble, alertPill, bubble, chip, label, nf } from '../ui/parts';
+import type { AlertPoint, TickerPoint, WeatherView } from '../view';
+import type { MiniValue, WeatherCardConfig } from '../types';
+import { alertBubble, bubble, chip, label, nf, scrolling, tint } from '../ui/parts';
 import { hoursChart, week } from './forecasts';
 import type { PressTarget } from './tile';
 
-/** One line: the sky and the temperature now, the place, and the most serious alert. */
-export function renderMini(v: WeatherView, holdTarget: PressTarget): TemplateResult {
-  const n = v.now, alert = v.alerts.find(a => a.official) ?? v.alerts[0];
+/** One value of the Mini's line: its icon, its words and, when it deserves a look, the colour of its meaning. */
+export interface MiniItem { key: MiniValue; icon: string; text: string; value: number; theme?: string }
+
+/** A number of a chip (« 78 % », « 1 013 hPa »), whatever the language's separators. */
+const chipNumber = (v: WeatherView, icon: string): number | undefined => {
+  const raw = v.extras?.find(c => c.icon === icon)?.value;
+  const n = raw ? Number(raw.replace(/[\s\u00a0\u202f]/g, '').replace(',', '.').replace(/[^\d.-]/g, '')) : NaN;
+  return Number.isFinite(n) ? n : undefined;
+};
+const lastGust = (v: WeatherView): number | undefined => {
+  const p = [...(v.wind?.gust ?? [])].reverse().find(p => p[1] !== null);
+  return p ? p[1]! : undefined;
+};
+/** Grey while ordinary; the colour of its meaning past these marks (the same as the maquette of issue #22). */
+const MINI: Record<MiniValue, { icon: string; read: (v: WeatherView) => number | undefined; text: (n: number) => string; theme: (n: number) => string | undefined }> = {
+  temperature: { icon: 'mdi:thermometer', read: v => v.now.temperature, text: n => `${nf(n)}°`, theme: n => n >= 35 ? 'level3' : n >= 30 ? 'heat' : n <= 0 ? 'cold' : undefined },
+  feel: { icon: 'mdi:human-handsdown', read: v => v.now.feels ?? v.comfort?.feels, text: n => `${nf(n)}°`, theme: n => n >= 35 ? 'level3' : n >= 27 ? 'heat' : n <= 8 ? 'cold' : undefined },
+  wind: { icon: 'mdi:weather-windy', read: v => v.now.wind ?? v.wind?.value, text: n => `${nf(n, 0)} km/h`, theme: n => n >= 40 ? 'wind' : undefined },
+  gust: { icon: 'mdi:weather-windy-variant', read: lastGust, text: n => `${nf(n, 0)} km/h`, theme: n => n >= 90 ? 'level2' : n >= 60 ? 'wind' : undefined },
+  rain: { icon: 'mdi:water-outline', read: v => v.rain?.unit === 'mm' ? v.rain.value : undefined, text: n => `${nf(n)} mm`, theme: n => n >= .2 ? 'rain' : undefined },
+  humidity: { icon: 'mdi:water-percent', read: v => chipNumber(v, 'mdi:water-percent'), text: n => `${nf(n, 0)} %`, theme: n => n >= 90 || n <= 25 ? 'watch' : undefined },
+  pressure: { icon: 'mdi:gauge', read: v => v.pressure?.value, text: n => `${nf(n, 0)} hPa`, theme: n => n <= 995 ? 'pressure' : undefined },
+  uv: { icon: 'mdi:white-balance-sunny', read: v => chipNumber(v, 'mdi:sun-wireless-outline'), text: n => `UV ${nf(n, 0)}`, theme: n => n >= 8 ? 'level3' : n >= 6 ? 'heat' : undefined },
+};
+/** The chosen values that are known, in the chosen order. */
+export function miniItems(v: WeatherView, which: ReadonlyArray<MiniValue>): MiniItem[] {
+  return which.flatMap(key => {
+    const m = MINI[key], n = m?.read(v);
+    return m && n !== undefined && Number.isFinite(n) ? [{ key, icon: m.icon, text: m.text(n), value: n, theme: m.theme(n) }] : [];
+  });
+}
+/** The alert the line shows: the official vigilance only (default), the most serious of all, or none. */
+export function miniAlert(v: WeatherView, which: 'official' | 'all' | 'none' = 'official'): AlertPoint | undefined {
+  if (which === 'none') return undefined;
+  const official = v.alerts.find(a => a.official);
+  return which === 'all' ? official ?? v.alerts[0] : official;
+}
+/** The round's colour when no alert: the sky's own meaning. */
+const skyTheme = (c: string) => ['rainy', 'pouring', 'snowy', 'snowy-rainy', 'hail'].includes(c) ? 'rain' : ['lightning', 'lightning-rainy', 'windy', 'windy-variant'].includes(c) ? 'wind'
+  : c === 'sunny' ? 'heat' : c === 'clear-night' ? 'pressure' : 'cold';
+
+/** One line, as Hestia Confort's (issue #22): a tinted round with the sky (or the vigilance), the place and the weather in words,
+ *  the chosen values, then the temperature large. Words and values that do not fit scroll; the temperature always stays. */
+export function renderMini(v: WeatherView, holdTarget: PressTarget, c: Pick<WeatherCardConfig, 'mini_values' | 'mini_alerts'> = {}): TemplateResult {
+  const n = v.now, alert = miniAlert(v, c.mini_alerts), chosen = c.mini_values ?? ['temperature'];
+  const items = miniItems(v, chosen.filter(k => k !== 'temperature')), temp = chosen.includes('temperature') ? miniItems(v, ['temperature'])[0] : undefined;
   const place = v.location ? t('Météo à {place}', { place: v.location }) : t('Météo');
-  return html`<div class=${`nw-mini${holdTarget === 'none' ? ' still' : ''}`} role=${holdTarget === 'none' ? 'group' : 'button'} tabindex=${holdTarget === 'none' ? -1 : 0}
+  const theme = alert ? `level${alert.level}` : skyTheme(n.condition);
+  const words = alert ? html`${alert.label ? `${alert.label} · ` : ''}${alert.text}` : n.label;
+  const values = items.map(i => html`<span class=${`mini-val${i.theme ? ' ink' : ''}`} style=${i.theme ? tint(i.theme) : ''}><ha-icon icon=${i.icon}></ha-icon>${i.text}</span>`);
+  return html`<div class=${`nw-mini${holdTarget === 'none' ? ' still' : ''}${alert ? ' alerting' : ''}`} role=${holdTarget === 'none' ? 'group' : 'button'} tabindex=${holdTarget === 'none' ? -1 : 0}
       aria-label=${holdTarget === 'none' ? place : colon(place, holdTarget === 'page' ? t('appui pour la page météo') : t('appui pour la carte complète'))}>
-    <ha-icon class="mini-icon" icon=${n.icon}></ha-icon>
-    <span class="mini-temp">${n.temperature === undefined ? '—' : nf(n.temperature)}<small>°C</small></span>
-    <span class="mini-text"><b>${n.label}</b>${v.location ? html`<span>${v.location}</span>` : nothing}</span>
-    ${alert ? alertPill(alert) : nothing}
+    <span class="mini-orb" style=${tint(theme)} title=${alert?.source ?? ''}><ha-icon icon=${alert ? alert.icon : n.icon}></ha-icon></span>
+    <span class="mini-text">${v.location ? html`<span class="mini-place">${scrolling(v.location)}</span>` : nothing}
+      <b class=${alert ? 'ink' : ''} style=${alert ? tint(theme) : ''} role=${alert ? 'status' : nothing}>${scrolling(words)}</b></span>
+    ${values.length ? html`<hestia-weather-marquee class="mini-vals"><span class="run">${values}</span><span class="run" aria-hidden="true">${values}</span></hestia-weather-marquee>` : nothing}
+    ${temp ? html`<span class=${`mini-t${temp.theme ? ' ink' : ''}`} style=${temp.theme ? tint(temp.theme) : ''}>${nf(temp.value)}<small>°</small></span>` : nothing}
   </div>`;
 }
 
@@ -121,18 +169,46 @@ export function stormComing(v: WeatherView): TemplateResult {
 }
 
 export const compactStyles = css`
-  .nw-mini { display:flex; align-items:center; gap:10px; padding:10px 14px; min-height:56px; box-sizing:border-box; cursor:pointer; color:var(--nw-fg); }
+  /* Mini (issue #22, as Hestia Confort's): the round, the words, the values, the temperature. */
+  .nw-mini { display:flex; align-items:center; gap:14px; padding:10px 14px 10px 16px; min-height:56px; box-sizing:border-box; cursor:pointer; color:var(--nw-fg); }
   .nw-mini.still { cursor:default; }
   .nw-mini:focus-visible, .nw-alertcard:focus-visible { outline:2px solid var(--nw-accent); outline-offset:-2px; }
-  .mini-icon { --mdc-icon-size:30px; color:color-mix(in oklab, var(--nw-wind) var(--nw-ink), var(--nw-fg)); flex:none; }
-  .mini-temp { font-size:var(--nw-fs-value); font-weight:700; letter-spacing:-.6px; white-space:nowrap; line-height:1; }
-  .mini-temp small { font-size:var(--nw-fs-small); font-weight:400; vertical-align:super; margin-left:1px; letter-spacing:0; }
-  .mini-text { display:flex; flex-direction:column; min-width:0; flex:1; line-height:1.3; }
-  .mini-text b { font-size:var(--nw-fs-text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .mini-text span { font-size:var(--nw-fs-small); color:var(--nw-fg2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .nw-mini .nw-alert { flex:none; width:46%; }
-  /* Narrow: the sky, the temperature and the vigilance; the words give way. */
-  @container (max-width:300px) { .mini-text { display:none; } .nw-mini .nw-alert { flex:1; width:auto; min-width:0; } }
+  .mini-orb { position:relative; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; flex:none; --mdc-icon-size:18px;
+    background:color-mix(in oklab, var(--c) 26%, var(--nw-bg)); color:color-mix(in oklab, var(--c) 60%, var(--nw-fg)); }
+  .mini-orb::before { content:''; position:absolute; inset:-3px; border-radius:50%; border:2px solid color-mix(in oklab, var(--c) 30%, transparent); pointer-events:none; }
+  .mini-orb ha-icon { display:flex; }
+  /* A vigilance: the round's ring widens and fades, slowly. */
+  .alerting .mini-orb::after { content:''; position:absolute; inset:-3px; border-radius:50%; border:1.5px solid var(--c); pointer-events:none;
+    animation:nw-mini-wave 3.6s ease-out infinite; animation-play-state:var(--nw-motion, running); }
+  @keyframes nw-mini-wave { 0% { transform:scale(1); opacity:.6; } 70%, 100% { transform:scale(1.35); opacity:0; } }
+  /* The words keep their room, the values take what is left: neither pushes the temperature out. */
+  .mini-text { flex:1 1 auto; min-width:min(92px, 34%); display:flex; flex-direction:column; line-height:1.3; }
+  .mini-text .mini-place { font-size:var(--nw-fs-small); color:var(--nw-fg2); }
+  .mini-text b { font-size:var(--nw-fs-text); font-weight:600; }
+  .mini-text b.ink { color:color-mix(in oklab, var(--c) 55%, var(--nw-fg)); }
+  /* A vigilance's words come before the values: they keep room enough to be read whole on a wide card. */
+  .nw-mini.alerting .mini-text { min-width:min(230px, 46%); }
+  .mini-vals { flex:0 1 auto; min-width:0; }
+  .mini-vals .run { display:inline-flex; align-items:center; gap:12px; vertical-align:middle; }
+  .mini-vals .run + .run { display:none; }
+  .mini-vals[moving] .run + .run { display:inline-flex; }
+  .mini-val { display:inline-flex; align-items:center; gap:4px; font-size:var(--nw-fs-small); color:var(--nw-fg2); white-space:nowrap; font-variant-numeric:tabular-nums; --mdc-icon-size:14px; }
+  .mini-val ha-icon { display:flex; }
+  .mini-val.ink, .mini-t.ink { color:color-mix(in oklab, var(--c) 60%, var(--nw-fg)); }
+  .mini-val.ink { font-weight:650; }
+  .mini-t { flex:none; font-size:var(--nw-fs-value); font-weight:700; letter-spacing:-.5px; line-height:1; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .mini-t small { font-size:var(--nw-fs-small); font-weight:500; color:var(--nw-fg2); }
+  .mini-t.ink small { color:inherit; opacity:.8; }
+  @container (max-width:360px) { .nw-mini { gap:10px; } }
+  /* A vigilance comes first on a narrow card: it takes the values' room, so its words can be read. */
+  @container (max-width:480px) { .nw-mini.alerting .mini-vals { display:none; } }
+  @container (max-width:250px) { .mini-vals { display:none; } }
+  @media (prefers-reduced-motion:reduce) {
+    .alerting .mini-orb::after { animation:none; }
+    /* Without motion, the values that do not fit leave from the end, whole. */
+    .mini-vals, .mini-vals[moving] { display:block; height:20px; overflow:hidden; -webkit-line-clamp:unset; }
+    .mini-vals .run, .mini-vals[moving] .run { display:flex; flex-wrap:wrap; justify-content:flex-end; column-gap:12px; row-gap:24px; padding:0; }
+    .mini-vals[moving] .run + .run { display:none; } }
 
   .nw-alertcard { display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:12px 14px; cursor:pointer; color:var(--nw-fg); }
   .nw-alertcard .place { font-size:var(--nw-fs-small); color:var(--nw-fg2); }

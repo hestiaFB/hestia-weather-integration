@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alertItems, pressureAhead, rainAhead, windAhead } from '../src/views/compact';
+import { alertItems, miniAlert, miniItems, pressureAhead, rainAhead, windAhead } from '../src/views/compact';
 import { airPanels } from '../src/views/single';
 import { displayed } from '../src/display';
 import type { AlertPoint, Slot, TickerPoint, WeatherView } from '../src/view';
@@ -64,5 +64,28 @@ describe('The air and pollen card', () => {
   it('shows the panels chosen, in their order, and skips those the sources do not give', () => {
     const v = view({ air: { today: [panel('air', false), panel('pollen', false)], tomorrow: [panel('air', true)] } } as Partial<WeatherView>);
     expect(airPanels(v, ['pollen_today', 'air_tomorrow', 'pollen_tomorrow'])).toEqual([panel('pollen', false), panel('air', true)]);
+  });
+});
+
+describe('The Mini (issue #22)', () => {
+  const v = view({
+    now: { condition: 'cloudy', label: 'Couvert', icon: 'mdi:x', phase: 'day', temperature: 36.2, feels: 7.5, wind: 45, source: '', temperatureSource: '', darkSky: false },
+    wind: { gust: [[1, 70], [2, null]] } as unknown as WeatherView['wind'], rain: { unit: 'mm', value: 0 } as WeatherView['rain'], pressure: { value: 990 } as WeatherView['pressure'],
+    extras: [{ theme: 'rain', icon: 'mdi:water-percent', label: 'humidité', value: '92 %' }, { theme: 'level2', icon: 'mdi:sun-wireless-outline', label: 'UV fort', value: '6' }],
+    alerts: [{ level: 2, text: 'Restriction d’eau', icon: 'mdi:x', source: '', official: false }, { level: 3, label: 'Vigilance rouge', text: 'Canicule', icon: 'mdi:x', source: '', official: true }],
+  });
+  it('reads each chosen value, in the chosen order, and colours those that deserve a look', () => {
+    const items = miniItems(v, ['uv', 'feel', 'wind', 'gust', 'rain', 'humidity', 'pressure', 'temperature']);
+    expect(items.map(i => [i.key, i.value, i.theme ?? null])).toEqual([['uv', 6, 'heat'], ['feel', 7.5, 'cold'], ['wind', 45, 'wind'], ['gust', 70, 'wind'],
+      ['rain', 0, null], ['humidity', 92, 'watch'], ['pressure', 990, 'pressure'], ['temperature', 36.2, 'level3']]);
+  });
+  it('leaves out a value it does not know', () => {
+    expect(miniItems(view({ now: { temperature: 12 } as WeatherView['now'], extras: [] }), ['humidity', 'gust', 'temperature']).map(i => i.key)).toEqual(['temperature']);
+  });
+  it('shows the official vigilance only by default, every alert or none on demand', () => {
+    expect(miniAlert(v)?.text).toBe('Canicule');
+    expect(miniAlert(view({ alerts: [v.alerts[0]] }))).toBeUndefined();
+    expect(miniAlert(view({ alerts: [v.alerts[0]] }), 'all')?.text).toBe('Restriction d’eau');
+    expect(miniAlert(v, 'none')).toBeUndefined();
   });
 });

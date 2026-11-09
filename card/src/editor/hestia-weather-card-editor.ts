@@ -9,7 +9,7 @@ import { fr, setLanguage, t } from '../i18n';
 const defaults: Partial<WeatherCardConfig> = { format: 'full', show_synthesis: true, show_bulletin: true, show_today: true, show_predictions: true,
   collapse_today: false, collapse_predictions: false, smart_brief: true, weather_animations: true, weather_animation_quality: 'standard',
   show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours', pressure_span: '6h', wind_span: '6h', rain_span: '7d', clock: 'none', now_frame: 'opaque',
-  records_period: 'both', records_source: 'station', records_layout: 'list' };
+  records_period: 'both', records_source: 'station', records_layout: 'list', mini_values: ['temperature'], mini_alerts: 'official' };
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   entry_id: fr('Lieu'), format: fr('Format'),
   weather_animations: fr('Ciel animé et halos'), weather_animation_quality: fr('Qualité des animations'), glass_effect: fr('Effet verre dépoli'),
@@ -20,7 +20,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   weather_path: fr('Page à ouvrir'),
   tile_blocks: fr('Contenu de la tuile dépliée'), card_blocks: fr('Contenu de la carte'), hide_when_calm: fr('Seulement en cas d’orage'), forecast_tab: fr('Prévisions affichées au départ'), banner_blocks: fr('Contenu du bandeau'), today_blocks: fr('Contenu d’Aujourd’hui'), forecast_blocks: fr('Contenu des Prévisions'),
   hold_action: fr('Appui long'), tap_action: fr('Appui'), pressure_span: fr('Courbe de pression'), wind_span: fr('Courbe du vent'), rain_span: fr('Barres de pluie'), clock: fr('Heure dans le bandeau'), now_frame: fr('Cadre de « En ce moment »'),
-  records_period: fr('Période'), records_source: fr('Source'), records_layout: fr('Disposition'),
+  mini_values: fr('Valeurs de la ligne'), mini_alerts: fr('Alertes sur la ligne'), records_period: fr('Période'), records_source: fr('Source'), records_layout: fr('Disposition'),
 };
 /** One line under the settings that need it. */
 const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
@@ -32,6 +32,8 @@ const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
   tile_blocks: fr('Cochez ce qui s’affiche quand la tuile est dépliée, et faites glisser pour changer l’ordre.'),
   banner_blocks: fr('Le bandeau et son ciel animé restent toujours, avec le lieu, la vigilance et la météo du moment. Cochez ce qu’il montre en dessous, dans l’ordre.'),
   card_blocks: fr('Cochez ce que la carte montre.'),
+  mini_values: fr('À droite du temps qu’il fait, dans cet ordre. Quand elles n’ont pas toutes la place, elles défilent : mettez en premier celles qui comptent. La température passe en grand, tout à droite.'),
+  mini_alerts: fr('« Vigilances officielles » : celles de Météo-France (ou de votre pays) ; une restriction d’eau ou un pollen restent sur la carte complète.'),
   hide_when_calm: fr('Cachée tant qu’aucun orage n’est à moins de 30 km ; visible pendant la modification du tableau de bord.'),
   today_blocks: fr('Tout décocher retire la section.'),
   forecast_blocks: fr('Tout décocher retire la section.'),
@@ -149,7 +151,14 @@ export class HestiaWeatherCardEditor extends LitElement {
       options: options.map(([value, label]) => ({ value, label })) } } });
     // The tile unfolds on a tap and opens the full card on a long press: its own options.
     const kind = this.config?.format;
-    if (kind === 'mini' || kind === 'alert') return [...place, ...format, group(t('Fonctionnalités'), 'mdi:tune-variant', path, true)];
+    if (kind === 'alert') return [...place, ...format, group(t('Fonctionnalités'), 'mdi:tune-variant', path, true)];
+    // The Mini: the values of its line, in their order, and which alerts it shows (issue #22).
+    if (kind === 'mini') return [...place, ...format, group(t('Contenu'), 'mdi:view-list-outline', [
+      { name: 'mini_values', selector: { select: { multiple: true, reorder: true, mode: 'list', options: ([['temperature', t('Température')], ['feel', t('Ressenti')],
+        ['wind', t('Vent')], ['gust', t('Rafales')], ['rain', t('Pluie du jour')], ['humidity', t('Humidité')], ['pressure', t('Pression')], ['uv', t('Indice UV')]] as Array<[string, string]>)
+        .map(([value, label]) => ({ value, label })) } } },
+      choice('mini_alerts', [['official', t('Vigilances officielles')], ['all', t('Toutes les alertes')], ['none', t('Aucune')]])], true),
+      group(t('Fonctionnalités'), 'mdi:tune-variant', path)];
     // The cards on their own: what each shows, then its own settings.
     const parts = (options: Array<[string, string]>, reorder = false) => ({ name: 'card_blocks', selector: { select: { multiple: true, reorder, mode: 'list',
       options: options.map(([value, label]) => ({ value, label })) } } });

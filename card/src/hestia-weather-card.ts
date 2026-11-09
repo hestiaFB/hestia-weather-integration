@@ -277,7 +277,7 @@ export class HestiaWeatherCard extends LitElement {
     const holdTarget = this.holdTarget;
     switch (config.format) {
       case 'mini':
-        return html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget)}</div>${dialog()}</ha-card>`;
+        return html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget, config)}</div>${dialog()}</ha-card>`;
       case 'alert': {
         const body = renderAlert(view, this.editing);
         return body === nothing ? nothing : html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${body}</div>${dialog()}</ha-card>`;

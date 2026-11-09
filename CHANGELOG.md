@@ -2,6 +2,10 @@
 
 ### Améliorations
 
+- Carte Mini, comme celle de Hestia Confort (#22) : un rond teinté avec le ciel, le lieu et le temps qu'il fait, les valeurs de votre choix, puis la température en grand.
+- Carte Mini : valeurs au choix et dans l'ordre voulu : température, ressenti, vent, rafales, pluie du jour, humidité, pression, indice UV. Chacune prend la couleur de son sens quand elle sort du confort.
+- Carte Mini : ce qui n'a pas la place défile au lieu d'être coupé, les valeurs comme le texte ; la température reste toujours entière.
+- Carte Mini : seulement les vigilances officielles par défaut ; une restriction d'eau ou un pollen restent sur la carte complète. Au choix : toutes les alertes, ou aucune.
 - Carte Records : période « Ce mois », avec les records et les jours comptés du mois en cours (#17).
 - Carte Records : l'heure d'un record de la station tient sur la ligne de sa date (« 24 juin · vers 16 h ») ; sur une carte étroite, elle passe dessous.
 - Carte Records : la carte prend toute la hauteur de sa rangée ; deux cartes côte à côte, station et lieu, finissent au même niveau, les jours comptés en bas (#17).

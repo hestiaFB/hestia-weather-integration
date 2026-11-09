@@ -16,7 +16,6 @@ export const traitStyles = css`
 
   /* Large figures: thin and tight (Manrope 300, the variable font). */
   .nw-now .temp:not(.nw-temp) { font-weight:300; letter-spacing:-.05em; }
-  .mini-temp { font-weight:300; letter-spacing:-.04em; }
   .nw-tile strong { font-weight:650; }
 
   /* Motion: brief entrances without blur, nothing moves while the card is out of view. */

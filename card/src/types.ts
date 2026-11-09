@@ -47,6 +47,10 @@ export interface WeatherCardConfig {
   records_period?: 'month' | 'year' | 'all' | 'both';
   /** The Records card: the station (default), the place since 1940 (Open-Meteo's archive), or both. */
   records_source?: 'station' | 'lieu' | 'both';
+  /** Mini: the values of its line, in this order (issue #22); the temperature, when chosen, goes large at the end. Unset: the temperature. */
+  mini_values?: MiniValue[];
+  /** Mini: the alerts its line shows: the official vigilances only (default), every alert, or none. */
+  mini_alerts?: 'official' | 'all' | 'none';
   /** The Records card: one line per record (list, default) or four cases (cases). */
   records_layout?: 'list' | 'cases';
   /** The cards on their own: what they show, in this order. Unset, everything their format has. */
@@ -97,3 +101,7 @@ export interface WeatherCardConfig {
   /** Before 2.0 the card held its sources; they stay in old dashboards, for the integration to take over. */
   weather_entity?: string;
 }
+
+/** What the Mini's line can show (issue #22). */
+export const MINI_VALUES = ['temperature', 'feel', 'wind', 'gust', 'rain', 'humidity', 'pressure', 'uv'] as const;
+export type MiniValue = typeof MINI_VALUES[number];

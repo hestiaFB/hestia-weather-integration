@@ -202,11 +202,13 @@ try {
       const forms = [...e.shadowRoot.querySelectorAll('ha-form')].flatMap(f => names(f.schema ?? []));
       e.remove(); return forms;
     };
-    return { full: await run('full'), tile: await run('tile') };
+    return { full: await run('full'), tile: await run('tile'), mini: await run('mini') };
   });
   for (const name of ['collapse_today', 'collapse_predictions']) assert.ok(editor.full.includes(name), `Full card setting ${name}`);
   // The tile's own settings: its blocks and its long press (the page's path only shows once « Ouvrir une page » is chosen).
   assert.ok(editor.tile.includes('hold_action') && editor.tile.includes('tile_blocks') && !editor.tile.includes('collapse_today'), 'Tile settings');
+  // The Mini's own settings: its values and its alerts (issue #22).
+  assert.ok(editor.mini.includes('mini_values') && editor.mini.includes('mini_alerts') && editor.mini.includes('hold_action'), 'Mini settings');
   report.editor = editor;
 
   // 10. Without the integration, or before it is set up, the card says what to do instead of staying empty.
@@ -367,6 +369,34 @@ try {
     await panel.screenshot({ path: `${out}/pollen-countries-${width}.png` });
   }
   report.pollenCountries = 'Country labels and Kleenex location fit mobile and desktop';
+
+  // 12a. The Mini (issue #22): every value chosen, at three widths; the values scroll when they do not fit, nothing leaves the card,
+  //      the temperature stays whole; only the official vigilance by default.
+  await page.setViewportSize({ width: 1300, height: 1000 });
+  const minis = [];
+  for (const width of [640, 380, 230]) {
+    await show({ format: 'mini', width, condition: 'pouring', vigilance: undefined, animated: false });
+    await page.evaluate(() => { const c = document.querySelector('hestia-weather-card');
+      c.setConfig({ ...c.config, mini_values: ['feel', 'wind', 'gust', 'rain', 'humidity', 'pressure', 'uv', 'temperature'] }); });
+    await sleep(300);
+    minis.push(await inCard(root => {
+      const card = root.querySelector('ha-card').getBoundingClientRect(), mini = root.querySelector('.nw-mini'), temp = root.querySelector('.mini-t'), vals = root.querySelector('.mini-vals');
+      const out = [...root.querySelectorAll('.nw-mini *')].filter(e => { const r = e.getBoundingClientRect(); return r.width && !e.closest('hestia-weather-marquee .run') && (r.right > card.right + 1 || r.left < card.left - 1); });
+      return { out: out.map(e => e.className || e.tagName), overflow: mini.scrollWidth > mini.clientWidth + 1, temp: !!temp && temp.getBoundingClientRect().right <= card.right,
+        values: root.querySelectorAll('.mini-vals .run:first-child .mini-val').length, moving: !!vals?.hasAttribute('moving'), shown: !!vals && getComputedStyle(vals).display !== 'none' };
+    }));
+  }
+  for (const [i, m] of minis.entries()) { assert.deepEqual(m.out, [], `Mini ${i}: ${m.out}`); assert.equal(m.overflow, false); assert.equal(m.temp, true); }
+  assert.ok(minis[0].values >= 5, `Mini values ${minis[0].values}`);
+  assert.equal(minis[1].moving, true, 'The values scroll on a phone');
+  assert.equal(minis[2].shown, false, 'No values at 230 px');
+  await page.locator('#stage').screenshot({ path: `${out}/mini.png` });
+  // A vigilance: on the line by default, in its colour.
+  await show({ format: 'mini', width: 380, condition: 'pouring', vigilance: 'Orange', animated: false });
+  const vigil = await inCard(root => ({ alerting: !!root.querySelector('.nw-mini.alerting'), words: root.querySelector('.mini-text b')?.textContent.replace(/\s+/g, ' ').trim() }));
+  assert.equal(vigil.alerting, true);
+  assert.match(vigil.words, /Vigilance orange/);
+  report.mini = 'Every value at 640, 380 and 230 px, scrolling, the temperature whole, the official vigilance';
 
   // 12. Records (issue #17): this month alone, the station's hour on the line of its day, two cards side by side ending level.
   await page.setViewportSize({ width: 1300, height: 1000 });
