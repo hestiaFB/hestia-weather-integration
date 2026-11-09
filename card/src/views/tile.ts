@@ -169,6 +169,12 @@ export const tileStyles = css`
   .more > div { overflow:hidden; min-height:0; }
   .more-in { padding:0 16px 14px; display:flex; flex-direction:column; gap:12px; opacity:0; transform:translateY(-6px); transition:opacity .3s .1s, transform .3s .1s; }
   .open .more-in { opacity:1; transform:none; }
+  /* Unfolded, as on the full card: under the top row, the bulletin and the timeline sit over a veil that fades in slowly and stays light,
+     so a cloud passing low behind the text is softened, not bright white (9 November). */
+  .more { position:relative; }
+  .more::before { content:''; position:absolute; top:-40px; bottom:0; left:0; right:0; z-index:-1; pointer-events:none; opacity:0; transition:opacity .3s .1s;
+    background:linear-gradient(180deg, transparent 0, color-mix(in srgb, var(--nw-bg) 45%, transparent) 90px, color-mix(in srgb, var(--nw-bg) 60%, transparent) 100%); }
+  .open .more::before { opacity:1; }
   .bulletin, .nw-events, .block { display:flex; flex-direction:column; gap:6px; }
   .bulletin, .nw-events { gap:4px; }
   /* Moments, hours and days: see-through tiles over the sky, without blur (it would be recomputed at every frame of the sky). */
@@ -208,5 +214,5 @@ export const tileStyles = css`
     .nw-tilecard .sky { --k:.54; --nw-orb-x:calc(100% - 260px); }
     .days { grid-template-columns:repeat(5, minmax(58px,1fr)); overflow-x:auto; scrollbar-width:none; }
   }
-  @media (prefers-reduced-motion:reduce) { .more, .more-in, .reveal, .brief, .brief > div, .top .nw-now .nw-badge { transition:none; } }
+  @media (prefers-reduced-motion:reduce) { .more, .more::before, .more-in, .reveal, .brief, .brief > div, .top .nw-now .nw-badge { transition:none; } }
 `;

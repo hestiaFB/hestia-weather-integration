@@ -536,7 +536,7 @@ export class HestiaWeatherSky extends LitElement {
       /* Small cards: what the weather carries is drawn larger, so it still reads at a glance. */
       .petal {width:20px;height:20px;}.plane {width:34px;height:34px;}.moon {width:72px;height:72px;}
       .leaf {width:28px;height:20px;}.leaf.k-dry {width:24px;height:17px;}.leaf.k-plane {width:36px;height:36px;}.leaf.k-petal {width:17px;height:17px;}.leaf.k-seed {width:25px;height:32px;}
-      .orb {left:var(--nw-orb-x,auto);right:12%;top:var(--nw-orb-y,36px);}.cloud.back {left:auto;right:20%;top:6px;width:235px;}.cloud.front {left:auto;right:-4%;top:clamp(100px,24%,210px);width:210px;}.cloud.small {left:auto;right:-16%;top:clamp(0px,7%,60px);width:165px;}
+      .orb {left:var(--nw-orb-x,auto);right:12%;top:var(--nw-orb-y,36px);}.cloud.back {left:auto;right:20%;top:6px;width:235px;}.cloud.front {left:auto;right:-4%;top:clamp(100px,24%,210px);width:210px;opacity:.6;}.cloud.small {left:auto;right:-16%;top:clamp(0px,7%,60px);width:165px;}
       .closed-sky .cloud.back {right:8%;top:clamp(150px,36%,300px);width:200px;opacity:.5;}
       .bolt.b1 {left:auto;right:18%;}.bolt.b2 {left:auto;right:2%;}.bolt.b3 {left:auto;right:42%;}
       .flash.f1 {--fx:70%;}.flash.f2 {--fx:94%;}.flash.f3 {--fx:48%;}

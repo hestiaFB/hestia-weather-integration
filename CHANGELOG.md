@@ -1,3 +1,10 @@
+## À venir
+
+### Corrections
+
+- Sur le téléphone et en une colonne, le nuage le plus bas n'est plus blanc vif derrière le texte : il est plus pâle.
+- Tuile dépliée : le même voile léger que la carte complète sous le bulletin et la frise, le texte reste lisible quand un nuage passe derrière.
+
 ## 3.5.1 — Des nuages en relief
 
 ### Corrections

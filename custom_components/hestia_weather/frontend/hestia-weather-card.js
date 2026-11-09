@@ -640,6 +640,12 @@ button.nw-scale-mk::before { content:''; position:absolute; inset:-6px -10px; }
   .more > div { overflow:hidden; min-height:0; }
   .more-in { padding:0 16px 14px; display:flex; flex-direction:column; gap:12px; opacity:0; transform:translateY(-6px); transition:opacity .3s .1s, transform .3s .1s; }
   .open .more-in { opacity:1; transform:none; }
+  /* Unfolded, as on the full card: under the top row, the bulletin and the timeline sit over a veil that fades in slowly and stays light,
+     so a cloud passing low behind the text is softened, not bright white (9 November). */
+  .more { position:relative; }
+  .more::before { content:''; position:absolute; top:-40px; bottom:0; left:0; right:0; z-index:-1; pointer-events:none; opacity:0; transition:opacity .3s .1s;
+    background:linear-gradient(180deg, transparent 0, color-mix(in srgb, var(--nw-bg) 45%, transparent) 90px, color-mix(in srgb, var(--nw-bg) 60%, transparent) 100%); }
+  .open .more::before { opacity:1; }
   .bulletin, .nw-events, .block { display:flex; flex-direction:column; gap:6px; }
   .bulletin, .nw-events { gap:4px; }
   /* Moments, hours and days: see-through tiles over the sky, without blur (it would be recomputed at every frame of the sky). */
@@ -679,7 +685,7 @@ button.nw-scale-mk::before { content:''; position:absolute; inset:-6px -10px; }
     .nw-tilecard .sky { --k:.54; --nw-orb-x:calc(100% - 260px); }
     .days { grid-template-columns:repeat(5, minmax(58px,1fr)); overflow-x:auto; scrollbar-width:none; }
   }
-  @media (prefers-reduced-motion:reduce) { .more, .more-in, .reveal, .brief, .brief > div, .top .nw-now .nw-badge { transition:none; } }
+  @media (prefers-reduced-motion:reduce) { .more, .more::before, .more-in, .reveal, .brief, .brief > div, .top .nw-now .nw-badge { transition:none; } }
 `;function Nr(e){return{move:i=>{let r=i.currentTarget,s=r.getBoundingClientRect(),l=e.length,c=Math.round(Math.min(1,Math.max(0,(i.clientX-s.left)/s.width))*(l-1)),d=e[c],u=c/(l-1)*s.width,m=r.querySelector(".fc-scrub"),f=r.querySelector(".fc-tip");!m||!f||(m.style.left=`${u}px`,f.textContent=[c?ie(d.hour):a("Maintenant"),d.temperature===void 0?"":`${$(d.temperature,0)} \xB0C`,d.precipitation>=.1?`${$(d.precipitation)} mm`:"",d.wind===void 0?"":ke($(d.wind,0),d.bearing)].filter(Boolean).join(" \xB7 "),f.style.left=`${Math.min(s.width-f.offsetWidth/2,Math.max(f.offsetWidth/2,u))}px`,r.classList.add("scrubbing"))},leave:i=>i.currentTarget.classList.remove("scrubbing")}}function Dt(e,n,t,i){let r=e.map((w,x)=>({h:w,i:x})).filter(w=>w.h.temperature!==void 0);if(r.length<3)return p;let s=e.length,l=100/(s-1),c=w=>w*l,d=r.map(w=>w.h.temperature),u=Math.min(...d)-1.5,m=Math.max(...d)+1.5,f=w=>(1-(w-u)/(m-u))*64+14,h=r.map(w=>[c(w.i),f(w.h.temperature)]),g=h.map(([w,x],C)=>C?`C${h[C-1][0]+(w-h[C-1][0])/2} ${h[C-1][1]} ${h[C-1][0]+(w-h[C-1][0])/2} ${x} ${w} ${x}`:`M${w} ${x}`).join(" "),v=r.reduce((w,x)=>x.h.temperature>w.h.temperature?x:w),y=r.reduce((w,x)=>x.h.temperature<w.h.temperature?x:w),T=Math.max(2,...e.map(w=>w.precipitation)),W=e.some(w=>w.precipitation>=.1),S=[];e.forEach((w,x)=>{if(!w.night)return;let C=S.at(-1);C&&C[1]===x-1?C[1]=x:S.push([x,x])});let z=e.map((w,x)=>x).filter(w=>w%3===0),L=w=>{let x=f(w.h.temperature);return o`<span class=${`pill${x<30?" low":""}`} style=${`left:${Math.min(94,Math.max(6,c(w.i)))}%;top:${x}%`}>${$(w.h.temperature,0)}°</span>`},F=`${i}-fs`,K=`${i}-fa`,G=Nr(e);return o`<section class="nw-panel" aria-label=${a("18 prochaines heures")}>${V("mdi:thermometer","wind",a("18 prochaines heures"),n)}
     <div class="fc" @pointermove=${G.move} @pointerdown=${G.move} @pointerleave=${G.leave}>
       <div class="fc-plot" role="img" aria-label=${`${a("Temp\xE9ratures de {low} \xE0 {high} \xB0C",{low:$(y.h.temperature,0),high:$(v.h.temperature,0)})}${W?a(", pluie jusqu\u2019\xE0 {mm} mm par heure",{mm:$(Math.max(...e.map(w=>w.precipitation)))}):a(", pas de pluie pr\xE9vue")}`}>
@@ -1454,7 +1460,7 @@ button.nw-scale-mk::before { content:''; position:absolute; inset:-6px -10px; }
       /* Small cards: what the weather carries is drawn larger, so it still reads at a glance. */
       .petal {width:20px;height:20px;}.plane {width:34px;height:34px;}.moon {width:72px;height:72px;}
       .leaf {width:28px;height:20px;}.leaf.k-dry {width:24px;height:17px;}.leaf.k-plane {width:36px;height:36px;}.leaf.k-petal {width:17px;height:17px;}.leaf.k-seed {width:25px;height:32px;}
-      .orb {left:var(--nw-orb-x,auto);right:12%;top:var(--nw-orb-y,36px);}.cloud.back {left:auto;right:20%;top:6px;width:235px;}.cloud.front {left:auto;right:-4%;top:clamp(100px,24%,210px);width:210px;}.cloud.small {left:auto;right:-16%;top:clamp(0px,7%,60px);width:165px;}
+      .orb {left:var(--nw-orb-x,auto);right:12%;top:var(--nw-orb-y,36px);}.cloud.back {left:auto;right:20%;top:6px;width:235px;}.cloud.front {left:auto;right:-4%;top:clamp(100px,24%,210px);width:210px;opacity:.6;}.cloud.small {left:auto;right:-16%;top:clamp(0px,7%,60px);width:165px;}
       .closed-sky .cloud.back {right:8%;top:clamp(150px,36%,300px);width:200px;opacity:.5;}
       .bolt.b1 {left:auto;right:18%;}.bolt.b2 {left:auto;right:2%;}.bolt.b3 {left:auto;right:42%;}
       .flash.f1 {--fx:70%;}.flash.f2 {--fx:94%;}.flash.f3 {--fx:48%;}
