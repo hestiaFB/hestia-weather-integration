@@ -99,6 +99,13 @@ export type RainPeriodId = '24h' | '7d' | '30d';
 export interface RainPeriod { period: RainPeriodId; days: RainDay[]; total?: number; partial: boolean }
 export interface WindPeriod { period: ChartPeriodId; mean: Point[]; gust: Point[]; top: number }
 export interface PressurePeriod { period: ChartPeriodId; series: Point[]; low: number; top: number; stats: Stat[] }
+/** The temperature or the humidity on its own card (issue #21), from integration 3.5.2 on: its value, its curve over each period. */
+export interface MeasureView {
+  source: string; value?: number; entity?: string; description: string; empty: string;
+  periods: PressurePeriod[];
+  /** The period shown and its curve, chosen by the card (`temperature_span`). */
+  period?: ChartPeriodId; series?: Point[]; low?: number; top?: number; stats?: Stat[];
+}
 export interface PressureView {
   source: string; value?: number; entity?: string; description: string;
   /** The period shown, six hours by default: `series`, `low`, `top` and `stats` are the ones of this period. */
@@ -164,6 +171,8 @@ export interface WeatherView {
   /** The banner's timeline: every point of the coming hours, each at its time (integration 2.0.5 and later). */
   timeline?: TickerPoint[];
   comfort?: ComfortView; rain?: RainView; wind?: WindView; pressure?: PressureView; extras: Chip[];
+  /** The temperature and the humidity on their own card (issue #21, integration 3.5.2 and later). */
+  temperature?: MeasureView; humidity?: MeasureView;
   hours: Slot[]; days: DayForecast[];
   air: { today: AirPanel[]; tomorrow: AirPanel[] };
   /** Blitzortung's storm, when it is chosen in the integration (from 2.9). */

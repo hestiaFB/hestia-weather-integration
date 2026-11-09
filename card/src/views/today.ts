@@ -1,7 +1,7 @@
 // « Aujourd'hui »: the feel, then rain, wind and pressure measured at home, each in the same panel model.
 import { css, html, nothing, svg, type TemplateResult } from 'lit';
 import { colon, currentLocale, fr, t } from '../i18n';
-import type { ChartPeriodId, Chip, ComfortView, PressureView, RainDay, RainPeriodId, RainView, Season, SeasonName, Stat, WeatherView, WindView } from '../view';
+import type { ChartPeriodId, Chip, ComfortView, MeasureView, PressureView, RainDay, RainPeriodId, RainView, Season, SeasonName, Stat, WeatherView, WindView } from '../view';
 import type { TodayBlock } from '../types';
 import { chartEnd, chartY, curvePaths, extremePills, type ChartPaths, type ChartPill } from '../ui/charts';
 import { chip, entity, info, label, legend, nf, panelHead } from '../ui/parts';
@@ -178,6 +178,24 @@ export function pressurePanel(p: PressureView, uid: string, parts?: Parts, lead:
       ${series.length ? html`<div class="mini-plot"><svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label=${t('Pression des {period}', { period: t(period.title) })}>${curve(series, 'var(--nw-pressure)', `${uid}-fill-pressure`)}</svg>${pills(extremePills(p.series, end, v => chartY(v, p.top, p.low), v => nf(v, 0), period.span))}</div>${axis(period)}`
         : html`<p class="nw-empty">${p.empty}</p>`}</div>` : nothing}
     ${has(parts, 'stats') && !stable ? stats(p.stats) : nothing}
+  </section>`;
+}
+
+/** The temperature or the humidity on its own card (issue #21): the value, its words, the curve over the chosen period, its extremes.
+ *  The same model as the pressure; `trend` (°C an hour, the temperature's) beside the value when it moves. */
+export function measurePanel(m: MeasureView, o: { key: string; icon: string; theme: string; title: string; unit: string; digits: number; trend?: number },
+                             uid: string, parts?: Parts, lead: TemplateResult | typeof nothing = nothing): TemplateResult {
+  const period = PERIODS[m.period ?? '6h'], data = m.series ?? [], low = m.low ?? 0, top = m.top ?? 2;
+  const end = chartEnd(data), series = curvePaths(data, top, end, low, period.span), color = `var(--nw-${o.theme})`;
+  const figure = (v: number) => nf(v, o.digits).replace('-', '−');
+  const moving = o.trend !== undefined && Math.abs(o.trend) >= .1;
+  return html`<section class="nw-panel" aria-label=${o.title}>${panelHead(o.icon, o.theme, o.title, m.source)}${lead}
+    ${has(parts, 'now') ? html`<div class="metric-row"><div class="metric" data-entity=${entity(m.entity)}><div class="nw-value"><b>${m.value === undefined ? '—' : figure(m.value)}</b><span>${o.unit}</span></div>
+      <small>${m.description}</small></div>${moving ? html`<span class="nw-say p-trend"><i class="nw-trend" data-way=${o.trend! < 0 ? 'down' : 'up'}></i><b>${`${o.trend! > 0 ? '+' : '−'}${nf(Math.abs(o.trend!))} ${o.unit}`}</b> ${t('par heure')}</span>` : nothing}</div>` : nothing}
+    ${has(parts, 'chart') ? html`<div class="mini"><div class="mini-top">${t(period.title)} · ${o.unit}</div>
+      ${series.length ? html`<div class="mini-plot"><svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label=${t('{what} des {period}', { what: o.title, period: t(period.title) })}>${curve(series, color, `${uid}-fill-${o.key}`)}</svg>${pills(extremePills(data, end, v => chartY(v, top, low), figure, period.span))}</div>${axis(period)}`
+        : html`<p class="nw-empty">${m.empty}</p>`}</div>` : nothing}
+    ${has(parts, 'stats') ? stats(m.stats ?? []) : nothing}
   </section>`;
 }
 

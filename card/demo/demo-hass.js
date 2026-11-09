@@ -68,7 +68,9 @@ export function demoHistory(ids, s, now = new Date()) {
   if (ids.includes('sensor.wind')) rows['sensor.wind'] = series(mean);
   if (ids.includes('sensor.gust')) rows['sensor.gust'] = series(i => mean(i) * 1.55 + 4 + 2 * Math.sin(i * 2.3));
   if (ids.includes('sensor.pressure')) rows['sensor.pressure'] = series((i, ago) => 1014 - ago * 0.45 + 0.15 * Math.sin(i / 4));
-  if (ids.includes('sensor.temperature')) rows['sensor.temperature'] = series((i, ago) => temp + ago * 0.4);
+  // L'après-midi : la température a monté puis redescend un peu ; l'humidité fait l'inverse (carte Température, issue #21).
+  if (ids.includes('sensor.temperature')) rows['sensor.temperature'] = series((i, ago) => temp - 2.4 + 3 * Math.sin((6 - ago) / 6 * 2.4) + 0.15 * Math.sin(i * 1.3));
+  if (ids.includes('sensor.humidity')) rows['sensor.humidity'] = series((i, ago) => 78 + 9 - 11 * Math.sin((6 - ago) / 6 * 2.4) + 0.6 * Math.sin(i * 1.1));
   // Pluie depuis minuit : le compteur monte dans la journée et revient à zéro à minuit, sur les 7 derniers jours.
   if (ids.includes('sensor.rain_day')) {
     const totals = [0, 2.1, 0, 0, 5.4, 2.1, rain * 2], midnight = new Date(now); midnight.setHours(0, 0, 0, 0);
@@ -132,7 +134,7 @@ export function scenarioData(scenario, now = new Date()) {
   const s = withStory(scenario);
   const { temp, rain } = demoWeather(s), { hourly, daily } = s.forecasts === false ? { hourly: [], daily: [] } : demoForecasts(temp, rain, now, s.story);
   return { options: scenarioSources(s), states: scenarioStates(s, now), hourly, daily,
-    history: s.station === false ? {} : demoHistory(['sensor.wind', 'sensor.gust', 'sensor.pressure', 'sensor.rain_day'], s, now),
+    history: s.station === false ? {} : demoHistory(['sensor.wind', 'sensor.gust', 'sensor.pressure', 'sensor.temperature', 'sensor.humidity', 'sensor.rain_day'], s, now),
     now: now.toISOString(), time_zone: 'Europe/Paris', latitude: 43.45, elevation: 0,
     ...(s.lightning ? { strikes: demoStrikes(s.lightning), lightning_month: 41 } : {}) };
 }

@@ -142,14 +142,18 @@ def weather_history(entity_id: str, rows: Sequence[Any]) -> dict[str, list[Chang
     result = {}
     for attribute, unit, kind in (("wind_speed", "wind_speed_unit", Kind.WIND),
                                   ("wind_gust_speed", "wind_speed_unit", Kind.WIND),
-                                  ("pressure", "pressure_unit", Kind.PRESSURE)):
+                                  ("pressure", "pressure_unit", Kind.PRESSURE),
+                                  ("temperature", "temperature_unit", Kind.TEMPERATURE),
+                                  ("humidity", "", Kind.PLAIN)):
         changes = []
         for row in rows:
             if not hasattr(row, "last_updated"):
                 continue
             attrs = row.attributes
-            value = measurement(attrs.get(attribute), attrs.get(unit), kind) if row.state not in ("unknown", "unavailable") else None
-            changes.append(Change(row.last_updated.timestamp(), str(value) if value is not None and value >= 0 else "unavailable"))
+            value = measurement(attrs.get(attribute), attrs.get(unit) if unit else "", kind) if row.state not in ("unknown", "unavailable") else None
+            # Only a temperature may be below zero.
+            usable = value is not None and (value >= 0 or kind is Kind.TEMPERATURE)
+            changes.append(Change(row.last_updated.timestamp(), str(value) if usable else "unavailable"))
         result[weather_history_key(entity_id, attribute)] = changes
     return result
 
@@ -215,8 +219,14 @@ def wind_chart_series(rows: Sequence[Change], unit: str | None, now: datetime, c
 
 def pressure_chart_series(rows: Sequence[Change], unit: str | None, now: datetime, current: float | None = None,
                           period: str = "6h") -> tuple[Point, ...]:
+    return measure_chart_series(rows, unit, now, current, Kind.PRESSURE, period)
+
+
+def measure_chart_series(rows: Sequence[Change], unit: str | None, now: datetime, current: float | None, kind: Kind,
+                         period: str = "6h") -> tuple[Point, ...]:
+    """A measure's means over one of the card's periods (pressure, temperature, humidity)."""
     span, step = PERIODS[period]
-    return _chart_series(rows, unit, now, current, "mean", Kind.PRESSURE, span, step)
+    return _chart_series(rows, unit, now, current, "mean", kind, span, step)
 
 
 class _Buckets(NamedTuple):
@@ -243,8 +253,9 @@ class _Buckets(NamedTuple):
             j += 1
 
 
-def _plain(value: float | None) -> float | None:
-    return value if value is not None and value >= 0 else None
+def _plain(value: float | None, kind: Kind = Kind.PLAIN) -> float | None:
+    """A reading the chart can use: below zero is a broken sensor, but for a temperature."""
+    return value if value is not None and (value >= 0 or kind is Kind.TEMPERATURE) else None
 
 
 _held: dict[tuple[Any, ...], tuple[Sequence[Change], _Buckets]] = {}
@@ -260,7 +271,7 @@ def _held_buckets(rows: Sequence[Change], unit: str | None, kind: Kind, start: f
         return hit[1]
     buckets = _Buckets([0.0] * count, [0.0] * count, [0.0] * count, [False] * count)
     for event, after in zip(window, window[1:]):
-        buckets.add(start, step, event.time, after.time, _plain(event.value), after.time - event.time)
+        buckets.add(start, step, event.time, after.time, _plain(event.value, kind), after.time - event.time)
     _keep(_held, key, (rows, buckets))
     return buckets
 
@@ -289,7 +300,7 @@ def _chart_series(rows: Sequence[Change], unit: str | None, now: datetime, curre
     buckets = _Buckets(list(held.sums), list(held.durations), list(held.peaks), list(held.missing))
     # The last reading runs until now.
     tail = window[-1]
-    buckets.add(start, step, tail.time, end, _plain(tail.value), end - tail.time)
+    buckets.add(start, step, tail.time, end, _plain(tail.value, kind), end - tail.time)
     out = []
     for i in range(buckets_count):
         middle = start + i * step + step // 2

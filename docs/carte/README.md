@@ -23,8 +23,9 @@ Dans **Ajouter une carte**, cherchez « Hestia-FB » : trois entrées, une par t
 | **Complète** (`full`, par défaut) | Une page météo : le bandeau, puis **Aujourd’hui** et **Prévisions**, qui se replient d’un appui sur leur titre. |
 | **Tuile** (`tile`) | La page d’accueil, en pleine ou demi-largeur : le lieu, la vigilance, la bulle qui défile et la météo du moment. **Un appui** la déplie sur place, **un appui long** ouvre la carte complète par-dessus la page. |
 | **Tuile dépliée** (`intermediate`) | La même tuile, ouverte au départ. |
-| **Mini** (`mini`) | Une seule ligne : le ciel, la température, le lieu et la vigilance. Pour un en-tête ou un téléphone. Un appui ouvre la carte complète. |
+| **Mini** (`mini`) | Une seule ligne : le ciel, le lieu, les valeurs de votre choix et la température ; la vigilance officielle quand il y en a une. Pour un en-tête ou un téléphone. Un appui ouvre la carte complète. |
 | **Ressenti** (`comfort`) | Le ressenti et son explication, sa jauge, ce qui le fait varier et les pastilles (humidité, rosée, soleil…). |
+| **Température** (`temperature`) | La température à venir (le maximum et le minimum des 18 heures), celle du moment, son ressenti et sa tendance, sa courbe et ses extrêmes ; puis l’humidité, sa courbe et ses extrêmes. Sur 6 h, 24 h, 2 jours ou 7 jours. |
 | **Pluie** (`rain`) | La pluie à venir (dans l’heure, sur 6 h, la prochaine averse), celle qui tombe, ses barres et ses cumuls. |
 | **Vent** (`wind`) | Le vent du moment et sa direction, sa courbe, les rafales et le maximum du jour. |
 | **Pression** (`pressure`) | La pression et sa tendance, sa courbe, les valeurs passées. |
@@ -85,10 +86,11 @@ Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le fo
 | Bloc | Réglage | Par défaut | Rôle |
 | --- | --- | --- | --- |
 | En haut | `entry_id` | — | Le lieu à afficher, s’il y en a plusieurs dans l’intégration |
-| En haut | `format` | `full` | `full`, `tile`, `intermediate`, `mini`, `comfort`, `rain`, `wind`, `pressure`, `lightning`, `air`, `forecast`, `events`, `records` ou `alert` |
+| En haut | `format` | `full` | `full`, `tile`, `intermediate`, `mini`, `comfort`, `temperature`, `rain`, `wind`, `pressure`, `lightning`, `air`, `forecast`, `events`, `records` ou `alert` |
 | Mini | `mini_values`, `mini_alerts` | `temperature`, `official` | Valeurs de la ligne, dans l’ordre : `temperature` (en grand, à droite), `feel`, `wind`, `gust`, `rain`, `humidity`, `pressure`, `uv` ; elles défilent quand elles n’ont pas toutes la place. Alertes : `official` (vigilances officielles), `all`, `none` |
+| Cartes seules | `show_title` | `true` | `false` : sans le titre de chaque partie, la carte ne montre que ses mesures |
 | Records | `records_period`, `records_source`, `records_layout` | `both`, `station`, `list` | Période : `month` (ce mois-ci), `year`, `all`, `both` (cette année et depuis toujours). Source : `station`, `lieu` (Open-Meteo depuis 1940), `both`. Disposition : `list`, `cases` |
-| Contenu (cartes seules) | `card_blocks` | tout | Ressenti : `feel`, `gauge`, `factors`, `extras`. Pluie : `ahead` (à venir), `now`, `chart`, `stats`. Vent et Pression : `now`, `chart`, `stats`. Éclairs : `now`, `radar`, `stats` (et `hide_when_calm: true` pour la cacher sans orage). Air et pollens, dans l’ordre voulu : `air_today`, `pollen_today`, `air_tomorrow`, `pollen_tomorrow`. Prévisions : `hours`, `days`. Les cartes Pluie, Vent et Pression suivent aussi `rain_span`, `wind_span` et `pressure_span` |
+| Contenu (cartes seules) | `card_blocks` | tout | Ressenti : `feel`, `gauge`, `factors`, `extras`. Température : `ahead`, `now`, `chart`, `stats`, `humidity` (le panneau Humidité), sur la période `temperature_span` (`6h`, `1d`, `2d`, `7d`). Pluie : `ahead` (à venir), `now`, `chart`, `stats`. Vent et Pression : `now`, `chart`, `stats`. Éclairs : `now`, `radar`, `stats` (et `hide_when_calm: true` pour la cacher sans orage). Air et pollens, dans l’ordre voulu : `air_today`, `pollen_today`, `air_tomorrow`, `pollen_tomorrow`. Prévisions : `hours`, `days`. Les cartes Pluie, Vent et Pression suivent aussi `rain_span`, `wind_span` et `pressure_span` |
 | Bandeau intelligent (complète) | `banner_blocks` | `bulletin`, `events` | Sous le lieu, la vigilance et la météo du moment, dans l’ordre : `bulletin`, `events` (la frise), `moments`, `forecast` (les prévisions en tuiles). Le bandeau et son ciel animé restent toujours |
 | Bandeau intelligent (complète) | `clock` | `none` | L’heure de l’appareil dans le bandeau : `left` en grand sous le titre, `right` au-dessus de « En ce moment », `none` masquée |
 | Aujourd’hui (complète) | `today_blocks` | tout | `rain`, `wind`, `pressure`, `lightning` (éclairs, avec Blitzortung), `comfort` (ressenti), `extras` (pastilles), `air` (air et pollens du jour). Une liste vide retire la section |

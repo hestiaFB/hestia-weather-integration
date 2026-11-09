@@ -3,6 +3,7 @@ import type { BannerBlock, CardBlock, ForecastBlock, TodayBlock, WeatherCardConf
 /** The cards on their own, and everything each can show, in its default order. */
 export const CARD_BLOCKS: Partial<Record<NonNullable<WeatherCardConfig['format']>, CardBlock[]>> = {
   comfort: ['feel', 'gauge', 'factors', 'extras'],
+  temperature: ['ahead', 'now', 'chart', 'stats', 'humidity'],
   rain: ['ahead', 'now', 'chart', 'stats'],
   wind: ['ahead', 'now', 'chart', 'stats'],
   pressure: ['ahead', 'now', 'chart', 'stats'],

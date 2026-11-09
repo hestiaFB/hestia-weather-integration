@@ -22,7 +22,7 @@ from .i18n import N_, language, t
 from .lightning import Lightning
 from .local import LocalWeather
 from .season import MONTHS, Season, current_season
-from .series import (PERIODS, RAIN_PERIODS, ColumnStatus, Point, column_status, joined, pressure_chart_series, rain_bars, rain_days,
+from .series import (PERIODS, RAIN_PERIODS, ColumnStatus, Point, column_status, joined, measure_chart_series, pressure_chart_series, rain_bars, rain_days,
                      rain_state_key, rain_sum_key, wind_chart_series, weather_history_key, week_key)
 from .settings import Settings
 from .station import Derived, RainDay
@@ -153,6 +153,17 @@ class PressureView:
 
 
 @dataclass(frozen=True)
+class MeasureView:
+    """The temperature or the humidity on its own card (issue #21): the value now, its curve over each period, its extremes."""
+    source: str
+    value: float | None
+    entity: str | None
+    description: str
+    empty: str
+    periods: tuple[PressurePeriod, ...]
+
+
+@dataclass(frozen=True)
 class Slot:
     """One forecast hour."""
 
@@ -279,6 +290,8 @@ class WeatherView:
     days: tuple[DayForecast, ...]
     air: Air
     lightning: LightningView | None = None
+    temperature: MeasureView | None = None
+    humidity: MeasureView | None = None
 
 
 def place_name(name: str) -> str:
@@ -313,7 +326,7 @@ def build_view(get: Getter, settings: Settings, w: LocalWeather, brief: Brief | 
     season = current_season(get, settings.season_entity, now, zone, latitude, elevation)
     # The forecast hour under way (or the next one): its rain gives the nuance when Météo-France's description is not there.
     this_hour = next((h for h in hours if h.time is None or h.time.timestamp() > now.timestamp() - 3600), None)
-    rain, wind, pressure = _measures(get, settings, w, hours, history, rain_history, derived, now, zone)
+    rain, wind, pressure, temperature, humidity = _measures(get, settings, w, hours, history, rain_history, derived, now, zone)
     return WeatherView(
         location=settings.location or place_name(str(attributes.get("friendly_name") or "")),
         date_label=date_label[0].upper() + date_label[1:], provider=weather_source_label(get, settings),
@@ -325,7 +338,7 @@ def build_view(get: Getter, settings: Settings, w: LocalWeather, brief: Brief | 
         bulletin=build_bulletin(hours, now, zone), comfort=_comfort(get, settings, w), rain=rain, wind=wind, pressure=pressure,
         extras=_extras(get, settings, w, now, zone), hours=forecast_slots(hours, now, zone, w.sunrise, w.sunset), days=forecast_days(days, hours, now, zone),
         air=Air(_air(get, settings, now, zone, False), _air(get, settings, now, zone, True)),
-        lightning=_lightning(settings, lightning))
+        lightning=_lightning(settings, lightning), temperature=temperature, humidity=humidity)
 
 
 def _lightning(settings: Settings, seen: Lightning | None) -> LightningView | None:
@@ -425,21 +438,32 @@ AGO = {"6h": N_("Il y a 6 h"), "1d": N_("Il y a 24 h"), "2d": N_("Il y a 2 j"), 
 
 def _pressure_period(period: str, rows: Sequence[Change], unit: str | None, now: datetime, value: float | None) -> PressurePeriod:
     """One period of the pressure chart: its curve, its scale, and where it started, its lowest and highest values."""
-    series = pressure_chart_series(rows, unit, now, value, period)
+    return _measure_period(period, rows, unit, now, value, Kind.PRESSURE, "hPa", 0)
+
+
+def _measure_period(period: str, rows: Sequence[Change], unit: str | None, now: datetime, value: float | None, kind: Kind, shown: str,
+                    digits: int, bounds: tuple[float, float] | None = None) -> PressurePeriod:
+    """One period of a measure's chart (pressure, temperature, humidity): its curve, its scale (within `bounds`), and where it
+    started, its lowest and highest values."""
+    series = measure_chart_series(rows, unit, now, value, kind, period)
     values = [p.value for p in series if p.value is not None]
     first = next((p for p in series if p.value is not None), None)
+    text = (lambda v: f"{french(v, digits, digits)} {shown}".replace("-", "−")) if digits else (lambda v: f"{french(v, 0)} {shown}".replace("-", "−"))
     stats = []
     if len(values) > 1:
         # « Il y a… » only when the curve really starts near the beginning of the period.
         if first is not None and first.time <= now.timestamp() - PERIODS[period][0] * 5 / 6:
-            stats.append(Stat(t(AGO[period]), f"{french(first.value, 0)} hPa"))
-        stats += [Stat(t("Min."), f"{french(min(values), 0)} hPa"), Stat(t("Max."), f"{french(max(values), 0)} hPa")]
-    return PressurePeriod(period, series, math.floor(min(values)) - 1 if values else 0, math.ceil(max(values)) + 1 if values else 2, tuple(stats))
+            stats.append(Stat(t(AGO[period]), text(first.value)))
+        stats += [Stat(t("Min."), text(min(values))), Stat(t("Max."), text(max(values)))]
+    low, top = (math.floor(min(values)) - 1, math.ceil(max(values)) + 1) if values else (0, 2)
+    if bounds:
+        low, top = max(bounds[0], low), min(bounds[1], top)
+    return PressurePeriod(period, series, low, top, tuple(stats))
 
 
 def _measures(get: Getter, settings: Settings, w: LocalWeather, hours: Sequence[Hour], history: Mapping[str, Sequence[Change]],
               rain_history: Mapping[str, Sequence[Change]], derived: Derived | None, now: datetime,
-              zone: ZoneInfo) -> tuple[RainView | None, WindView | None, PressureView | None]:
+              zone: ZoneInfo) -> tuple[RainView | None, WindView | None, PressureView | None, MeasureView | None, MeasureView | None]:
     metrics = {m.key: m for m in current_metrics(get, settings, w, hours, now)}
     status: ColumnStatus = column_status(w if w.available else None)
 
@@ -582,7 +606,36 @@ def _measures(get: Getter, settings: Settings, w: LocalWeather, hours: Sequence[
             series=six.series, low=six.low, top=six.top,
             empty=t("Historique du service météo absent ou trop court dans Home Assistant") if entity == settings.weather_entity
                   else t("Historique de pression indisponible ou insuffisant"), stats=six.stats, periods=periods)
-    return rain, wind, pressure
+
+    # The temperature and the humidity on their own card (issue #21): the station's sensors, else the weather service's values.
+    temperature = None
+    temperature_metric = metrics.get("temperature")
+    if temperature_metric and (temperature_metric.value is not None or settings.temperature_entity):
+        entity = temperature_metric.entity or settings.weather_entity
+        rows, unit = history_of(entity, "temperature", "°C")
+        week = week_of(entity, "temperature", rows)
+        temperature = MeasureView(
+            source=source_of(temperature_metric), value=temperature_metric.value, entity=entity,
+            description=" · ".join(x for x in (temperature_metric.detail, temperature_metric.description) if x),
+            empty=t("Historique du service météo absent ou trop court dans Home Assistant") if entity == settings.weather_entity
+                  else t("Historique de température indisponible ou insuffisant"),
+            periods=tuple(_measure_period(period, week if period != "6h" else rows, unit, now, temperature_metric.value, Kind.TEMPERATURE, "°C", 1)
+                          for period in PERIODS))
+    humidity = None
+    if w.humidity is not None or settings.humidity_entity:
+        measured = w.humidity_source == "station" or (w.humidity is None and bool(settings.humidity_entity))
+        entity = settings.humidity_entity if measured else settings.weather_entity
+        rows, unit = history_of(entity, "humidity", "%")
+        week = week_of(entity, "humidity", rows)
+        humidity = MeasureView(
+            source=t(STATION) if measured else weather_source_label(get, settings), value=w.humidity, entity=entity,
+            description=t("Point de rosée {value} °C", value=french(w.dew_point, 1, 1)) if w.dew_point is not None
+                        else t("Mesurée chez vous") if measured else t("Humidité du bulletin"),
+            empty=t("Historique du service météo absent ou trop court dans Home Assistant") if entity == settings.weather_entity
+                  else t("Historique d’humidité indisponible ou insuffisant"),
+            periods=tuple(_measure_period(period, week if period != "6h" else rows, unit, now, w.humidity, Kind.PLAIN, "%", 0, (0, 100))
+                          for period in PERIODS))
+    return rain, wind, pressure, temperature, humidity
 
 
 def pressure_trend(change: float, span: str) -> Chip:

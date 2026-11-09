@@ -202,11 +202,13 @@ try {
       const forms = [...e.shadowRoot.querySelectorAll('ha-form')].flatMap(f => names(f.schema ?? []));
       e.remove(); return forms;
     };
-    return { full: await run('full'), tile: await run('tile'), mini: await run('mini') };
+    return { full: await run('full'), tile: await run('tile'), mini: await run('mini'), temperature: await run('temperature') };
   });
   for (const name of ['collapse_today', 'collapse_predictions']) assert.ok(editor.full.includes(name), `Full card setting ${name}`);
   // The tile's own settings: its blocks and its long press (the page's path only shows once « Ouvrir une page » is chosen).
   assert.ok(editor.tile.includes('hold_action') && editor.tile.includes('tile_blocks') && !editor.tile.includes('collapse_today'), 'Tile settings');
+  // The Temperature card's own settings (issue #21): its parts, its period, its titles.
+  assert.ok(['card_blocks', 'temperature_span', 'show_title'].every(n => editor.temperature.includes(n)), 'Temperature settings');
   // The Mini's own settings: its values and its alerts (issue #22).
   assert.ok(editor.mini.includes('mini_values') && editor.mini.includes('mini_alerts') && editor.mini.includes('hold_action'), 'Mini settings');
   report.editor = editor;
@@ -397,6 +399,25 @@ try {
   assert.equal(vigil.alerting, true);
   assert.match(vigil.words, /Vigilance orange/);
   report.mini = 'Every value at 640, 380 and 230 px, scrolling, the temperature whole, the official vigilance';
+
+  // 12b. Température (issue #21): the temperature and the humidity, each with its curve and extremes; nothing wider than the card,
+  //      at a phone's width and a computer's, in both themes; without titles, no panel head.
+  for (const theme of ['light', 'dark']) for (const width of [375, 1180]) {
+    await show({ format: 'temperature', width, theme, condition: 'partlycloudy', animated: false });
+    const t = await inCard(root => {
+      const host = root.host.getBoundingClientRect();
+      const out = [...root.querySelectorAll('*')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.right > host.right + 1 || r.left < host.left - 1); });
+      return { out: out.map(e => e.className || e.tagName).slice(0, 5), panels: root.querySelectorAll('.nw-single.temperature .nw-panel').length,
+        curves: root.querySelectorAll('.nw-single.temperature .mini-plot svg').length, ahead: !!root.querySelector('.nw-single.temperature .rain-ahead .nw-chip') };
+    });
+    assert.deepEqual(t.out, [], `Overflow temperature ${width} ${theme}`);
+    assert.equal(t.panels, 2); assert.equal(t.curves, 2); assert.equal(t.ahead, true);
+  }
+  await page.evaluate(() => { const c = document.querySelector('hestia-weather-card'); c.setConfig({ ...c.config, show_title: false }); });
+  await sleep(200);
+  assert.equal(await inCard(root => [...root.querySelectorAll('.nw-panel-head')].filter(h => getComputedStyle(h).display !== 'none').length), 0, 'Untitled');
+  await page.locator('#stage').screenshot({ path: `${out}/temperature.png` });
+  report.temperature = 'Temperature and humidity, curves and extremes, phone and computer, both themes, without titles';
 
   // 12. Records (issue #17): this month alone, the station's hour on the line of its day, two cards side by side ending level.
   await page.setViewportSize({ width: 1300, height: 1000 });

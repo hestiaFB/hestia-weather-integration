@@ -9,17 +9,19 @@ import { chip, panelHead } from '../ui/parts';
 /** Where Blitzortung is chosen: the integration's settings. */
 const SETTINGS = '/config/integrations/integration/hestia_weather';
 import { airPanel } from './air';
-import { pressureComing, rainComing, renderForecastCard, stormComing, windComing } from './compact';
-import { around, comfortPanel, leftExtras, pressurePanel, rainPanel, windPanel } from './today';
+import { pressureComing, rainComing, renderForecastCard, stormComing, temperatureComing, windComing } from './compact';
+import { around, comfortPanel, leftExtras, measurePanel, pressurePanel, rainPanel, windPanel } from './today';
 import { lightningPanel } from './lightning';
 import '../ui/frise';
 
-export type SingleFormat = 'comfort' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'events';
+export type SingleFormat = 'comfort' | 'temperature' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'events';
 export interface SingleOptions {
   uid: string; entity: string;
   /** A local thermometer: the feel is compared with it rather than with the bulletin. */
   station: boolean;
   tab: 'hours' | 'days'; onTab: (tab: 'hours' | 'days') => void;
+  /** The panels' titles: false hides them (`show_title`, issue #21). */
+  title?: boolean;
 }
 
 /** The air and pollen panels chosen, in their order. */
@@ -43,6 +45,15 @@ export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardB
     const left = parts.has('factors') ? leftExtras(v.extras) : v.extras;
     const extras = parts.has('extras') && left.length ? html`<div class="nw-chips extras">${left.map(chip)}</div>` : nothing;
     body = v.comfort ? comfortPanel(v.comfort, o.uid, o.station, around(v), parts, extras) : empty(t('Ressenti indisponible pour le moment.'));
+  } else if (format === 'temperature') {
+    // Issue #21: the temperature (to come, now, its curve and extremes), then the humidity's panel when it is chosen.
+    const lead = parts.has('ahead') ? temperatureComing(v) : nothing;
+    const temp = v.temperature ? measurePanel(v.temperature, { key: 'temperature', icon: 'mdi:thermometer', theme: 'heat', title: t('Température'), unit: '°C', digits: 1, trend: v.now.trend }, o.uid, parts, lead)
+      : parts.has('ahead') || parts.has('now') || parts.has('chart') || parts.has('stats')
+        ? html`<section class="nw-panel" aria-label=${t('Température')}>${panelHead('mdi:thermometer', 'heat', t('Température'), v.provider)}${lead === nothing ? empty(t('Température indisponible pour le moment.')) : lead}</section>` : nothing;
+    const hum = parts.has('humidity') ? v.humidity ? measurePanel(v.humidity, { key: 'humidity', icon: 'mdi:water-percent', theme: 'rain', title: t('Humidité'), unit: '%', digits: 0 }, o.uid, parts)
+      : html`<section class="nw-panel" aria-label=${t('Humidité')}>${panelHead('mdi:water-percent', 'rain', t('Humidité'), v.provider)}${empty(t('Humidité indisponible pour le moment.'))}</section>` : nothing;
+    body = html`${temp}${hum}`;
   } else if (format === 'rain') {
     const lead = parts.has('ahead') ? rainComing(v) : nothing;
     // Without a rain gauge nor a bulletin amount, the rain to come still has its panel.
@@ -67,7 +78,7 @@ export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardB
     const panels = airPanels(v, blocks);
     body = panels.length ? html`<div class="panels-two">${panels.map(p => airPanel(p))}</div>` : empty(t('Air et pollens indisponibles pour le moment.'));
   }
-  return html`<div class=${`nw-single ${format}`}>${body}</div>`;
+  return html`<div class=${`nw-single ${format}${o.title === false ? ' untitled' : ''}`}>${body}</div>`;
 }
 
 /** The banner's timeline alone (issue #15): the forecast sky of the coming hours and its points, for small screens. */
@@ -81,6 +92,11 @@ function eventsPanel(v: WeatherView): TemplateResult {
 export const singleStyles = css`
   .nw-single { padding:14px 16px 16px; color:var(--nw-fg); }
   .nw-single .nw-panel { border:0; padding:0; background:none; }
+  /* Without titles (issue #21): the card shows only what it measures, as a sensor tile would. */
+  .nw-single.untitled .nw-panel-head { display:none; }
+  /* Température: the humidity under the temperature, past a soft line. */
+  .nw-single.temperature { display:flex; flex-direction:column; gap:18px; }
+  .nw-single.temperature .nw-panel + .nw-panel { padding-top:16px; border-top:1px solid var(--nw-line-soft); border-radius:0; }
   .nw-single .extras { justify-content:flex-start; }
   .lz-missing p { margin:0; font-size:var(--nw-fs-text); color:var(--nw-fg2); line-height:1.5; }
   .lz-missing .links { display:flex; flex-wrap:wrap; gap:8px; }

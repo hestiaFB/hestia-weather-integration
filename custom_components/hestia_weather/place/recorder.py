@@ -82,11 +82,12 @@ class RecorderMixin:
         return [Change(row.last_updated.timestamp(), row.state) for row in rows.get(entity_id, [])]
 
     async def _load_history(self) -> None:
-        """Six hours of pressure and wind for the charts and trends; today's gusts and the last hour of temperature when the station has no sensor for them."""
+        """Six hours of pressure, wind, temperature and humidity for the charts and trends (the temperature's last hour gives its trend
+        when the station has no sensor for it); today's gusts when it has none for their maximum."""
         s, now = self.settings, dt_util.utcnow()
         derived = s.station_history
         ids = sorted(e for e in {s.weather_entity, s.pressure_entity, s.wind_speed_entity, s.wind_gust_entity,
-                                 s.temperature_entity if derived and not s.temperature_trend_entity else None} if e)
+                                 s.temperature_entity, s.humidity_entity} if e)
         if not ids:
             self.history = {}
             return
@@ -106,7 +107,9 @@ class RecorderMixin:
         from_service = []
         for entity_id, attribute, kind, statistic in ((s.pressure_entity, "pressure", "pressure", "mean"),
                                                       (s.wind_speed_entity, "wind_speed", "speed", "mean"),
-                                                      (s.wind_gust_entity, "wind_gust_speed", "speed", "max")):
+                                                      (s.wind_gust_entity, "wind_gust_speed", "speed", "max"),
+                                                      (s.temperature_entity, "temperature", "temperature", "mean"),
+                                                      (s.humidity_entity, "humidity", None, "mean")):
             if not entity_id:
                 from_service.append(attribute)
                 continue
@@ -121,14 +124,14 @@ class RecorderMixin:
                 week[week_key(key)] = recorded.get(key, [])
         self.history = {**{k: v for k, v in self.history.items() if not k.endswith("#week")}, **week}
 
-    async def _hourly(self, entity_id: str, start: datetime, now: datetime, kind: str, statistic: str) -> list[Change] | None:
+    async def _hourly(self, entity_id: str, start: datetime, now: datetime, kind: str | None, statistic: str) -> list[Change] | None:
         """Hourly means or maxima, or None when the sensor keeps no statistics. The sensor itself may not have started yet
         (Hestia Weather often starts before the station): the statistics are read without it, in the unit they are kept in."""
         state = self.hass.states.get(entity_id)
         unit = state.attributes.get("unit_of_measurement") if state is not None else None
 
         def during() -> list[Any]:
-            rows = statistics.statistics_during_period(self.hass, start, now, {entity_id}, "hour", {kind: unit} if unit else None, cast(Any, {statistic}))
+            rows = statistics.statistics_during_period(self.hass, start, now, {entity_id}, "hour", {kind: unit} if unit and kind else None, cast(Any, {statistic}))
             return list(rows.get(entity_id, []))
 
         try:

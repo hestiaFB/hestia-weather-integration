@@ -179,3 +179,38 @@ def test_sends_plain_json_with_camel_case_keys_and_no_unknown_values() -> None:
     assert all(value is not None for value in data["now"].values())
     # Chart points travel as [seconds, value].
     assert data["pressure"]["series"] == [] or isinstance(data["pressure"]["series"][0], list)
+
+
+def test_temperature_and_humidity_cards_draw_the_station_curves_with_their_extremes():
+    """Issue #21: the temperature and humidity of the station, each with its curve, its extremes and where it started."""
+    from engine.trends import Change
+    start = NOW.timestamp() - 6 * 3600
+    history = {"sensor.temperature": [Change(start, "-2.5"), Change(start + 3 * 3600, "4.0")],
+               "sensor.humidity": [Change(start, "88"), Change(start + 3 * 3600, "61")]}
+    v = view({"temperature_entity": "sensor.temperature", "humidity_entity": "sensor.humidity"},
+             {"sensor.temperature": sensor(5.1, "°C"), "sensor.humidity": sensor(58, "%")}, history=history)
+    six = v.temperature.periods[0]
+    assert v.temperature.value == 5.1 and v.temperature.entity == "sensor.temperature" and v.temperature.source == "Station locale"
+    assert six.period == "6h" and six.series[0].value == -2.5 and six.series[-1].value == 5.1
+    assert [(s.label, s.value) for s in six.stats] == [("Il y a 6 h", "−2,5 °C"), ("Min.", "−2,5 °C"), ("Max.", "5,1 °C")]
+    assert six.low == -4 and six.top == 7
+    assert [p.period for p in v.temperature.periods] == ["6h", "1d", "2d", "7d"]
+    hum = v.humidity.periods[0]
+    assert v.humidity.value == 58 and v.humidity.entity == "sensor.humidity"
+    assert [(s.label, s.value) for s in hum.stats] == [("Il y a 6 h", "88 %"), ("Min.", "58 %"), ("Max.", "88 %")]
+    assert 0 <= hum.low and hum.top <= 100
+    assert v.humidity.description.startswith("Point de rosée")
+
+
+def test_temperature_and_humidity_cards_fall_back_on_the_weather_service_history():
+    from engine.trends import Change
+    from engine.series import weather_history, weather_history_key
+    start = NOW.timestamp() - 6 * 3600
+    rows = weather_history("weather.home", [type("Row", (), {"state": "cloudy", "last_updated": datetime.fromtimestamp(start, PARIS),
+                                                             "attributes": {"temperature": -1.5, "temperature_unit": "°C", "humidity": 90}})()])
+    assert rows[weather_history_key("weather.home", "temperature")][0].state == "-1.5"
+    v = view({}, {}, history={**rows, weather_history_key("weather.home", "pressure"): [Change(start, "1010")]})
+    assert v.temperature.entity == "weather.home" and v.temperature.periods[0].series[0].value == -1.5
+    assert v.humidity.entity == "weather.home" and v.humidity.periods[0].series[0].value == 90
+    assert v.humidity.description == "Point de rosée 17,6 °C" or v.humidity.description == "Humidité du bulletin"
+    assert to_json(v)["temperature"]["periods"][0]["series"][0][1] == -1.5

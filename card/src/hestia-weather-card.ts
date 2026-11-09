@@ -117,7 +117,7 @@ export class HestiaWeatherCard extends LitElement {
     if (this.config.format === 'alert') return this.view && this.hasAlert(this.view) ? 2 : 0;
     if (this.config.format === 'forecast' || this.config.format === 'rain' || this.config.format === 'air') return 5;
     if (this.config.format === 'records') return 6;
-    if (this.single) return this.config.format === 'comfort' || this.config.format === 'events' ? 3 : 4;
+    if (this.single) return this.config.format === 'comfort' || this.config.format === 'events' ? 3 : this.config.format === 'temperature' ? 6 : 4;
     if (this.tile) return this.unfolded ? 7 : 2;
     return Math.max(1, (this.config.show_synthesis === false ? 0 : 4) + (this.config.show_today === false ? 0 : 5) + (this.config.show_predictions === false ? 0 : 4));
   }
@@ -127,7 +127,7 @@ export class HestiaWeatherCard extends LitElement {
     return this.tile || this.single || format === 'records' || format === 'alert' ? { columns: 12, rows: 'auto', min_columns: 6 } : { columns: 'full', rows: 'auto' };
   }
   /** One part of the full card on its own: the feel, the rain, the wind, the pressure, the air and pollens, the forecasts, the events. */
-  private get single(): boolean { return ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events'].includes(this.config?.format ?? ''); }
+  private get single(): boolean { return ['comfort', 'temperature', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events'].includes(this.config?.format ?? ''); }
   /** The lightning card set to show only storms, while none is within 30 km. */
   private calm(v: WeatherView): boolean { return this.config?.format === 'lightning' && this.config.hide_when_calm === true && !!v.lightning && v.lightning.step === 0; }
 
@@ -284,7 +284,7 @@ export class HestiaWeatherCard extends LitElement {
       }
     }
     if (this.single) return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${renderSingle(view, config.format as SingleFormat, cardBlocks(config),
-      { uid: this.uid, entity: view.weatherEntity, station: view.station, tab: this.tab, onTab: this.setTab })}</ha-card>`;
+      { uid: this.uid, entity: view.weatherEntity, station: view.station, tab: this.tab, onTab: this.setTab, title: config.show_title !== false })}</ha-card>`;
     if (!this.tile) return html`<ha-card @click=${this.openEntity} @keydown=${this.entityKey}>${full()}</ha-card>`;
     const blocks = config.tile_blocks?.length ? config.tile_blocks : config.show_bulletin === false ? ['events' as const] : DEFAULT_BLOCKS;
     return html`<ha-card>
@@ -438,7 +438,7 @@ export class HestiaWeatherCard extends LitElement {
 // Each format has its own element (`hestia-weather-<format>-card`, intermediate → `hestia-weather-tile-open-card`): a card written by hand
 // with that type keeps its format. Home Assistant's « Add card » window offers three of them, one per kind of card, as the editor
 // classes them; the picker takes the type from getStubConfig, so dashboards never depend on these extra names.
-const FORMATS: Array<NonNullable<WeatherCardConfig['format']>> = ['full', 'tile', 'intermediate', 'mini', 'comfort', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events', 'records', 'alert'];
+const FORMATS: Array<NonNullable<WeatherCardConfig['format']>> = ['full', 'tile', 'intermediate', 'mini', 'comfort', 'temperature', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events', 'records', 'alert'];
 const elementOf = (format: NonNullable<WeatherCardConfig['format']>) => format === 'full' ? 'hestia-weather-card' : `hestia-weather-${format === 'intermediate' ? 'tile-open' : format}-card`;
 for (const format of FORMATS) {
   const type = elementOf(format);

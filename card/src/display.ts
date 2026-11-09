@@ -1,4 +1,4 @@
-import type { AirPanel, ChartPeriodId, PressureView, RainPeriodId, RainView, WeatherView, WindView } from './view';
+import type { AirPanel, ChartPeriodId, MeasureView, PressureView, RainPeriodId, RainView, WeatherView, WindView } from './view';
 import type { WeatherCardConfig } from './types';
 
 /** The view as this card shows it: the integration computes everything, the card's display settings leave out what they hide. */
@@ -6,6 +6,12 @@ import type { WeatherCardConfig } from './types';
 function pressureOver(p: PressureView, period: ChartPeriodId): PressureView {
   const chosen = p.periods?.find(x => x.period === period);
   return chosen ? { ...p, period, series: chosen.series, low: chosen.low, top: chosen.top, stats: chosen.stats } : { ...p, period: '6h' };
+}
+
+/** The temperature or the humidity over the chosen period; six hours when that one is missing. */
+function measureOver(m: MeasureView, period: ChartPeriodId): MeasureView {
+  const chosen = m.periods.find(x => x.period === period) ?? m.periods.find(x => x.period === '6h');
+  return chosen ? { ...m, period: chosen.period, series: chosen.series, low: chosen.low, top: chosen.top, stats: chosen.stats } : { ...m, period: '6h', series: [], low: 0, top: 2, stats: [] };
 }
 
 /** The wind over the chosen period, when the integration sends it; six hours otherwise. */
@@ -34,6 +40,8 @@ export function displayed(v: WeatherView, config: WeatherCardConfig, tile: boole
     bulletin: config.show_bulletin === false && !(tile && config.tile_blocks?.length) && !chosen ? undefined : v.bulletin,
     pressure: v.pressure && pressureOver(v.pressure, config.pressure_span ?? '6h'),
     wind: v.wind && windOver(v.wind, config.wind_span ?? '6h'),
+    temperature: v.temperature && measureOver(v.temperature, config.temperature_span ?? '6h'),
+    humidity: v.humidity && measureOver(v.humidity, config.temperature_span ?? '6h'),
     rain: v.rain && rainOver(v.rain, config.rain_span ?? '7d'),
     air: { today: details(v.air.today), tomorrow: config.show_atmo_tomorrow === false && !config.forecast_blocks && config.format !== 'air' ? [] : details(v.air.tomorrow) },
   };

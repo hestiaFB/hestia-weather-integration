@@ -158,6 +158,26 @@ export function pressureComing(v: WeatherView, alone = false): TemplateResult | 
   return html`<div class="rain-ahead">${label(t('À venir'))}${coming}</div>`;
 }
 
+/** The temperature to come (issue #21): the highest and the lowest of the next 18 forecast hours, and when. */
+export function temperatureAhead(v: WeatherView): { high: { value: number; hour: string }; low: { value: number; hour: string } } | undefined {
+  const known = v.hours.slice(0, 18).filter((h): h is typeof h & { temperature: number } => h.temperature !== undefined);
+  if (known.length < 2) return undefined;
+  const high = known.reduce((a, b) => b.temperature > a.temperature ? b : a), low = known.reduce((a, b) => b.temperature < a.temperature ? b : a);
+  return { high: { value: high.temperature, hour: hourText(high.hour) }, low: { value: low.temperature, hour: hourText(low.hour) } };
+}
+
+/** « À venir » for the temperature: the warmest and the coldest of the coming hours, the first of them first. */
+export function temperatureComing(v: WeatherView): TemplateResult {
+  const a = temperatureAhead(v);
+  const deg = (n: number) => `${nf(n).replace('-', '−')}°`;
+  const first = a && v.hours.findIndex(h => h.temperature === a.low.value) < v.hours.findIndex(h => h.temperature === a.high.value) ? 'low' : 'high';
+  const chips = a ? (first === 'low' ? ['low', 'high'] as const : ['high', 'low'] as const).map(k => k === 'high'
+    ? chip({ theme: a.high.value >= 30 ? 'level2' : 'heat', icon: 'mdi:thermometer-chevron-up', value: deg(a.high.value), label: t('max. vers {hour}', { hour: a.high.hour }) })
+    : chip({ theme: 'cold', icon: 'mdi:thermometer-chevron-down', value: deg(a.low.value), label: t('min. vers {hour}', { hour: a.low.hour }) })) : [];
+  const coming = !a ? html`<p class="nw-empty">${t('Prévisions indisponibles pour le moment.')}</p>` : html`<div class="nw-chips">${chips}</div>`;
+  return html`<div class="rain-ahead">${label(t('À venir'))}${coming}</div>`;
+}
+
 const STORMY = ['lightning', 'lightning-rainy', 'hail'];
 /** « À venir » for the lightning: a storm forecast within six hours, from the weather provider (Blitzortung only sees the strikes of now). */
 export function stormComing(v: WeatherView): TemplateResult {

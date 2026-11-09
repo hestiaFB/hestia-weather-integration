@@ -51,3 +51,15 @@ describe('What the card shows of the integration’s view', () => {
     expect([plain.wind!.period, plain.rain!.period, plain.rain!.days?.length]).toEqual(['6h', '7d', 1]);
   });
 });
+
+describe('The Temperature card’s period (issue #21)', () => {
+  const period = (p: '6h' | '1d', v: number) => ({ period: p, series: [[1, v]] as [number, number][], low: v - 1, top: v + 1, stats: [{ label: 'Min.', value: `${v} °C` }] });
+  const m = { source: 'Station', value: 5, description: '', empty: '', periods: [period('6h', 4), period('1d', 2)] };
+  it('shows the temperature and the humidity over the chosen period, six hours by default or when it is missing', () => {
+    const v = { ...view, temperature: m, humidity: m } as unknown as WeatherView;
+    expect(displayed(v, config({ temperature_span: '1d' }), false).temperature!.series).toEqual([[1, 2]]);
+    expect(displayed(v, config({ temperature_span: '1d' }), false).humidity!.period).toBe('1d');
+    expect(displayed(v, config(), false).temperature!.series).toEqual([[1, 4]]);
+    expect(displayed(v, config({ temperature_span: '7d' }), false).temperature!.period).toBe('6h');
+  });
+});

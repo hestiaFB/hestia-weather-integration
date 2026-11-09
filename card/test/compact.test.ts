@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alertItems, miniAlert, miniItems, pressureAhead, rainAhead, windAhead } from '../src/views/compact';
+import { alertItems, miniAlert, miniItems, pressureAhead, rainAhead, temperatureAhead, windAhead } from '../src/views/compact';
 import { airPanels } from '../src/views/single';
 import { displayed } from '../src/display';
 import type { AlertPoint, Slot, TickerPoint, WeatherView } from '../src/view';
@@ -87,5 +87,13 @@ describe('The Mini (issue #22)', () => {
     expect(miniAlert(view({ alerts: [v.alerts[0]] }))).toBeUndefined();
     expect(miniAlert(view({ alerts: [v.alerts[0]] }), 'all')?.text).toBe('Restriction d’eau');
     expect(miniAlert(v, 'none')).toBeUndefined();
+  });
+});
+
+describe('The Temperature card (issue #21)', () => {
+  it('says the warmest and the coldest of the next 18 hours, and when', () => {
+    const hours = [14, 15, 16, 17, 18].map((hour, i) => ({ ...slot(hour, 0), temperature: [12, 15.5, 16.2, 13, 9.4][i] }));
+    expect(temperatureAhead(view({ hours }))).toEqual({ high: { value: 16.2, hour: '16 h' }, low: { value: 9.4, hour: '18 h' } });
+    expect(temperatureAhead(view({ hours: [slot(14, 0)] }))).toBeUndefined();
   });
 });
