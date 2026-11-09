@@ -99,6 +99,8 @@ export class HestiaWeatherCard extends LitElement {
     const next = cleanConfig(config), old = this.config;
     if (old && JSON.stringify(old) === JSON.stringify(next)) return;
     this.config = next;
+    // The Records card fills its row, so two of them side by side end level (issue #17).
+    this.toggleAttribute('fill', next.format === 'records');
     if (!old || old.collapse_today !== next.collapse_today || old.collapse_predictions !== next.collapse_predictions)
       this.folded = { today: next.collapse_today === true, predictions: next.collapse_predictions === true };
     if (!old || old.format !== next.format || old.entry_id !== next.entry_id) this.open = this.remembered(next);
@@ -389,6 +391,8 @@ export class HestiaWeatherCard extends LitElement {
   static styles = [tokens, shared, marqueeStyles, pieces, bubbles, tileStyles, compactStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, singleStyles, lightningStyles, recordsStyles, traitStyles, css`
     :host { display:block; }
     :host([hidden]) { display:none; }
+    :host([fill]) { height:100%; }
+    :host([fill]) ha-card { height:100%; box-sizing:border-box; }
     /* Animations switched off: the alert halo stays still too, in the tile, the window and the scrolling bubble. */
     :host([still]) { --nw-motion:paused; }
     /* Frosted glass switched off: no blur anywhere (it costs a lot on slow devices), a more opaque glass keeps the text readable. */

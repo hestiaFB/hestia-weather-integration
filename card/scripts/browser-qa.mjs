@@ -368,6 +368,54 @@ try {
   }
   report.pollenCountries = 'Country labels and Kleenex location fit mobile and desktop';
 
+  // 12. Records (issue #17): this month alone, the station's hour on the line of its day, two cards side by side ending level.
+  await page.setViewportSize({ width: 1300, height: 1000 });
+  const records = await page.evaluate(async () => {
+    document.documentElement.classList.remove('dark');
+    const count = (year, month) => ({ year, month, mean: null, best: [year, 2026], partial: false, since: '2025-12-01' });
+    const station = { since: '2025-12-01', marks: {
+      chaleur: { ever: [42.4, '2026-06-24', 16], year: [42.4, '2026-06-24', 16], month: [18.4, '2026-11-03', 15] },
+      froid: { ever: [-8.2, '2026-01-04', 5], year: [-8.2, '2026-01-04', 5], month: [2.1, '2026-11-08', 6] },
+      rafale: { ever: [143, '2026-01-09', 3], year: [143, '2026-01-09', 3], month: null },
+      pluie: { ever: [24.1, '2026-05-05', null], year: [24.1, '2026-05-05', null], month: null } },
+      counts: { jours_gel: count(12, 0), jours_chauds: count(68, 0), nuits_tropicales: count(18, 0), jours_canicule: count(0, 0) } };
+    const lieu = { since: '1940-01-01', marks: {
+      chaleur: { ever: [40.2, '2019-07-25', null], year: [39.8, '2026-06-24', null], month: [17.9, '2026-11-03', null] },
+      froid: { ever: [-19.2, '1987-01-17', null], year: [-7, '2026-01-01', null], month: [1.4, '2026-11-08', null] },
+      rafale: { ever: [131, '1999-12-26', null], year: [84, '2026-10-23', null], month: [52, '2026-11-02', null] },
+      pluie: { ever: [49.9, '1965-08-07', null], year: [24.7, '2026-05-05', null], month: [8.2, '2026-11-01', null] } },
+      counts: { jours_gel: count(13, 0), jours_chauds: count(52, 0), nuits_tropicales: count(27, 0) } };
+    const hass = { states: {}, language: 'fr', locale: { language: 'fr' }, callWS: async () => [], connection: { subscribeMessage: async (callback, message) => {
+      setTimeout(() => callback({ version: 1, station, lieu, loading: [] }), 20); return async () => {}; } } };
+    const stage = document.getElementById('stage'); stage.replaceChildren();
+    const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:12px;width:1040px'; stage.append(row);
+    const cards = ['station', 'lieu', 'station'].map((records_source, i) => {
+      const box = document.createElement('div'); box.style.cssText = 'flex:1 1 0;min-width:0;display:flex;flex-direction:column';
+      const card = document.createElement('hestia-weather-card');
+      card.setConfig({ type: 'custom:hestia-weather-card', format: 'records', records_source, records_period: i === 2 ? 'month' : 'both' });
+      card.hass = hass;
+      if (i < 2) { box.append(card); row.append(box); } else { card.style.width = '380px'; stage.append(card); }
+      return card;
+    });
+    await new Promise(r => setTimeout(r, 400));
+    const [a, b, month] = cards.map(c => c.shadowRoot);
+    const h = root => root.querySelector('ha-card').getBoundingClientRect().height;
+    const text = e => e?.textContent.replace(/\s+/g, ' ').trim();
+    return { heights: [h(a), h(b)], hour: text(a.querySelector('.rk-row .rk-d')), brokenHour: !!a.querySelector('.rk-row .rk-d br'),
+      title: text(month.querySelector('.nw-title')), values: [...month.querySelectorAll('.rk-row .rk-v')].map(text), columns: !!month.querySelector('.rk-cols'),
+      counts: [...month.querySelectorAll('.rk-counts b')].map(text), chips: month.querySelectorAll('.nw-chip').length };
+  });
+  assert.ok(Math.abs(records.heights[0] - records.heights[1]) < 1, `Records cards side by side: ${records.heights}`);
+  assert.equal(records.hour, '24 juin · vers 16 h');
+  assert.equal(records.brokenHour, false);
+  assert.match(records.title, /novembre 2026/);
+  assert.deepEqual(records.values, ['18,4°C', '2,1°C', '—', '—']);
+  assert.equal(records.columns, false);
+  assert.deepEqual(records.counts, ['0 j', '0 j', '0 j', '0 j']);
+  assert.equal(records.chips, 0, 'No « Nouveau » on this month’s records');
+  await page.locator('#stage').screenshot({ path: `${out}/records.png` });
+  report.records = 'This month alone, the hour on the line of the day, two cards side by side ending level';
+
   assert.deepEqual(errors, [], 'Browser errors');
   writeFileSync(`${out}/browser-report.json`, JSON.stringify(report, null, 2));
   console.log(`Contrôles navigateur réussis : ${report.layout.length} mises en page, accessibilité, gestes, fenêtre complète, sections repliables, bulles « i », charte, éditeur.`);

@@ -173,7 +173,7 @@ export class HestiaWeatherCardEditor extends LitElement {
     // The timeline alone: nothing to choose, its sky and its points are the banner's.
     if (kind === 'events') return [...place, ...format];
     if (kind === 'records') return [...place, ...format, group(t('Contenu'), 'mdi:view-list-outline', [
-      choice('records_period', [['year', t('Cette année')], ['all', t('Depuis toujours')], ['both', t('Les deux')]]),
+      choice('records_period', [['month', t('Ce mois')], ['year', t('Cette année')], ['all', t('Depuis toujours')], ['both', t('Les deux')]]),
       choice('records_source', [['station', t('Votre station')], ['lieu', t('Le lieu (depuis 1940)')], ['both', t('Les deux')]]),
       choice('records_layout', [['list', t('Liste')], ['cases', t('Cases')]])], true)];
     if (this.small) return [...place, ...format, look,

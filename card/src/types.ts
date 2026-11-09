@@ -43,8 +43,8 @@ export interface WeatherCardConfig {
    *  and of the place (issue #17). alert: only while there is a vigilance or an alert, hidden otherwise.
    *  On the small formats a long press (a tap on mini and alert) does what hold_action says. */
   format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'comfort' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'events' | 'records' | 'alert';
-  /** The Records card: this year, all time, or both (default). */
-  records_period?: 'year' | 'all' | 'both';
+  /** The Records card: this month, this year, all time, or this year and all time (both, default). */
+  records_period?: 'month' | 'year' | 'all' | 'both';
   /** The Records card: the station (default), the place since 1940 (Open-Meteo's archive), or both. */
   records_source?: 'station' | 'lieu' | 'both';
   /** The Records card: one line per record (list, default) or four cases (cases). */
