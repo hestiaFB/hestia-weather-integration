@@ -1,4 +1,9 @@
-## À venir — Feux de forêt et rivière
+## 3.7.0 — Feux de forêt et rivière
+
+**En bref**
+
+- **Les feux de forêt signalés autour de chez vous, et la fumée quand le vent la pousse vers la maison (PyroVeille).**
+- **La rivière à la station Vigicrues la plus proche : hauteur, montée et vos seuils (CrueVeille, en bêta).**
 
 ### Nouveautés
 
