@@ -29,7 +29,9 @@
           "vigilance_entity": "Vigilance officielle",
           "season_entity": "Saison",
           "water_restriction_entity": "Restrictions d’eau (Vigieau)",
-          "lightning_entity": "Éclairs (Blitzortung)"
+          "lightning_entity": "Éclairs (Blitzortung)",
+          "fire_entity": "Feux de forêt (PyroVeille)",
+          "river_entity": "Rivière (CrueVeille, bêta)"
         },
         "data_description": {
           "weather_entity": "Météo-France, MétéoSuisse ou un autre fournisseur.",
@@ -37,7 +39,9 @@
           "vigilance_entity": "Facultatif : Météo-France ou MeteoSwiss (capteur regroupant les alertes).",
           "season_entity": "Facultatif. Sans capteur, la saison suit la date.",
           "water_restriction_entity": "Facultatif : le niveau d’alerte de l’intégration Vigieau, zone de l’eau du robinet (AEP).",
-          "lightning_entity": "Facultatif : le capteur de distance de l’intégration Blitzortung. À moins de 30 km, le capteur Orage s’allume."
+          "lightning_entity": "Facultatif : le capteur de distance de l’intégration Blitzortung. À moins de 30 km, le capteur Orage s’allume.",
+          "fire_entity": "Facultatif : le capteur « Alerte incendie proche » de l’intégration PyroVeille. Les feux signalés autour de chez vous, et si leur fumée vient vers la maison.",
+          "river_entity": "Facultatif : le capteur « Alerte inondation » de l’intégration CrueVeille (bêta). La hauteur de la rivière mesurée à la station Vigicrues la plus proche."
         },
         "sections": {
           "advanced": {
@@ -189,7 +193,9 @@
           "vigilance_entity": "Vigilance officielle",
           "season_entity": "Saison",
           "water_restriction_entity": "Restrictions d’eau (Vigieau)",
-          "lightning_entity": "Éclairs (Blitzortung)"
+          "lightning_entity": "Éclairs (Blitzortung)",
+          "fire_entity": "Feux de forêt (PyroVeille)",
+          "river_entity": "Rivière (CrueVeille, bêta)"
         },
         "data_description": {
           "weather_entity": "Météo-France, MétéoSuisse ou un autre fournisseur.",
@@ -197,7 +203,9 @@
           "vigilance_entity": "Facultatif : Météo-France ou MeteoSwiss (capteur regroupant les alertes).",
           "season_entity": "Facultatif. Sans capteur, la saison suit la date.",
           "water_restriction_entity": "Facultatif : le niveau d’alerte de l’intégration Vigieau, zone de l’eau du robinet (AEP).",
-          "lightning_entity": "Facultatif : le capteur de distance de l’intégration Blitzortung. À moins de 30 km, le capteur Orage s’allume."
+          "lightning_entity": "Facultatif : le capteur de distance de l’intégration Blitzortung. À moins de 30 km, le capteur Orage s’allume.",
+          "fire_entity": "Facultatif : le capteur « Alerte incendie proche » de l’intégration PyroVeille. Les feux signalés autour de chez vous, et si leur fumée vient vers la maison.",
+          "river_entity": "Facultatif : le capteur « Alerte inondation » de l’intégration CrueVeille (bêta). La hauteur de la rivière mesurée à la station Vigicrues la plus proche."
         },
         "sections": {
           "advanced": {
@@ -402,6 +410,8 @@
         "gel": "Gel — oui/non",
         "canicule": "Canicule — oui/non ; en France, la vigilance Météo-France",
         "uv_fort": "UV forts — oui/non",
+        "incendie_proche": "Incendie proche — les feux signalés autour de chez vous, via PyroVeille",
+        "riviere": "Rivière — hauteur et montée à la station Vigicrues proche, via CrueVeille (bêta)",
         "bulletin": "Bulletin du jour — le texte de la prévision, à lire ou envoyer",
         "next_rain": "Pluie dans — heures avant la prochaine pluie",
         "pluie_heure": "Pluie dans l’heure — mm",
@@ -570,6 +580,24 @@
           "alerte": "Alerte",
           "alerte_renforcee": "Alerte renforcée",
           "crise": "Crise"
+        }
+      },
+      "incendie_proche": {
+        "name": "Incendie proche",
+        "state": {
+          "aucun": "Aucun feu",
+          "eteint": "Feu éteint",
+          "signale": "Feu signalé",
+          "actif": "Feu actif"
+        }
+      },
+      "riviere": {
+        "name": "Rivière",
+        "state": {
+          "calme": "Rien à signaler",
+          "a_surveiller": "À surveiller",
+          "vigilance": "Seuil de vigilance",
+          "critique": "Seuil critique"
         }
       },
       "record_chaleur": {

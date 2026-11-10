@@ -99,6 +99,7 @@ def facts(hass: HomeAssistant, entry: Any, card_twice: bool = False, context: Co
     weather = get(sources.get("weather_entity") or "")
     vigilance = get(sources.get("vigilance_entity") or "")
     water, strikes = get(sources.get("water_restriction_entity") or ""), get(sources.get("lightning_entity") or "")
+    fires, flow = get(sources.get("fire_entity") or ""), get(sources.get("river_entity") or "")
     found = detection.vigilance_candidates(states, registry)
     model = Draft(hass, sources, entry).station_model()
     sensors, chosen = [], set()
@@ -173,6 +174,10 @@ def facts(hass: HomeAssistant, entry: Any, card_twice: bool = False, context: Co
         lightning=_name(strikes, sources["lightning_entity"]) if sources.get("lightning_entity") else "",
         # « unknown » is Blitzortung's quiet state, between storms.
         lightning_ok=strikes is not None and strikes.state != "unavailable",
+        fire=_name(fires, sources["fire_entity"]) if sources.get("fire_entity") else "",
+        fire_ok=fires is not None and fires.state not in GONE,
+        river=_name(flow, sources["river_entity"]) if sources.get("river_entity") else "",
+        river_ok=flow is not None and flow.state not in GONE,
         station=MODELS.get(model, "") if model != NONE else "", sensors=sensors, history=bool(sources.get("station_history", True)),
         unused=unused, air=(f"WAQI · {sources.get('waqi_place') or sources.get('waqi_station')}" if waqi_air and sources.get("waqi_station")
                             else f"Atmo France · {area}" if area and sources.get("air_source") not in ("none", "waqi") else ""),

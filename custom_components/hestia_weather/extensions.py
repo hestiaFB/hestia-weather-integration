@@ -18,12 +18,16 @@ CATALOGUE = (
     ("atmo", "atmofrance", "Atmo France", N_("Qualité de l’air et pollens de votre commune."), "sebcaps/atmofrance", 2, ""),
     ("vigieau", "vigieau", "Vigieau", N_("Restrictions d’eau et usages concernés."), "kamaradclimber/vigieau", 6, "water_restriction_entity"),
     ("blitzortung", "blitzortung", "Blitzortung", N_("Éclairs à proximité, distance et direction de l’orage."), "mrk-its/homeassistant-blitzortung", 0, "lightning_entity"),
+    ("pyroveille", "pyroveille", "PyroVeille", N_("Feux de forêt signalés autour de chez vous, et la fumée quand le vent la pousse vers la maison."), "vico34/pyroveille", 0, "fire_entity"),
+    ("crueveille", "vigicrues_alert", "CrueVeille", N_("Hauteur et montée de la rivière à la station Vigicrues proche."), "vico34/crueveille", 0, "river_entity"),
     ("waqi", "waqi", "WAQI", N_("Qualité de l’air mesurée par une station près de chez vous."), "", 2, ""),
     ("polleninformation", "polleninformation", "Polleninformation", N_("Pollens par espèce dans les pays couverts."), "krissen/polleninformation", 3, ""),
     ("irm_kmi", "irm_kmi", "IRM KMI", N_("Pollens en Belgique."), "jdejaegh/irm-kmi-ha", 3, ""),
     ("swiss_pollen", "swiss_pollen", "Swiss Pollen", N_("Mesures de pollens en Suisse."), "frimtec/hass-swiss-pollen", 3, ""),
     ("kleenex_pollenradar", "kleenex_pollenradar", "Kleenex / Scottex", N_("Pollens en France et dans les pays couverts."), "MarcoGos/kleenex_pollenradar", 3, ""),
 )
+BETA = frozenset({"crueveille"})
+"""Extensions Weather reads while they are young: their sensors may still change, the panel says so."""
 # Integrations Weather could read one day: listed only when Home Assistant has them loaded (socle 1.18, « Demander »).
 OTHERS = (
     {"key": "vigicrues", "name": "Vigicrues", "use": N_("Pourrait dire la hauteur de la rivière proche et sa vigilance crues.")},
@@ -109,7 +113,7 @@ def inventory(hass: HomeAssistant, options: Mapping[str, Any]) -> list[dict[str,
                        "configured": chosen,
                        "air_configured": options.get("air_source") not in ("none", "waqi") and bool(options.get("atmo_air_entity")) if key == "atmo" else False,
                        "pollen_configured": options.get("pollen_source") not in ("none", "legacy") and bool(options.get("atmo_pollen_entity")) if key == "atmo" else False,
-                       "stage": stage, "field": field,
+                       "stage": stage, "field": field, "beta": key in BETA,
                        "url": f"https://github.com/{repository}" if repository else f"https://www.home-assistant.io/integrations/{domain}/" if key in ("waqi", "meteo_france") else "",
                        "integration": domain,
                        "install": (t("Dans HACS, cherchez « Blitzortung.org Lightning Detector » et téléchargez-le. Redémarrez Home Assistant, "

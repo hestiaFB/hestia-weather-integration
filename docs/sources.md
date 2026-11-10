@@ -14,6 +14,8 @@ Hestia Weather assemble des données **déjà présentes** dans Home Assistant. 
 | Atmo France | Facultative | Air extérieur et pollens, aujourd’hui et demain. |
 | Vigieau | Facultative | Les restrictions d’eau (sécheresse) de votre commune. |
 | Blitzortung | Facultative | Les éclairs détectés autour de chez vous : l’orage vu, pas seulement prévu. |
+| PyroVeille | Facultative | Les feux de forêt signalés autour de chez vous, et si le vent pousse leur fumée vers la maison. |
+| CrueVeille | Facultative, **bêta** | La hauteur et la montée de la rivière à la station Vigicrues la plus proche. |
 | Historique (Recorder) | Facultatif, actif par défaut dans Home Assistant | Courbes et tendances, cumuls de pluie et rafale du jour calculés quand la station ne les donne pas. |
 
 ## Configurer
@@ -22,11 +24,11 @@ Tout se règle dans le panneau **Hestia-FB** de la barre latérale, onglet **Mé
 
 - **Accueil** : à lire seulement. L’état de chaque lieu, ce qui reste à régler, les extensions et les versions.
 - **Réglages généraux** : vos lieux (**Modifier**, **Ajouter un lieu**) et les cartes. Une installation faite sous l’ancien nom y trouve aussi « Nom des entités » ([les noms techniques](capteurs.md#noms-techniques)).
-- **Extensions** : chaque intégration que Hestia Weather sait lire, rangée par thème (sources météo, qualité de l’air, pollens, eau et jardin, orages et éclairs), avec son état : utilisée, installée ou non installée. **Comment l’installer** donne la marche à suivre. Hestia Confort s’y relie d’un interrupteur.
+- **Extensions** : chaque intégration que Hestia Weather sait lire, rangée par thème (sources météo, qualité de l’air, pollens, eau et jardin, orages et éclairs, feux et crues), avec son état : utilisée, installée ou non installée. **Comment l’installer** donne la marche à suivre. Hestia Confort s’y relie d’un interrupteur.
 
 Un lieu se règle en sept étapes :
 
-1. **Sources météo** : l’entité météo, le nom du lieu, la vigilance, la saison, les éclairs (Blitzortung).
+1. **Sources météo** : l’entité météo, le nom du lieu, la vigilance, la saison, les éclairs (Blitzortung), les feux de forêt (PyroVeille) et la rivière (CrueVeille).
 2. **Station météo** : le modèle reconnu, puis chaque capteur. Laissez vide ce que la station ne mesure pas.
 3. **Qualité de l’air** : Atmo France, une station WAQI, ou aucune.
 4. **Pollens** : Atmo France, Polleninformation, IRM KMI (Belgique), Swiss Pollen (Suisse), Kleenex / Scottex (France et autres pays couverts) ou aucune. Avec Swiss Pollen, choisissez une station commune aux espèces suivies ; avec les autres fournisseurs par espèce, choisissez leurs capteurs.
@@ -161,6 +163,26 @@ Ce capteur ne garde que le dernier éclair ; Hestia Weather retient lui-même ce
 
 Les éclairs ne font jamais tomber une vigilance ni un orage prévu : quand le bulletin annonce un orage en cours sans éclair à moins de 30 km, le capteur Orage reste allumé et le dit. Après un redémarrage, les éclairs de la dernière heure reviennent de l’historique, sans leur direction. Les données viennent d’un réseau bénévole de détecteurs : très fiables en France, mais ce n’est pas un service officiel.
 
+## PyroVeille — feux de forêt
+
+Installez [PyroVeille](https://github.com/vico34/pyroveille) dans HACS, centré sur votre maison, avec le rayon qui vous intéresse. Choisissez son capteur **Alerte incendie proche** : il liste les feux du rayon.
+
+Le capteur **Incendie proche** (famille Alertes) dit le feu le plus proche : `aucun`, `eteint`, `signale` ou `actif`, avec sa distance, sa direction et sa commune : « Feu actif à 4,6 km au sud-ouest (Gignac 34) ».
+
+- Un feu **signalé ou actif** dans le rayon apparaît dans la synthèse, à surveiller.
+- Un feu **actif à moins de 10 km**, ou dont **le vent pousse la fumée vers la maison**, demande une attention renforcée. Le vent est celui de votre station quand elle a une girouette, sinon celui du service météo.
+- Un feu éteint reste en attribut, sans alerte.
+
+Les attributs donnent la distance, la direction, la fumée vers la maison (`fumee_vers_maison`), le nombre de feux, le rayon et le lien du signalement. Les données viennent de la carte participative feuxdeforet.fr : ce n’est **pas une vigilance officielle**. Un PyroVeille qui ne répond pas laisse le capteur inconnu, jamais « aucun ».
+
+## CrueVeille — rivière (bêta)
+
+Installez [CrueVeille](https://github.com/vico34/crueveille) dans HACS, sur votre position ou une station précise, avec vos seuils. Choisissez son capteur **Alerte inondation** : il porte toutes les mesures.
+
+Le capteur **Rivière** (famille Alertes) reprend le niveau que CrueVeille calcule avec vos seuils : `calme`, `a_surveiller`, `vigilance` ou `critique`, avec la station, la hauteur et la montée : « Seuil de vigilance · La Loire à Orléans : 2,10 m, +8 cm/h ». La synthèse en parle **à partir du seuil de vigilance**. La hauteur projetée et l’heure de la mesure sont en attributs.
+
+Les hauteurs viennent de Hub’Eau (Vigicrues). Le niveau est celui de CrueVeille, **pas la vigilance crues officielle**, qui arrive avec la vigilance Météo-France (« Crues », « Inondation »). CrueVeille est récent : Hestia-FB le lit en **bêta**, ses capteurs peuvent encore changer.
+
 ## Historique (Recorder)
 
 Les capteurs de vent, de pression et de pluie doivent être enregistrés par l’historique de Home Assistant (c’est le cas par défaut). Il sert aux courbes, aux tendances et aux bilans calculés : voir [Pluie, vent, pression](mesures.md). Sans historique, les valeurs du moment restent affichées et rien n’est inventé.
@@ -177,6 +199,8 @@ Les clés sont les mêmes que dans le YAML de la carte avant la 2.0 : les régla
 | `season_entity` | Capteur de l’intégration Saison |
 | `water_restriction_entity` | Capteur niveau d’alerte de Vigieau |
 | `lightning_entity` | Capteur distance de Blitzortung |
+| `fire_entity` | Capteur « Alerte incendie proche » de PyroVeille |
+| `river_entity` | Capteur « Alerte inondation » de CrueVeille (bêta) |
 | `sun_entity`, `sun_elevation_entity` | Soleil, si ce n’est pas `sun.sun` |
 | `station_model` | `gw2000a`, `ws90`, `netatmo` ou `manual` |
 | `station_history` | Calculer les cumuls de pluie et la rafale du jour depuis l’historique quand la station ne les donne pas (activé) |

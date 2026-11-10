@@ -13,7 +13,7 @@ from .i18n import N_, language, t
 STALE_FORECAST = 90
 """Minutes after which a forecast that should come every 15 minutes is old."""
 # Where an entity's missing source is set (an assistant step); the others are station sensors.
-NEED_STAGE = {"vigilance": 0, "qualite_air": 2, "pollens": 3, "restrictions_eau": 6}
+NEED_STAGE = {"vigilance": 0, "qualite_air": 2, "pollens": 3, "restrictions_eau": 6, "incendie_proche": 0, "riviere": 0}
 # What a station sensor brings, when the station has one that is not chosen.
 GAINS = {
     "temperature_entity": N_("la température mesurée chez vous, au lieu de celle du service météo"),
@@ -64,6 +64,12 @@ class Facts:
     """Blitzortung's distance sensor, by name; "" when not chosen."""
     lightning_ok: bool = True
     """It answers: « unknown » is its quiet state, not a failure."""
+    fire: str = ""
+    """PyroVeille's « Alerte incendie proche » sensor, by name; "" when not chosen."""
+    fire_ok: bool = True
+    river: str = ""
+    """CrueVeille's « Alerte inondation » sensor, by name; "" when not chosen."""
+    river_ok: bool = True
     station: str = ""
     """The station's model (« GW2000A »), "" without a station."""
     sensors: Sequence[Sensor] = ()
@@ -226,7 +232,8 @@ def report(f: Facts) -> dict:
                         "text": t("aucune source") if not value else value + ("" if good else " · " + t("ne répond pas"))})
     sources.append({"key": "season", "label": t("Saison"), "level": "ok" if f.season else "none", "text": f.season or t("pas de capteur : suit la date")})
     # Optional extras: shown once chosen, never as a grey line for every home that has no use for them.
-    for key, label, value, good in (("water", t("Restrictions d’eau"), f.water, f.water_ok), ("lightning", t("Éclairs"), f.lightning, f.lightning_ok)):
+    for key, label, value, good in (("water", t("Restrictions d’eau"), f.water, f.water_ok), ("lightning", t("Éclairs"), f.lightning, f.lightning_ok),
+                                    ("fire", t("Feux de forêt"), f.fire, f.fire_ok), ("river", t("Rivière"), f.river, f.river_ok)):
         if value:
             sources.append({"key": key, "label": label, "level": "ok" if good else "bad", "text": value + ("" if good else " · " + t("ne répond pas"))})
 

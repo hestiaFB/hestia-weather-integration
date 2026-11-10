@@ -45,6 +45,10 @@ class AlertPoint:
 def label(s: Signal) -> str:
     if s.key == "water":
         return t("Eau")
+    if s.key == "fire":
+        return t("Incendie")
+    if s.key == "river":
+        return t("Rivière")
     if s.group == "now":
         return t("Maintenant")
     if s.group == "future":
@@ -58,8 +62,10 @@ def theme_of(s: Signal) -> str | None:
         return "rain"
     if s.key.startswith("wind"):
         return "wind"
-    if s.key == "water":
+    if s.key in ("water", "river"):
         return "rain"
+    if s.key == "fire":
+        return "heat"
     if s.key in ("pressure", "pressure-future", "storm", "storm-near", "storm-far"):
         return "pressure"
     if s.key == "uv":

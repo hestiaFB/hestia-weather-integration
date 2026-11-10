@@ -61,6 +61,8 @@ Des oui/non prêts à déclencher, et la vigilance officielle. Une alerte s’al
 | `binary_sensor.hestia_weather_gel` | Gel mesuré, ou gel au sol possible cette nuit (≤ 3 °C prévus) | Rentrer les plantes, hors-gel |
 | `binary_sensor.hestia_weather_canicule` | En France, la vigilance canicule de Météo-France : orange = canicule, rouge = canicule extrême (niveau 3). Ailleurs : ressenti ≥ 34 °C, ou 35 °C prévus dans les 24 h ou demain | Fermer les volets côté soleil |
 | `binary_sensor.hestia_weather_uv_fort` · *à activer* | Indice UV ≥ 6 (capteur UV nécessaire) | Rappel crème solaire |
+| `sensor.hestia_weather_incendie_proche` · *à activer* | Le feu le plus proche signalé par PyroVeille : `aucun`, `eteint`, `signale` ou `actif` ; distance, direction et fumée vers la maison en attributs | Fermer les fenêtres quand la fumée arrive |
+| `sensor.hestia_weather_riviere` · *à activer* | La rivière à la station Vigicrues proche, via CrueVeille (bêta) : `calme`, `a_surveiller`, `vigilance` ou `critique` ; hauteur et montée en attributs | Surélever ce qui craint au sous-sol |
 
 ## Prochaines heures
 

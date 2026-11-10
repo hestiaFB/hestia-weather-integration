@@ -10,9 +10,10 @@ from datetime import date, datetime, timedelta
 from typing import Any, Callable, Mapping, Sequence
 from zoneinfo import ZoneInfo
 
-from . import atmo, polleninfo, water
+from . import atmo, polleninfo, river, water
 from .brief import COLOR_NAMES, Brief, Vigilance, number, read_vigilance
 from .feel import STORMY, normalise_condition
+from .fire import Fires
 from .forecast import Day, Hour
 from .lightning import NEAR_KM, Lightning
 from .local import CONDITION_TITLES, LocalWeather
@@ -41,7 +42,7 @@ class Item:
     """A number, a word, True/False for a yes/no, or None when unknown."""
     reason: str = ""
     source: str | None = None
-    """« station », « bulletin », « prevision », « vigilance », « atmo », « waqi », « blitzortung » or « vigieau »."""
+    """« station », « bulletin », « prevision », « vigilance », « atmo », « waqi », « blitzortung », « vigieau », « pyroveille » or « crueveille »."""
     start: datetime | None = None
     end: datetime | None = None
     partial: bool = False
@@ -151,8 +152,9 @@ def measured_day_mean(rows: Sequence[tuple[float, float | None, float | None]], 
 
 def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, settings: Settings, get: Callable[[str], Any],
                     hours: Sequence[Hour], days: Sequence[Day], now: datetime, zone: ZoneInfo,
-                    platforms: Mapping[str, str] | None = None, lightning: Lightning | None = None) -> dict[str, Item]:
-    """Every entry of the catalogue at this moment. `hours` and `days` are the whole forecasts; `lightning` Blitzortung's strikes."""
+                    platforms: Mapping[str, str] | None = None, lightning: Lightning | None = None, fires: Fires | None = None) -> dict[str, Item]:
+    """Every entry of the catalogue at this moment. `hours` and `days` are the whole forecasts; `lightning` Blitzortung's strikes;
+    `fires` what PyroVeille reports around the home."""
     upcoming = sorted((h for h in hours if h.time is not None and h.time + HOUR > now), key=lambda h: h.time or now)
     forecast = bool(upcoming)
     weather = get(settings.weather_entity)
@@ -350,6 +352,16 @@ def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, sett
         text = "faible" if uv < 3 else "modéré" if uv < 6 else "fort" if uv < 8 else "très fort" if uv < 11 else "extrême"
         items["uv_fort"] = Item(strong, f"Indice UV {number(uv, 0)} : {text}" if strong else "Indice UV sous 6", uv_source,
                                 level=2 if uv >= 8 else 1 if strong else 0)
+
+    if fires is not None:
+        items["incendie_proche"] = Item(fires.value, fires.text, "pyroveille", level=fires.level, extra=fires.extra())
+    else:
+        items["incendie_proche"] = Item(None, "PyroVeille non choisi" if not settings.fire_entity else "PyroVeille indisponible", "pyroveille")
+    flow = river.read(get, settings)
+    if flow is not None:
+        items["riviere"] = Item(flow.value, flow.text, "crueveille", level=flow.level, extra=flow.extra())
+    else:
+        items["riviere"] = Item(None, "CrueVeille non choisi" if not settings.river_entity else "CrueVeille indisponible", "crueveille")
 
     # ---- Prochaines heures ----
     for key, span in (("pluie_heure", 1), ("pluie_6h", 6), ("pluie_24h_prevue", 24)):

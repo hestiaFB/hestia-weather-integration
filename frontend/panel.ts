@@ -20,7 +20,7 @@ const createSections=order.map(stage=>sections.find(x=>x.stage===stage)??{stage,
 const repository='https://github.com/hestiaFB/hestia-weather-integration';
 const sectionStage=(section:string)=>categories.indexOf(section);
 // The same words and colours as Hestia Confort's general settings: blue when used, orange when something is to do.
-const extIcon:Record<string,string>={hestia_comfort:'home',meteo_france:'weather',open_meteo:'weather',atmo:'air',waqi:'air',vigieau:'pollen',blitzortung:'weather',polleninformation:'pollen',irm_kmi:'pollen',swiss_pollen:'pollen',kleenex_pollenradar:'pollen'};
+const extIcon:Record<string,string>={hestia_comfort:'home',meteo_france:'weather',open_meteo:'weather',atmo:'air',waqi:'air',vigieau:'pollen',blitzortung:'weather',pyroveille:'weather',crueveille:'weather',polleninformation:'pollen',irm_kmi:'pollen',swiss_pollen:'pollen',kleenex_pollenradar:'pollen'};
 const hacsUrl=(url:string)=>{const [owner,repository]=url.replace('https://github.com/','').split('/');return `https://my.home-assistant.io/redirect/hacs_repository/?owner=${owner}&repository=${repository}&category=integration`;};
 
 @customElement('hestia-weather-setup')
@@ -232,11 +232,15 @@ export class WeatherSetup extends LitElement {
  }
 
  // ---- The steps ----
- private prevision(v:View){const p=v.prevision,lightning=p.fields.find(f=>f.key==='lightning_entity');
+ private prevision(v:View){const p=v.prevision,lightning=p.fields.find(f=>f.key==='lightning_entity'),fire=p.fields.find(f=>f.key==='fire_entity'),river=p.fields.find(f=>f.key==='river_entity');
+  const ext=(id:string)=>v.extensions?.find(e=>e.id===id);
+  const risks=[...this.integrationRow(ext('pyroveille'),!!fire?.options.length),...(fire?[this.field(fire)]:[]),
+   ...this.integrationRow(ext('crueveille'),!!river?.options.length),...(river?[this.field(river)]:[])];
   return html`${listSection(t('Prévisions du lieu'),[...this.integrationRow(v.extensions?.find(e=>e.id==='meteo_france')),this.field(p.fields[0]),
     this.textRow('location',t('Nom du lieu'),p.location,p.location_placeholder,t('Affiché en tête de la carte. Vide : le nom vient du service météo.'))])}
-   ${listSection(t('Alertes et saison'),p.fields.slice(1).filter(f=>!['water_restriction_entity','lightning_entity'].includes(f.key)).map(f=>this.field(f)))}
-   ${listSection(t('Orages et éclairs'),[...this.integrationRow(v.extensions?.find(e=>e.id==='blitzortung'),!!lightning?.options.length),...(lightning?[this.field(lightning)]:[])])}
+   ${listSection(t('Alertes et saison'),p.fields.slice(1).filter(f=>!['water_restriction_entity','lightning_entity','fire_entity','river_entity'].includes(f.key)).map(f=>this.field(f)))}
+   ${listSection(t('Orages et éclairs'),[...this.integrationRow(ext('blitzortung'),!!lightning?.options.length),...(lightning?[this.field(lightning)]:[])])}
+   ${risks.length?listSection(t('Feux et crues'),risks):nothing}
    ${listSection('',moreRow(t('Réglages avancés'),'',html`<p class="hint nk-more-note">${t('Laissés vides, Hestia-FB prend le soleil de Home Assistant.')}</p>${p.advanced.map(f=>this.field(f))}${this.textRow('forecast_source',t('Nom de la source des prévisions'),p.forecast_source,'')}`))}
    ${this.refreshSources()}${this.bottom()}`;
  }
@@ -329,9 +333,10 @@ export class WeatherSetup extends LitElement {
    :html`<a href=${'https://my.home-assistant.io/redirect/config_flow_start/?domain='+integration} target="_blank" rel="noreferrer">${t('Ajouter')}</a>`;
   // One line per extension, as in Confort (socle 1.21): what it is for, then its switch, or the one thing to do.
   // With several places, one switch per place under it.
-  const rows=(name:string,use:string,sub:string|undefined,switches:{label:string;checked:boolean;disabled:boolean;set:(on:boolean)=>void}[],value:unknown)=>{
+  // A young extension Weather already reads says so beside its name: its sensors may still change.
+  const rows=(name:string,use:string,sub:string|undefined,switches:{label:string;checked:boolean;disabled:boolean;set:(on:boolean)=>void}[],value:unknown,beta=false)=>{
    const one=switches.length===1?switches[0]:undefined;
-   return [listRow({label:name,sub:[use,sub].filter(Boolean).join(' · ')||undefined,value:one?toggle(one.label,one.checked,one.set,one.disabled):value}),
+   return [listRow({name,label:beta?html`${name} <span class="nk-pill todo">${t('Bêta')}</span>`:name,sub:[use,sub].filter(Boolean).join(' · ')||undefined,value:one?toggle(one.label,one.checked,one.set,one.disabled):value}),
     ...(switches.length>1?switches.map(sw=>listRow({label:sw.label,value:toggle(sw.label,sw.checked,sw.set,sw.disabled)})):[])];};
   return html`<main>${pageHead({title:t('Extensions'),subtitle:t('Les autres briques Hestia-FB et les intégrations que Météo lit. Un changement s’enregistre tout de suite : le lieu redémarre.')})}
    ${this.saved?html`<p class="notice" role="status">${this.saved}</p>`:nothing}${this.error?html`<p class="notice error" role="alert">${this.error}</p>`:nothing}
@@ -347,7 +352,7 @@ export class WeatherSetup extends LitElement {
     const detail=e.online?(several?mine.map(x=>`${x.p.title} : ${x.e.detail??''}`).join(' · '):mine[0]?.e.detail??''):e.id==='meteo_france'?t('Obligatoire : les prévisions et la vigilance du lieu.'):'';
     const value=e.online?html`<a href=${e.url} target="_blank" rel="noreferrer">${t('En savoir plus')}</a>`:!e.installed?install(e.url,e.integration)
      :used.length===1?html`<button type="button" class="nk-reset-s" ?disabled=${this.busy} @click=${()=>void this.open(used[0].p.entry_id,e.stage)}>${t('Régler')}</button>`:undefined;
-    return rows(e.name,e.description,detail||undefined,switches,value);})))}
+    return rows(e.name,e.description,detail||undefined,switches,value,!!e.beta);})))}
    ${detectedFrame({brick:t('Météo'),repository,version:places[0]?.health.technical?.integration??'',rows:this.places?.others??[]})}
    <button class="link" ?disabled=${this.busy} @click=${()=>void this.loadExtensions()}>${t('Actualiser la détection')}</button>`}
   </main>${this.busy?html`<p class="busy" role="status">${t('Un instant…')}</p>`:nothing}`;
@@ -362,7 +367,8 @@ export class WeatherSetup extends LitElement {
   return html`${listSection(t('Configuration du lieu'),[row(t('Sources météo'),`${v.summary.weather} · « ${v.title} »`),
     row(t('Station météo'),v.summary.station+(v.station.model!==NONE?' · '+(v.station.history?t('historique calculé'):t('sans historique')):'')),
     row(t('Qualité de l’air'),capital(v.summary.air)),row(t('Pollens'),capital(v.summary.pollen)),row(t('Eau et jardin'),named('water_restriction_entity')),
-    row(t('Orages et éclairs'),named('lightning_entity')),row(t('Entités'),entities)])}
+    row(t('Orages et éclairs'),named('lightning_entity')),row(t('Feux de forêt'),named('fire_entity')),row(t('Rivière'),named('river_entity')),
+    row(t('Entités'),entities)])}
    ${v.needs.length?listSection(t('À savoir'),v.needs.map(n=>listRow({label:html`<span class="warn">${t('{need}. L’entité restera vide.',{need:n})}</span>`}))):nothing}
    <p class="notice">${this.entryId?t('En enregistrant, le lieu redémarre avec ses nouveaux réglages : la carte se met à jour quelques secondes plus tard.'):t('En enregistrant, Hestia Weather crée ce lieu et ses entités.')}</p>
    ${this.bottom()}`;

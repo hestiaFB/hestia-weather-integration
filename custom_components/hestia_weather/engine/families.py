@@ -8,7 +8,7 @@ from .settings import Settings
 FAMILIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("maintenant", ("feels_like", "temps_observe", "pluie_en_cours", "brouillard", "dew_point", "frost_point", "humidex", "pressure_trend",
                     "temperature_trend", "rain_24h", "max_gust_today")),
-    ("alertes", ("vigilance", "alert", "brief", "orage", "vent_fort", "pluie_forte", "gel", "canicule", "uv_fort")),
+    ("alertes", ("vigilance", "alert", "brief", "orage", "vent_fort", "pluie_forte", "gel", "canicule", "uv_fort", "incendie_proche", "riviere")),
     ("prochaines_heures", ("bulletin", "next_rain", "pluie_heure", "pluie_6h", "pluie_24h_prevue", "minimale_nuit", "maximale_demain", "rafales_6h")),
     ("jardin", ("pluie_7j", "restrictions_eau")),
     ("batiment", ("degres_jours_chauffe", "degres_jours_clim")),
@@ -39,6 +39,8 @@ def needs(settings: Settings) -> dict[str, str]:
     missing = {
         "vigilance": not settings.vigilance_entity and N_("la vigilance officielle"),
         "restrictions_eau": not settings.water_restriction_entity and N_("l’intégration Vigieau"),
+        "incendie_proche": not settings.fire_entity and N_("l’intégration PyroVeille"),
+        "riviere": not settings.river_entity and N_("l’intégration CrueVeille"),
         "uv_fort": not settings.uv_index_entity and N_("un capteur UV (OpenUV, station…)"),
         "pluie_7j": not (rain_gauge and settings.station_history) and N_("un pluviomètre et l’historique de la station"),
         "rain_24h": not rain_gauge and N_("un pluviomètre"),

@@ -29,7 +29,9 @@
           "vigilance_entity": "Amtliche Wetterwarnungen",
           "season_entity": "Jahreszeit",
           "water_restriction_entity": "Wassereinschränkungen (Vigieau)",
-          "lightning_entity": "Blitze (Blitzortung)"
+          "lightning_entity": "Blitze (Blitzortung)",
+          "fire_entity": "Waldbrände (PyroVeille)",
+          "river_entity": "Fluss (CrueVeille, Beta)"
         },
         "data_description": {
           "weather_entity": "Météo-France, MeteoSwiss oder ein anderer Anbieter.",
@@ -37,7 +39,9 @@
           "vigilance_entity": "Optional: Météo-France oder MeteoSwiss (Sensor mit den gesammelten Warnungen).",
           "season_entity": "Optional. Ohne Sensor richtet sich die Jahreszeit nach dem Datum.",
           "water_restriction_entity": "Optional: die Warnstufe der Integration Vigieau, Trinkwasserzone (AEP).",
-          "lightning_entity": "Optional: der Entfernungssensor der Integration Blitzortung. Innerhalb von 30 km schaltet sich der Gewitter-Sensor ein."
+          "lightning_entity": "Optional: der Entfernungssensor der Integration Blitzortung. Innerhalb von 30 km schaltet sich der Gewitter-Sensor ein.",
+          "fire_entity": "Optional: der Sensor « Alerte incendie proche » der Integration PyroVeille. Gemeldete Brände in Ihrer Umgebung und ob ihr Rauch zum Haus zieht.",
+          "river_entity": "Optional: der Sensor « Alerte inondation » der Integration CrueVeille (Beta). Der Wasserstand an der nächsten Vigicrues-Station."
         },
         "sections": {
           "advanced": {
@@ -189,7 +193,9 @@
           "vigilance_entity": "Amtliche Wetterwarnungen",
           "season_entity": "Jahreszeit",
           "water_restriction_entity": "Wassereinschränkungen (Vigieau)",
-          "lightning_entity": "Blitze (Blitzortung)"
+          "lightning_entity": "Blitze (Blitzortung)",
+          "fire_entity": "Waldbrände (PyroVeille)",
+          "river_entity": "Fluss (CrueVeille, Beta)"
         },
         "data_description": {
           "weather_entity": "Météo-France, MeteoSwiss oder ein anderer Anbieter.",
@@ -197,7 +203,9 @@
           "vigilance_entity": "Optional: Météo-France oder MeteoSwiss (Sensor mit den gesammelten Warnungen).",
           "season_entity": "Optional. Ohne Sensor richtet sich die Jahreszeit nach dem Datum.",
           "water_restriction_entity": "Optional: die Warnstufe der Integration Vigieau, Trinkwasserzone (AEP).",
-          "lightning_entity": "Optional: der Entfernungssensor der Integration Blitzortung. Innerhalb von 30 km schaltet sich der Gewitter-Sensor ein."
+          "lightning_entity": "Optional: der Entfernungssensor der Integration Blitzortung. Innerhalb von 30 km schaltet sich der Gewitter-Sensor ein.",
+          "fire_entity": "Optional: der Sensor « Alerte incendie proche » der Integration PyroVeille. Gemeldete Brände in Ihrer Umgebung und ob ihr Rauch zum Haus zieht.",
+          "river_entity": "Optional: der Sensor « Alerte inondation » der Integration CrueVeille (Beta). Der Wasserstand an der nächsten Vigicrues-Station."
         },
         "sections": {
           "advanced": {
@@ -402,6 +410,8 @@
         "gel": "Frost — ja/nein",
         "canicule": "Hitzewelle — ja/nein; in Frankreich die Warnung von Météo-France",
         "uv_fort": "Hohe UV-Strahlung — ja/nein",
+        "incendie_proche": "Brand in der Nähe — gemeldete Brände in Ihrer Umgebung, über PyroVeille",
+        "riviere": "Fluss — Pegel und Anstieg an der nahen Vigicrues-Station, über CrueVeille (Beta)",
         "bulletin": "Tagesbericht — der Vorhersagetext, zum Vorlesen oder Versenden",
         "next_rain": "Regen in — Stunden bis zum nächsten Regen",
         "pluie_heure": "Regen innerhalb einer Stunde — mm",
@@ -570,6 +580,24 @@
           "alerte": "Warnung",
           "alerte_renforcee": "Erhöhte Warnung",
           "crise": "Krise"
+        }
+      },
+      "incendie_proche": {
+        "name": "Brand in der Nähe",
+        "state": {
+          "aucun": "Kein Brand",
+          "eteint": "Brand gelöscht",
+          "signale": "Brand gemeldet",
+          "actif": "Aktiver Brand"
+        }
+      },
+      "riviere": {
+        "name": "Fluss",
+        "state": {
+          "calme": "Nichts zu melden",
+          "a_surveiller": "Beobachten",
+          "vigilance": "Warnschwelle",
+          "critique": "Kritische Schwelle"
         }
       },
       "record_chaleur": {

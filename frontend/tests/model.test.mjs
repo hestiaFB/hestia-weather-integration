@@ -46,6 +46,18 @@ test('extensions group by use and Atmo keeps separate air and pollen configurati
  assert.notEqual(groups[1].items[0].id,groups[2].items[0].id);
 });
 
+test('PyroVeille and CrueVeille sit together under fires and floods, and their switch sets their sensor',()=>{
+ const ext=(id,extra={})=>({id,name:id,description:'',installed:true,configured:false,stage:0,field:'',url:'',integration:id,install:'',...extra});
+ const groups=extensionGroups([ext('blitzortung'),ext('pyroveille',{field:'fire_entity'}),ext('crueveille',{field:'river_entity',beta:true})]);
+ const risks=groups.find(g=>g.key==='risks');
+ assert.deepEqual([risks.label,risks.items.map(e=>e.id)],['Feux et crues',['pyroveille','crueveille']]);
+ assert.equal(risks.items[1].beta,true);
+ const view={air:{value:'none',sources:[]},pollen:{value:'none',sources:[]},
+  prevision:{fields:[{key:'fire_entity',value:'',options:[sensor('binary_sensor.fire')],better:null},{key:'river_entity',value:'binary_sensor.flood',options:[sensor('binary_sensor.flood')],better:null}]}};
+ assert.deepEqual(extensionSwitch(risks.items[0],view).on,[{op:'set',key:'fire_entity',value:'binary_sensor.fire'}]);
+ assert.deepEqual(extensionSwitch(risks.items[1],{...view}).off,[{op:'set',key:'river_entity',value:''}]);
+});
+
 test('an extension switch turns its source on or off in the draft, and Météo-France has none',()=>{
  const ext=(id,extra={})=>({id,name:id,description:'',installed:true,configured:false,stage:2,field:'',url:'',integration:id,install:'',...extra});
  const view={air:{value:'atmo',sources:[{value:'atmo',label:'Atmo'},{value:'waqi',label:'WAQI',available:false},{value:'none',label:'Aucune'}]},

@@ -77,6 +77,20 @@
           "alerte_renforcee": "mdi:water-remove",
           "crise": "mdi:water-off"
         }
+      },
+      "incendie_proche": {
+        "default": "mdi:pine-tree-fire",
+        "state": {
+          "signale": "mdi:fire-alert",
+          "actif": "mdi:fire-alert"
+        }
+      },
+      "riviere": {
+        "default": "mdi:waves",
+        "state": {
+          "vigilance": "mdi:waves-arrow-up",
+          "critique": "mdi:home-flood"
+        }
       }
     },
     "binary_sensor": {

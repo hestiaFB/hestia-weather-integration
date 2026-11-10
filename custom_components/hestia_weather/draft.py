@@ -27,7 +27,7 @@ from .engine.i18n import N_, language, t
 AIR_SOURCES = ("atmo", "waqi", NONE)
 POLLEN_SOURCES = ("atmo", *polleninfo.PROVIDERS, NONE)
 SIMPLE = frozenset({"weather_entity", "location", "vigilance_entity", "season_entity", "sun_entity", "sun_elevation_entity",
-                    "water_restriction_entity", "lightning_entity",
+                    "water_restriction_entity", "lightning_entity", "fire_entity", "river_entity",
                     "forecast_source", "station_history", "station_shade", "open_meteo_pressure", "pollen_risk_entity", *detection.STATION_FIELDS})
 RECOMMENDED = frozenset({"temperature_entity", "humidity_entity", "rain_rate_entity", "wind_gust_entity", "wind_bearing_entity"})
 HELP = {
@@ -36,6 +36,8 @@ HELP = {
     "season_entity": N_("Sans capteur, la saison suit la date."),
     "water_restriction_entity": N_("Les restrictions d’eau de votre commune, avec l’intégration Vigieau (HACS). Choisissez la zone de l’eau du robinet (AEP)."),
     "lightning_entity": N_("Les éclairs détectés autour de chez vous, avec l’intégration Blitzortung (HACS). À moins de 30 km, le capteur Orage s’allume."),
+    "fire_entity": N_("Les feux signalés autour de chez vous sur la carte FeuxDeForet, avec l’intégration PyroVeille (HACS). Hestia-FB dit aussi si le vent pousse la fumée vers la maison."),
+    "river_entity": N_("La rivière à la station Vigicrues la plus proche, avec l’intégration CrueVeille (HACS, bêta) : hauteur, montée, et les seuils que vous y avez réglés."),
     "temperature_entity": N_("La température dehors, à l’ombre."),
     "rain_rate_entity": N_("Dit s’il pleut maintenant (mm/h). Un cumul de la journée ne le dit pas."),
     "wind_gust_entity": N_("Les pointes de vent : elles déclenchent l’alerte de vent fort."),
@@ -321,6 +323,8 @@ class Draft(_SourceSteps):
                 self._field("season_entity", t("Saison"), detection.season_candidates(states, registry)),
                 self._field("water_restriction_entity", t("Restrictions d’eau (Vigieau)"), detection.water_candidates(states, registry)),
                 self._field("lightning_entity", t("Éclairs (Blitzortung)"), detection.lightning_candidates(states, registry)),
+                self._field("fire_entity", t("Feux de forêt (PyroVeille)"), detection.fire_candidates(states, registry)),
+                self._field("river_entity", t("Rivière (CrueVeille, bêta)"), detection.river_candidates(states, registry)),
             ],
             "location": s.get("location") or "", "location_placeholder": self._title(),
             "advanced": [

@@ -29,7 +29,9 @@
           "vigilance_entity": "Official weather warnings",
           "season_entity": "Season",
           "water_restriction_entity": "Water restrictions (Vigieau)",
-          "lightning_entity": "Lightning (Blitzortung)"
+          "lightning_entity": "Lightning (Blitzortung)",
+          "fire_entity": "Wildfires (PyroVeille)",
+          "river_entity": "River (CrueVeille, beta)"
         },
         "data_description": {
           "weather_entity": "Météo-France, MeteoSwiss or another provider.",
@@ -37,7 +39,9 @@
           "vigilance_entity": "Optional: Météo-France or MeteoSwiss (aggregate warnings sensor).",
           "season_entity": "Optional. Without a sensor, the season follows the date.",
           "water_restriction_entity": "Optional: the alert level of the Vigieau integration, drinking water zone (AEP).",
-          "lightning_entity": "Optional: the distance sensor of the Blitzortung integration. Within 30 km, the Storm sensor turns on."
+          "lightning_entity": "Optional: the distance sensor of the Blitzortung integration. Within 30 km, the Storm sensor turns on.",
+          "fire_entity": "Optional: the « Alerte incendie proche » sensor of the PyroVeille integration. Fires reported around your home, and whether their smoke comes towards the house.",
+          "river_entity": "Optional: the « Alerte inondation » sensor of the CrueVeille integration (beta). The river height measured at the nearest Vigicrues station."
         },
         "sections": {
           "advanced": {
@@ -189,7 +193,9 @@
           "vigilance_entity": "Official weather warnings",
           "season_entity": "Season",
           "water_restriction_entity": "Water restrictions (Vigieau)",
-          "lightning_entity": "Lightning (Blitzortung)"
+          "lightning_entity": "Lightning (Blitzortung)",
+          "fire_entity": "Wildfires (PyroVeille)",
+          "river_entity": "River (CrueVeille, beta)"
         },
         "data_description": {
           "weather_entity": "Météo-France, MeteoSwiss or another provider.",
@@ -197,7 +203,9 @@
           "vigilance_entity": "Optional: Météo-France or MeteoSwiss (aggregate warnings sensor).",
           "season_entity": "Optional. Without a sensor, the season follows the date.",
           "water_restriction_entity": "Optional: the alert level of the Vigieau integration, drinking water zone (AEP).",
-          "lightning_entity": "Optional: the distance sensor of the Blitzortung integration. Within 30 km, the Storm sensor turns on."
+          "lightning_entity": "Optional: the distance sensor of the Blitzortung integration. Within 30 km, the Storm sensor turns on.",
+          "fire_entity": "Optional: the « Alerte incendie proche » sensor of the PyroVeille integration. Fires reported around your home, and whether their smoke comes towards the house.",
+          "river_entity": "Optional: the « Alerte inondation » sensor of the CrueVeille integration (beta). The river height measured at the nearest Vigicrues station."
         },
         "sections": {
           "advanced": {
@@ -402,6 +410,8 @@
         "gel": "Frost — yes/no",
         "canicule": "Heatwave — yes/no; in France, Météo-France's vigilance",
         "uv_fort": "High UV — yes/no",
+        "incendie_proche": "Nearby fire — fires reported around your home, through PyroVeille",
+        "riviere": "River — height and rise at the nearby Vigicrues station, through CrueVeille (beta)",
         "bulletin": "Today’s bulletin — the forecast text, to read aloud or send",
         "next_rain": "Rain in — hours before the next rain",
         "pluie_heure": "Rain within the hour — mm",
@@ -570,6 +580,24 @@
           "alerte": "Alert",
           "alerte_renforcee": "Reinforced alert",
           "crise": "Crisis"
+        }
+      },
+      "incendie_proche": {
+        "name": "Nearby fire",
+        "state": {
+          "aucun": "No fire",
+          "eteint": "Fire out",
+          "signale": "Fire reported",
+          "actif": "Active fire"
+        }
+      },
+      "riviere": {
+        "name": "River",
+        "state": {
+          "calme": "Nothing to report",
+          "a_surveiller": "To watch",
+          "vigilance": "Warning threshold",
+          "critique": "Critical threshold"
         }
       },
       "record_chaleur": {

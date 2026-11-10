@@ -17,7 +17,7 @@ from homeassistant.util import slugify
 from .engine import legacy
 from .const import DOMAIN
 from .coordinator import HestiaWeatherConfigEntry, HestiaWeatherCoordinator, Snapshot
-from .engine import families, records, water
+from .engine import families, fire, records, river, water
 from .engine.catalogue import CONDITIONS, DRYING, VIGILANCE, Item
 from .engine.feel import Alert
 from .engine.moisture import humidex
@@ -160,6 +160,10 @@ _DEGREE_DAYS = {"native_unit_of_measurement": "DJU", "state_class": SensorStateC
 CATALOGUE_SENSORS: tuple[CatalogueSensorDescription, ...] = (
     CatalogueSensorDescription(key="temps_observe", translation_key="temps_observe", device_class=SensorDeviceClass.ENUM, options=list(CONDITIONS)),
     CatalogueSensorDescription(key="vigilance", translation_key="vigilance", device_class=SensorDeviceClass.ENUM, options=list(VIGILANCE)),
+    CatalogueSensorDescription(key="incendie_proche", translation_key="incendie_proche", device_class=SensorDeviceClass.ENUM,
+                               options=list(fire.STATES), entity_registry_enabled_default=False),
+    CatalogueSensorDescription(key="riviere", translation_key="riviere", device_class=SensorDeviceClass.ENUM,
+                               options=list(river.STATES), entity_registry_enabled_default=False),
     CatalogueSensorDescription(key="pluie_heure", translation_key="pluie_heure", **_MM),
     CatalogueSensorDescription(key="pluie_6h", translation_key="pluie_6h", **_MM),
     CatalogueSensorDescription(key="pluie_24h_prevue", translation_key="pluie_24h_prevue", **_MM),

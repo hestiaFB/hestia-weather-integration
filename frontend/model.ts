@@ -18,7 +18,7 @@ export interface Technical {
  forecast:{hours:number|null;days:number|null;received:string|null};computation:string|null;
  entities:{active:number;with_value:number;total:number};integration:string;links:string[];interface_version:number;
 }
-export interface Extension {id:string;name:string;description:string;installed:boolean;configured:boolean;online?:boolean;detail?:string;air_configured?:boolean;pollen_configured?:boolean;stage:number;field:string;url:string;integration:string;install:string}
+export interface Extension {id:string;name:string;description:string;installed:boolean;configured:boolean;online?:boolean;beta?:boolean;detail?:string;air_configured?:boolean;pollen_configured?:boolean;stage:number;field:string;url:string;integration:string;install:string}
 // A Hestia-FB brick: Hestia Confort keeps the link, Hestia Weather reads and changes it through Confort's interface.
 export interface Official {id:string;name:string;official:true;installed:boolean;linked:boolean;elsewhere:string;switchable:boolean;description:string;url:string}
 export interface Place {entry_id:string;title:string;loaded:boolean;failed:boolean;health:Health;extensions?:Extension[];official?:Official[];
@@ -111,6 +111,7 @@ export function extensionGroups(items:Extension[]):ExtensionGroup[]{
   {key:'pollen',label:t('Pollens'),items:[...subject('pollen',3),...items.filter(e=>['polleninformation','irm_kmi','swiss_pollen','kleenex_pollenradar'].includes(e.id))]},
   {key:'water',label:t('Eau et jardin'),items:items.filter(e=>e.id==='vigieau')},
   {key:'storm',label:t('Orages et éclairs'),items:items.filter(e=>e.id==='blitzortung')},
+  {key:'risks',label:t('Feux et crues'),items:items.filter(e=>e.id==='pyroveille'||e.id==='crueveille')},
  ].filter(g=>g.items.length);
 }
 

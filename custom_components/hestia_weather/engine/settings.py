@@ -58,6 +58,10 @@ class Settings:
     """Vigieau's alert level sensor: the drought restrictions of the commune."""
     lightning_entity: str | None = None
     """Blitzortung's distance sensor: each of its changes is a strike."""
+    fire_entity: str | None = None
+    """PyroVeille's « Alerte incendie proche » binary sensor: the fires reported around the home."""
+    river_entity: str | None = None
+    """CrueVeille's « Alerte inondation » binary sensor: the river measured at the nearest Vigicrues station (beta)."""
     open_meteo_pressure: bool = True
     """Ask Open-Meteo for the pressure to come when the weather service gives none (Météo-France): the home's position, rounded, leaves Home Assistant."""
     # Station

@@ -44,7 +44,7 @@ STATION_FIELDS = tuple(STATION_RULES)
 ANY_DEVICE = frozenset({"uv_index_entity"})
 """Measures many stations lack (a Netatmo has no UV sensor): taken from another device, such as OpenUV, when the station has none."""
 SOURCE_FIELDS = ("weather_entity", "vigilance_entity", "sun_entity", "sun_elevation_entity", "season_entity", "water_restriction_entity",
-                 "lightning_entity")
+                 "lightning_entity", "fire_entity", "river_entity")
 CATEGORY_FIELDS: dict[str, tuple[str, ...]] = {"weather": SOURCE_FIELDS, "station": STATION_FIELDS, "atmo": ATMO_KEYS}
 
 _WIND_UNITS = r"^(km/h|m/s|mph|kn|kt|kts|knots?)$"
@@ -681,9 +681,29 @@ def _is_lightning(state: StateLike, entry: Mapping[str, Any]) -> bool:
     return entry.get("translation_key") == "distance" or str(entry.get("unique_id") or "").endswith("-distance")
 
 
+def fire_candidates(states: Sequence[StateLike], registry: Registry) -> list[str]:
+    """PyroVeille's « Alerte incendie proche » binary sensors, one per watched place: the one that lists the fires."""
+    return [s.entity_id for s in states if _is_fire(s, registry.get(s.entity_id) or {})]
+
+
+def _is_fire(state: StateLike, entry: Mapping[str, Any]) -> bool:
+    return (entry.get("platform") == "pyroveille" and not entry.get("disabled_by") and state.entity_id.startswith("binary_sensor.")
+            and str(entry.get("unique_id") or "").endswith("_nearby_fire"))
+
+
+def river_candidates(states: Sequence[StateLike], registry: Registry) -> list[str]:
+    """CrueVeille's « Alerte inondation » binary sensors (domain vigicrues_alert), one per watched station: the one that carries them all."""
+    return [s.entity_id for s in states if _is_river(s, registry.get(s.entity_id) or {})]
+
+
+def _is_river(state: StateLike, entry: Mapping[str, Any]) -> bool:
+    return (entry.get("platform") == "vigicrues_alert" and not entry.get("disabled_by") and state.entity_id.startswith("binary_sensor.")
+            and (entry.get("translation_key") == "flood_alert" or str(entry.get("unique_id") or "").endswith("_flood_alert")))
+
+
 def detect_sources(states: Sequence[StateLike], registry: Registry, options: Mapping[str, Any], devices: Devices | None = None) -> dict[str, str]:
-    """The weather service (Météo-France first), its vigilance, the sun, the season, Vigieau and Blitzortung, each only when there is a
-    single choice (for Vigieau, the drinking water zone among several)."""
+    """The weather service (Météo-France first), its vigilance, the sun, the season, Vigieau, Blitzortung, PyroVeille and CrueVeille, each
+    only when there is a single choice (for Vigieau, the drinking water zone among several)."""
     detected: dict[str, str] = {}
     # Hestia Weather's own weather entity is a result, never a source.
     weather = [s for s in states if s.entity_id.startswith("weather.") and (registry.get(s.entity_id) or {}).get("platform") != "hestia_weather"]
@@ -711,6 +731,9 @@ def detect_sources(states: Sequence[StateLike], registry: Registry, options: Map
     lightnings = lightning_candidates(states, registry)
     if options.get("lightning_entity") is None and len(lightnings) == 1:
         detected["lightning_entity"] = lightnings[0]
+    for key, found in (("fire_entity", fire_candidates(states, registry)), ("river_entity", river_candidates(states, registry))):
+        if options.get(key) is None and len(found) == 1:
+            detected[key] = found[0]
     return detected
 
 

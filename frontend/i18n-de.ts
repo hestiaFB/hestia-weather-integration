@@ -57,7 +57,7 @@ export const PANEL_DE:Record<string,string>={
  "Choisir « {name} » à la place":"Stattdessen „{name}“ wählen","Étape précédente":"Vorheriger Schritt","Continuer":"Weiter","Créer ce lieu":"Diesen Ort anlegen",
  "Prévisions du lieu":"Vorhersagen des Ortes","Nom du lieu":"Name des Ortes",
  "Affiché en tête de la carte. Vide : le nom vient du service météo.":"Oben auf der Karte angezeigt. Leer: Der Name kommt vom Wetterdienst.",
- "Alertes et saison":"Warnungen und Jahreszeit","Orages et éclairs":"Gewitter und Blitze","Réglages avancés":"Erweiterte Einstellungen",
+ "Alertes et saison":"Warnungen und Jahreszeit","Feux et crues":"Brände und Hochwasser","Feux de forêt":"Waldbrände","Rivière":"Fluss","Bêta":"Beta","Orages et éclairs":"Gewitter und Blitze","Réglages avancés":"Erweiterte Einstellungen",
  "Laissés vides, Hestia-FB prend le soleil de Home Assistant.":"Bleiben sie leer, nimmt Hestia-FB die Sonne von Home Assistant.",
  "Nom de la source des prévisions":"Name der Vorhersagequelle","Votre station":"Ihre Station","Reconnue : {name}":"Erkannt: {name}",
  "Appareil":"Gerät","Appareil de la station":"Gerät der Station","Limite les capteurs proposés à cet appareil.":"Beschränkt die vorgeschlagenen Sensoren auf dieses Gerät.",

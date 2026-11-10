@@ -11,7 +11,8 @@ from datetime import datetime, timedelta
 from typing import Any, Callable, Mapping, Sequence
 from zoneinfo import ZoneInfo
 
-from . import atmo, polleninfo, swiss, water, waqi
+from . import atmo, polleninfo, river, swiss, water, waqi
+from .fire import Fires
 from .forecast import Day, Hour
 from .lightning import Lightning
 from .local import LocalWeather
@@ -157,7 +158,8 @@ class _Point:
 
 
 def build_brief(w: LocalWeather, settings: Settings, get: Callable[[str], Any], hours: Sequence[Hour], days: Sequence[Day],
-                now: datetime, zone: ZoneInfo, platforms: Mapping[str, str] | None = None, lightning: Lightning | None = None) -> Brief:
+                now: datetime, zone: ZoneInfo, platforms: Mapping[str, str] | None = None, lightning: Lightning | None = None,
+                fires: Fires | None = None) -> Brief:
     signals: list[Signal] = []
     caveats: list[str] = []
     add = signals.append
@@ -232,6 +234,21 @@ def build_brief(w: LocalWeather, settings: Settings, get: Callable[[str], Any], 
                    t("Restrictions d’eau : {level}", level=restriction.label.lower()) + (t(", arrosage restreint") if restriction.watering else ""),
                    (t("Arrêté préfectoral relayé par Vigieau : {count} usages concernés.", count=len(restriction.usages)) if restriction.usages
                     else t("Arrêté préfectoral relayé par Vigieau.")) + " " + t("Ouvrez le capteur pour le détail."), "mdi:water-off" if restriction.level >= 4 else "mdi:water-alert", restriction.entity_id))
+    if fires is not None and fires.level > 0:
+        # A fire reported on feuxdeforet.fr, through PyroVeille: a public map fed by reports, not an official vigilance.
+        add(Signal("fire", "now", fires.level, fires.text,
+                   t("Signalé sur la carte participative FeuxDeForet, relayée par PyroVeille. Ce n’est pas une vigilance officielle.")
+                   + (t(" Le vent souffle du côté du feu : fermez les fenêtres si la fumée arrive.") if fires.smoke else "")
+                   + (t(" Suivez les consignes des secours et de la préfecture.") if fires.level >= 2 else ""),
+                   "mdi:fire-alert", fires.entity_id))
+    flow = river.read(get, settings)
+    if flow is not None and flow.level >= river.ALERT:
+        # CrueVeille's own level, from the thresholds the household set: the official flood vigilance is Météo-France's.
+        where = ", ".join(x for x in (flow.station or t("Rivière"), flow.measure) if x)
+        add(Signal("river", "now", 2 if flow.level >= 3 else 1,
+                   t("Rivière au seuil critique : {where}", where=where) if flow.level >= 3 else t("Rivière au seuil de vigilance : {where}", where=where),
+                   t("Mesuré à la station Vigicrues par CrueVeille (bêta), selon les seuils que vous y avez réglés. Ce n’est pas la vigilance crues officielle."),
+                   "mdi:home-flood", flow.entity_id))
     p = w.pressure_trend
     if p.direction is not None and str(p.direction) in ("hausse", "baisse") and p.change is not None:
         add(Signal("pressure", "now", 0,
@@ -428,7 +445,7 @@ def build_brief(w: LocalWeather, settings: Settings, get: Callable[[str], Any], 
     available = feels is not None or bool(signals) or bool(upcoming)
     official_signal = next((s for s in signals if s.key == "official"), None)
     themes = {"wind": N_("Vent"), "wind-rain": N_("Pluie et vent"), "rain-now": N_("Pluie"), "rain-future": N_("Pluie"), "wind-future": N_("Vent"), "pressure-future": N_("Pression"), "storm": N_("Orage"), "storm-near": N_("Orage"),
-              "water": N_("Restrictions d’eau"),
+              "water": N_("Restrictions d’eau"), "fire": N_("Incendie"), "river": N_("Crue"),
               "temperature": N_("Chaleur") if feels is not None and feels >= 34 else N_("Froid"), "freeze-future": N_("Froid"), "frost-night": N_("Gel"),
               "fog": N_("Brouillard"), "uv": N_("UV")}
     topics: list[str] = []

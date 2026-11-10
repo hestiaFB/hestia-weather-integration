@@ -172,7 +172,8 @@ def calculate(i: Inputs, language: str) -> Calculation:
         # WAQI's station today and Open-Meteo tomorrow stand where Atmo France's air sensors would be.
         settings, get = station_overlay(i, *waqi.overlay(i.settings, i.get, i.air_forecast, i.now, i.zone))
         result = compute(get, settings, open_meteo_forecast.fill(i.hours, i.pressure_forecast), i.days, i.history, i.rain_history,
-                         i.statistics, i.statistics_unit, i.now, i.zone, i.latitude, i.elevation, i.platforms, i.original_condition, i.strikes)
+                         i.statistics, i.statistics_unit, i.now, i.zone, i.latitude, i.elevation, i.platforms, i.original_condition, i.strikes,
+                         i.longitude)
         view = to_json(result.view)
         retained = retained_now(settings, get)
     radar = i.get(i.radar_entity) if i.radar_entity else None

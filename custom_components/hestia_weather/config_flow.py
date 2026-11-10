@@ -64,10 +64,10 @@ def _context(hass: HomeAssistant) -> tuple[list[State], dict[str, dict[str, Any]
     return hass.states.async_all(), registry, devices
 
 
-def _sensor(choices: list[str], current: str = "") -> EntitySelector:
+def _sensor(choices: list[str], current: str = "", domain: str = "sensor") -> EntitySelector:
     """A sensor picker limited to what fits, keeping the current choice even when it does not."""
     allowed = sorted(set(choices) | ({current} if current else set()))
-    return EntitySelector(EntitySelectorConfig(domain="sensor", include_entities=allowed) if allowed else EntitySelectorConfig(domain="sensor"))
+    return EntitySelector(EntitySelectorConfig(domain=domain, include_entities=allowed) if allowed else EntitySelectorConfig(domain=domain))
 
 
 def _clean(sources: dict[str, Any]) -> dict[str, Any]:
@@ -132,7 +132,8 @@ class _SourceSteps:
             return self.async_abort(reason="no_weather")  # type: ignore[attr-defined]
         if user_input is not None:
             advanced = user_input.get("advanced") or {}
-            for key in ("weather_entity", "location", "vigilance_entity", "season_entity", "water_restriction_entity", "lightning_entity"):
+            for key in ("weather_entity", "location", "vigilance_entity", "season_entity", "water_restriction_entity", "lightning_entity",
+                        "fire_entity", "river_entity"):
                 self.sources[key] = user_input.get(key, "")
             for key in ("sun_entity", "sun_elevation_entity", "forecast_source"):
                 self.sources[key] = advanced.get(key, "")
@@ -147,6 +148,8 @@ class _SourceSteps:
             vol.Optional("season_entity"): _sensor(detection.season_candidates(states, registry), filled.get("season_entity") or ""),
             vol.Optional("water_restriction_entity"): _sensor(detection.water_candidates(states, registry), filled.get("water_restriction_entity") or ""),
             vol.Optional("lightning_entity"): _sensor(detection.lightning_candidates(states, registry), filled.get("lightning_entity") or ""),
+            vol.Optional("fire_entity"): _sensor(detection.fire_candidates(states, registry), filled.get("fire_entity") or "", "binary_sensor"),
+            vol.Optional("river_entity"): _sensor(detection.river_candidates(states, registry), filled.get("river_entity") or "", "binary_sensor"),
             vol.Required("advanced"): section(vol.Schema({
                 vol.Optional("sun_entity"): EntitySelector(EntitySelectorConfig(domain="sun")),
                 vol.Optional("sun_elevation_entity"): EntitySelector(EntitySelectorConfig(domain="sensor")),

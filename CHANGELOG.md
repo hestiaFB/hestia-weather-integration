@@ -1,3 +1,11 @@
+## À venir — Feux de forêt et rivière
+
+### Nouveautés
+
+- PyroVeille (#23) : les feux de forêt signalés autour de chez vous. Nouveau capteur « Incendie proche » (famille Alertes), avec la distance, la direction et la commune du feu le plus proche. La synthèse le signale ; un feu actif à moins de 10 km, ou dont le vent pousse la fumée vers la maison, demande une attention renforcée.
+- CrueVeille (#18), en bêta : la hauteur et la montée de la rivière à la station Vigicrues la plus proche. Nouveau capteur « Rivière » (famille Alertes) ; la synthèse en parle à partir du seuil de vigilance réglé dans CrueVeille.
+- Extensions : un thème « Feux et crues », et un badge « Bêta » pour les extensions encore jeunes.
+
 ## 3.6.1 — La pluie annoncée, plus précise
 
 ### Améliorations
