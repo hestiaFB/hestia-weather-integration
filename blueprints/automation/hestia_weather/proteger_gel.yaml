@@ -36,9 +36,35 @@ blueprint:
       selector:
         text:
           multiple: true
+    telephones:
+      name: Téléphones
+      description: Les téléphones qui ont l’application Home Assistant.
+      default: []
+      selector:
+        device:
+          multiple: true
+          filter:
+            - integration: mobile_app
+    enceintes:
+      name: Enceintes (facultatif)
+      description: Le message y est lu à voix haute, avec la voix choisie juste en dessous.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: media_player
+    voix:
+      name: Voix des enceintes
+      description: Par exemple « Google Translate » ou « Home Assistant Cloud ».
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: tts
     notifier:
-      name: Actions de notification
-      description: Par exemple notify.mobile_app_telephone_de_frank ou notify.famille.
+      name: Autres notifications (facultatif)
+      description: Un groupe comme notify.famille, à taper ; vos réglages d’avant sont gardés ici.
       default: []
       selector:
         text:
@@ -61,6 +87,9 @@ variables:
   givre: !input givre
   a_rentrer: !input a_rentrer
   notifier: !input notifier
+  telephones: !input telephones
+  enceintes: !input enceintes
+  voix: !input voix
   liste: "{{ a_rentrer | join(', ') }}"
   texte: >-
     {{ state_attr(gel, 'raison') }}.
@@ -73,13 +102,35 @@ conditions:
 
 actions:
   - repeat:
-      for_each: "{{ notifier }}"
+      for_each: "{{ telephones }}"
       sequence:
-        - action: "{{ repeat.item }}"
+        - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+          continue_on_error: true
           data:
             title: Gel cette nuit
             message: "{{ texte }}"
             data:
               tag: hestia_weather_gel_rappel
+  - repeat:
+      for_each: "{{ notifier }}"
+      sequence:
+        - action: "{{ repeat.item }}"
+          continue_on_error: true
+          data:
+            title: Gel cette nuit
+            message: "{{ texte }}"
+            data:
+              tag: hestia_weather_gel_rappel
+  - if:
+      - condition: template
+        value_template: "{{ enceintes | count > 0 and voix != '' }}"
+    then:
+      - action: tts.speak
+        continue_on_error: true
+        target:
+          entity_id: "{{ voix }}"
+        data:
+          media_player_entity_id: "{{ enceintes }}"
+          message: "{{ texte }}"
   - choose: []
     default: !input en_plus

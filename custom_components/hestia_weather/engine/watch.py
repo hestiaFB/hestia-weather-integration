@@ -15,7 +15,8 @@ HOLD = timedelta(minutes=15)
 HOLDS = {"vigilance": timedelta(0)}
 """The official vigilance is published, not measured: it ends as soon as Météo-France lifts it."""
 END_TEXTS = {"vigilance": "Vigilance levée", "orage": "L’orage est passé", "vent_fort": "Le vent est retombé",
-             "pluie_forte": "La forte pluie est passée", "gel": "Plus de gel prévu", "canicule": "La chaleur retombe",
+             "pluie_forte": "La forte pluie est passée", "gel": "Plus de gel prévu", "neige": "Plus de risque de neige estimé",
+             "verglas": "Plus de risque de verglas estimé", "canicule": "La chaleur retombe",
              "uv_fort": "Les UV redeviennent modérés"}
 
 

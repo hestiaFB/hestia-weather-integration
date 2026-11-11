@@ -17,6 +17,7 @@ from .fire import Fires
 from .forecast import Day, Hour
 from .lightning import NEAR_KM, Lightning
 from .local import CONDITION_TITLES, LocalWeather
+from .nuances import describe
 from .settings import Settings
 from .station import Derived
 from .units import Kind, finite, measurement
@@ -27,9 +28,12 @@ CONDITIONS = ("clear-night", "cloudy", "exceptional", "fog", "hail", "lightning"
 """Home Assistant's weather conditions: the states of « temps observé »."""
 VIGILANCE = COLOR_NAMES
 DRYING = ("excellent", "bon", "moyen", "mauvais", "impossible")
-ALERTS = ("vigilance", "orage", "vent_fort", "pluie_forte", "gel", "canicule", "uv_fort")
+ALERTS = ("vigilance", "orage", "vent_fort", "pluie_forte", "gel", "neige", "verglas", "canicule", "uv_fort")
 """The entries that start, change and end as alerts."""
 RAINY = ("rainy", "pouring", "lightning-rainy", "snowy-rainy", "hail")
+SNOWY = ("snowy", "snowy-rainy")
+ICE_HOURS = timedelta(hours=18)
+"""How far the black-ice risk looks: tonight and tomorrow morning, like the frost."""
 # How much sun each condition lets through, for hours whose cloud cover is not given.
 SUN_SHARE = {"sunny": 100, "clear-night": 100, "windy": 60, "partlycloudy": 55, "windy-variant": 40, "exceptional": 30, "cloudy": 15,
              "lightning": 15, "fog": 10, "rainy": 10, "snowy": 10, "lightning-rainy": 10, "pouring": 5, "snowy-rainy": 5, "hail": 5}
@@ -99,7 +103,7 @@ def night_end(now: datetime, zone: ZoneInfo) -> datetime:
     return end if end > later else end + timedelta(days=1)
 
 
-def _span_of(rainy: Sequence[Hour], now: datetime, zone: ZoneInfo) -> str:
+def _span_of(rainy: Sequence[Hour], now: datetime, zone: ZoneInfo, word: str = "Pluie") -> str:
     """« Pluie de 16 h à 19 h », then the next shower: « , puis demain vers midi ». « Demain » when it falls tomorrow in the
     daytime (after midnight, the night is still tonight's)."""
     runs: list[list[datetime]] = []
@@ -116,7 +120,7 @@ def _span_of(rainy: Sequence[Hour], now: datetime, zone: ZoneInfo) -> str:
         day = "demain " if local.date() > now.astimezone(zone).date() and local.hour >= 6 else ""
         return f"{day}vers {hour_text(run[0], zone)}" if len(run) == 1 else f"{day}de {hour_text(run[0], zone)} à {hour_text(run[-1] + HOUR, zone)}"
 
-    return "Pluie " + said(runs[0]) + (f", puis {said(runs[1])}" if len(runs) > 1 else "")
+    return f"{word} " + said(runs[0]) + (f", puis {said(runs[1])}" if len(runs) > 1 else "")
 
 
 def _day_of(days: Sequence[Day], day: date, zone: ZoneInfo) -> Day | None:
@@ -152,9 +156,10 @@ def measured_day_mean(rows: Sequence[tuple[float, float | None, float | None]], 
 
 def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, settings: Settings, get: Callable[[str], Any],
                     hours: Sequence[Hour], days: Sequence[Day], now: datetime, zone: ZoneInfo,
-                    platforms: Mapping[str, str] | None = None, lightning: Lightning | None = None, fires: Fires | None = None) -> dict[str, Item]:
+                    platforms: Mapping[str, str] | None = None, lightning: Lightning | None = None, fires: Fires | None = None,
+                    original_condition: str | None = None) -> dict[str, Item]:
     """Every entry of the catalogue at this moment. `hours` and `days` are the whole forecasts; `lightning` Blitzortung's strikes;
-    `fires` what PyroVeille reports around the home."""
+    `fires` what PyroVeille reports around the home; `original_condition` Météo-France's sky sensor (freezing rain, freezing fog)."""
     upcoming = sorted((h for h in hours if h.time is not None and h.time + HOUR > now), key=lambda h: h.time or now)
     forecast = bool(upcoming)
     weather = get(settings.weather_entity)
@@ -310,6 +315,14 @@ def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, sett
     else:
         items["gel"] = Item(False, f"Minimale prévue : {number(low18)} °C" if low18 is not None else "Pas de gel prévu", "prevision",
                             extra={"minimale": low18})
+
+    # Snow and black ice (issue #27): risks estimated from the forecast, never a measurement of the road.
+    original = get(original_condition) if original_condition else None
+    sky_now = describe(original.state) if original is not None else None
+    snow_ice = SnowIce(sky_now[0] if sky_now else bulletin_state, sky_now[1] if sky_now else "", temperature, bool(items["pluie_en_cours"].value),
+                       w.rain.last_24h, snow_ice_vigilance(official), upcoming, now, zone)
+    items["neige"] = snow_ice.snow()
+    items["verglas"] = snow_ice.ice(low18)
 
     feels = w.feel.value
     # In France, the heatwave is Météo-France's: orange vigilance is a heatwave, red an extreme one (issue #16).
@@ -543,3 +556,133 @@ def _atmo(get: Callable[[str], Any], settings: Settings, kind: str, metrics: Seq
     return Item(index, f"{reading.label} ({index}/6)" + (f" · {detail}" if detail else ""), source,
                 extra={"libelle": reading.label, "principal": detail, "zone": reading.zone or None,
                        "demain": int(tomorrow.value) if tomorrow and tomorrow.value is not None and not tomorrow.stale and tomorrow.value <= 6 else None})
+
+
+def snow_ice_vigilance(official: Vigilance | None) -> int:
+    """The official snow and ice vigilance, 0 green to 3 red: Météo-France's « neige-verglas », MétéoSuisse's snow or slippery roads."""
+    if official is None:
+        return 0
+    return max((level for name, level in official.phenomena if "neige" in atmo.normal(name) or "verglas" in atmo.normal(name)), default=0)
+
+
+def _wet(h: Hour) -> bool:
+    return (h.precipitation or 0) >= 0.1 or normalise_condition(h.condition) in RAINY
+
+
+@dataclass(frozen=True)
+class SnowIce:
+    """Snow and black ice on the roads (issue #27), estimated from the sky now and the next hours: a risk, never a measurement.
+
+    Black ice comes from rain freezing as it falls, from a wet road freezing over (rain, then 0 °C), from snow on a cold road or from
+    freezing fog; the official vigilance comes first. The air's temperature stands for the road's: on a clear night the road is colder."""
+
+    sky: str | None
+    """The condition now: Météo-France's own description when there is one, else the bulletin's."""
+    nuance: str
+    """« freezing-rain », « freezing-fog », « heavy-snow »… from Météo-France's description; empty otherwise."""
+    temperature: float | None
+    raining: bool
+    rain_24h: float | None
+    """Measured by the rain gauge over the last 24 h."""
+    vigilance: int
+    hours: Sequence[Hour]
+    now: datetime
+    zone: ZoneInfo
+
+    def _within(self, span: timedelta) -> list[Hour]:
+        return [h for h in self.hours if h.time is not None and h.time < self.now + span]
+
+    def _when(self, moment: datetime | None) -> str:
+        if moment is None or moment <= self.now:
+            return "en ce moment"
+        local = moment.astimezone(self.zone)
+        day = "demain " if local.date() > self.now.astimezone(self.zone).date() and local.hour >= 6 else ""
+        return f"{day}vers {hour_text(moment, self.zone)}"
+
+    def snow(self) -> Item:
+        day = self._within(timedelta(hours=24))
+        snowy = [h for h in day if normalise_condition(h.condition) in SNOWY]
+        snowing = self.sky in SNOWY
+        if not snowing and not snowy:
+            # Without the next hours, a dry sky now says nothing about tomorrow morning's snow.
+            return Item(False, "Pas de neige prévue dans les 24 h", "prevision") if day else Item(None, "Prévisions indisponibles", "prevision")
+        run: list[Hour] = []
+        for h in snowy:
+            if run and h.time and run[-1].time and h.time - run[-1].time > HOUR:
+                break
+            run.append(h)
+        first = run[0].time if run else None
+        end = run[-1].time + HOUR if run and run[-1].time else None
+        now_run = first is not None and first <= self.now + HOUR
+        if snowing:
+            text = "Risque de neige en ce moment" + (f", jusqu’à {hour_text(end, self.zone)}" if now_run and end else "")
+        else:
+            text = _span_of(snowy, self.now, self.zone, "Risque de neige")
+        temps = [h.temperature for h in (run if run else []) if h.temperature is not None]
+        if snowing and self.temperature is not None:
+            temps.append(self.temperature)
+        coldest = min(temps) if temps else None
+        # Snow settles on the road from about 1 °C; above it melts as it falls, or nearly.
+        settles = coldest is not None and coldest <= 1
+        if settles:
+            text += f" ; elle peut tenir au sol ({number(coldest)} °C prévus)"
+        level = max(1, 2 if snowing and self.nuance == "heavy-snow" else 0, self.vigilance)
+        return Item(True, text, "bulletin" if snowing and not now_run else "prevision", start=None if snowing or now_run else first,
+                    end=end if now_run or not snowing else None, level=level, extra={"tient_au_sol": settles})
+
+    def ice(self, low: float | None) -> Item:
+        window = self._within(ICE_HOURS)
+        if not window and self.temperature is None and not self.vigilance:
+            return Item(None, "Température et prévisions indisponibles", "prevision")
+        risks: list[tuple[int, datetime | None, str, str]] = []
+        """Each risk found: level, start (None now), cause, sentence."""
+        if self.vigilance:
+            risks.append((self.vigilance, None, "vigilance", f"Vigilance {COLOR_NAMES[self.vigilance]} neige-verglas"))
+        cold_now = self.temperature is not None and self.temperature <= 0
+
+        def freezing(h: Hour, limit: float = 0) -> bool:
+            return h.temperature is not None and h.temperature <= limit
+
+        def said(level: int, what: str, h: Hour | None) -> str:
+            figure = f" ({number(h.temperature or 0)} °C prévus)" if h is not None else ""
+            return f"{'Risque fort' if level >= 2 else 'Risque'} de {what} {self._when(h.time if h else None)}{figure}"
+
+        # Rain falling at 0 °C or below freezes on the road as it lands.
+        if self.nuance == "freezing-rain" or ((self.raining or self.sky in RAINY) and self.sky != "snowy" and cold_now):
+            risks.append((2, None, "pluie_verglacante", said(2, "pluie verglaçante", None)))
+        elif hour := next((h for h in window if _wet(h) and normalise_condition(h.condition) != "snowy" and freezing(h)), None):
+            risks.append((2, hour.time, "pluie_verglacante", said(2, "pluie verglaçante", hour)))
+        # Snow on a road at 1 °C or below: it settles and packs down.
+        if self.sky == "snowy" and self.temperature is not None and self.temperature <= 1:
+            risks.append((2, None, "neige", said(2, "neige sur route froide", None)))
+        elif hour := next((h for h in window if normalise_condition(h.condition) == "snowy" and freezing(h, 1)), None):
+            risks.append((2, hour.time, "neige", said(2, "neige sur route froide", hour)))
+        # Freezing fog leaves a thin film of ice.
+        if self.nuance == "freezing-fog" or (self.sky == "fog" and cold_now):
+            risks.append((1, None, "brouillard_givrant", said(1, "brouillard givrant", None)))
+        elif hour := next((h for h in window if normalise_condition(h.condition) == "fog" and freezing(h)), None):
+            risks.append((1, hour.time, "brouillard_givrant", said(1, "brouillard givrant", hour)))
+        # A wet road freezing over: rain within the 6 h before the first hour at 0 °C, or measured over the last day.
+        cold = None if cold_now else next((h for h in window if freezing(h)), None)
+        moment = self.now if cold_now else cold.time if cold is not None else None
+        if moment is not None:
+            forecast, _ = rain_between(self.hours, max(self.now, moment - timedelta(hours=6)), moment) if moment > self.now else (0.0, False)
+            measured = self.rain_24h if self.rain_24h is not None and self.rain_24h >= 1 and moment - self.now <= timedelta(hours=12) else 0.0
+            amount = (forecast or 0) + measured
+            if amount >= 0.2 or self.raining:
+                level = 2 if amount >= 1 else 1
+                after = f"après {number(amount, 0 if amount >= 10 else 1)} mm de pluie" if amount >= 0.2 else "après la pluie"
+                figure = (f"{number(self.temperature or 0)} °C" if cold_now else f"{number(cold.temperature or 0)} °C prévus" if cold else "")
+                risks.append((level, None if cold_now else moment, "regel",
+                              f"{'Risque fort' if level >= 2 else 'Risque'} de regel {self._when(None if cold_now else moment)} : {figure} {after}"))
+        if not risks:
+            low_text = f" (minimale {number(low)} °C)" if low is not None else ""
+            return Item(False, f"Aucun risque de verglas estimé d’ici 18 h{low_text}", "prevision" if window else "bulletin",
+                        extra={"cause": None, "causes": [], "minimale": low})
+        risks.sort(key=lambda r: (-r[0], r[1] or self.now))
+        main = risks[0]
+        # The vigilance says how serious; the forecast says when: both are told.
+        told = [main] + [r for r in risks[1:] if r[2] != main[2]][:1]
+        start = main[1] if main[2] != "vigilance" else next((r[1] for r in risks[1:]), None)
+        return Item(True, " ; ".join(r[3] for r in told), "vigilance" if main[2] == "vigilance" else "prevision" if main[1] else "bulletin",
+                    start=start, level=main[0], extra={"cause": main[2], "causes": sorted({r[2] for r in risks}), "minimale": low})

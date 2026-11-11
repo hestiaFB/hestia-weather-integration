@@ -2,7 +2,7 @@ blueprint:
   name: Hestia Weather · Notifier les alertes
   description: >-
     Un message quand une alerte Hestia Weather commence, change de niveau ou se termine :
-    vigilance Météo-France, orage, vent fort, pluie forte, gel, canicule, UV.
+    vigilance Météo-France, orage, vent fort, pluie forte, gel, risque de neige ou de verglas, canicule, UV.
     Toute la météo est calculée par Hestia Weather ; cette automatisation ne fait que transmettre.
     Le message de fin remplace celui du début sur le téléphone.
   domain: automation
@@ -12,7 +12,7 @@ blueprint:
   input:
     alertes:
       name: Alertes à transmettre
-      default: [vigilance, orage, vent_fort, pluie_forte, gel, canicule, uv_fort]
+      default: [vigilance, orage, vent_fort, pluie_forte, gel, neige, verglas, canicule, uv_fort]
       selector:
         select:
           multiple: true
@@ -22,6 +22,8 @@ blueprint:
             - { value: vent_fort, label: Vent fort }
             - { value: pluie_forte, label: Pluie forte }
             - { value: gel, label: Gel }
+            - { value: neige, label: Risque de neige }
+            - { value: verglas, label: Risque de verglas }
             - { value: canicule, label: Canicule }
             - { value: uv_fort, label: UV forts }
     niveau:
@@ -39,11 +41,46 @@ blueprint:
       default: true
       selector:
         boolean:
+    telephones:
+      name: Téléphones
+      description: Les téléphones qui ont l’application Home Assistant.
+      default: []
+      selector:
+        device:
+          multiple: true
+          filter:
+            - integration: mobile_app
+    enceintes:
+      name: Enceintes (facultatif)
+      description: Le message y est lu à voix haute, avec la voix choisie juste en dessous.
+      default: []
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - domain: media_player
+    voix:
+      name: Voix des enceintes
+      description: Par exemple « Google Translate » ou « Home Assistant Cloud ».
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: tts
+    annonces_debut:
+      name: Annonces vocales à partir de
+      description: Hors de ces heures, les enceintes se taisent ; les téléphones sont toujours prévenus.
+      default: "08:00:00"
+      selector:
+        time:
+    annonces_fin:
+      name: Annonces vocales jusqu’à
+      default: "21:30:00"
+      selector:
+        time:
     notifier:
-      name: Actions de notification
-      description: >-
-        Une ou plusieurs actions de notification, par exemple notify.mobile_app_telephone_de_frank
-        ou un groupe notify.famille (Outils de développement → Actions pour voir les vôtres).
+      name: Autres notifications (facultatif)
+      description: Un groupe comme notify.famille, à taper ; vos réglages d’avant sont gardés ici.
       default: []
       selector:
         text:
@@ -68,6 +105,14 @@ variables:
   niveau_min: !input niveau
   fins: !input fins
   notifier: !input notifier
+  telephones: !input telephones
+  enceintes: !input enceintes
+  voix: !input voix
+  annonces_debut: !input annonces_debut
+  annonces_fin: !input annonces_fin
+  calme_ok: >-
+    {% set d, f, n = today_at(annonces_debut), today_at(annonces_fin), now() %}
+    {{ (d <= n < f) if d <= f else (n >= d or n < f) }}
   type: "{{ trigger.event.data.type }}"
   etat: "{{ trigger.event.data.etat }}"
   niveau: "{{ trigger.event.data.niveau | int(0) }}"
@@ -78,6 +123,8 @@ variables:
     vent_fort: Vent fort
     pluie_forte: Pluie forte
     gel: Gel
+    neige: Risque de neige
+    verglas: Risque de verglas
     canicule: Canicule
     uv_fort: UV forts
   titre: "{{ 'Météo' if etat == 'fin' else noms.get(type, 'Météo') }}"
@@ -88,13 +135,35 @@ conditions:
 
 actions:
   - repeat:
-      for_each: "{{ notifier }}"
+      for_each: "{{ telephones }}"
       sequence:
-        - action: "{{ repeat.item }}"
+        - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+          continue_on_error: true
           data:
             title: "{{ titre }}"
             message: "{{ texte }}"
             data:
               tag: "hestia_weather_{{ type }}"
+  - repeat:
+      for_each: "{{ notifier }}"
+      sequence:
+        - action: "{{ repeat.item }}"
+          continue_on_error: true
+          data:
+            title: "{{ titre }}"
+            message: "{{ texte }}"
+            data:
+              tag: "hestia_weather_{{ type }}"
+  - if:
+      - condition: template
+        value_template: "{{ enceintes | count > 0 and voix != '' and calme_ok }}"
+    then:
+      - action: tts.speak
+        continue_on_error: true
+        target:
+          entity_id: "{{ voix }}"
+        data:
+          media_player_entity_id: "{{ enceintes }}"
+          message: "{{ texte }}"
   - choose: []
     default: !input en_plus

@@ -47,5 +47,5 @@ def compute(get: Callable[[str], Any], settings: Settings, hours: Sequence[Hour]
     brief = build_brief(local, settings, get, hours, days, now, zone, platforms, lightning, fires)
     view = build_view(get, settings, local, brief, hours, days, history, rain_history, derived, now, zone, latitude, elevation,
                       original_condition, lightning)
-    catalogue = build_catalogue(local, brief, derived, settings, get, hours, days, now, zone, platforms, lightning, fires)
+    catalogue = build_catalogue(local, brief, derived, settings, get, hours, days, now, zone, platforms, lightning, fires, original_condition)
     return Result(local, brief, derived, view, catalogue)

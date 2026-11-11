@@ -59,6 +59,8 @@ Des oui/non prêts à déclencher, et la vigilance officielle. Une alerte s’al
 | `binary_sensor.hestia_weather_vent_fort` | Vent ≥ 30 km/h ou rafales ≥ 40 km/h | Rentrer les stores et le parasol |
 | `binary_sensor.hestia_weather_pluie_forte` | ≥ 4 mm/h mesurés, ou forte pluie prévue dans les 6 h | Surveiller gouttières et pompe de relevage |
 | `binary_sensor.hestia_weather_gel` | Gel mesuré, ou gel au sol possible cette nuit (≤ 3 °C prévus) | Rentrer les plantes, hors-gel |
+| `binary_sensor.hestia_weather_neige` | Risque de neige estimé dans les 24 h, d’après les prévisions ; l’attribut `tient_au_sol` dit si elle peut tenir (≤ 1 °C prévus) | Sortir la pelle, prévoir les pneus neige |
+| `binary_sensor.hestia_weather_verglas` | Risque de verglas estimé dans les 18 h : pluie verglaçante, regel d’une route mouillée, neige sur route froide, brouillard givrant, ou vigilance neige-verglas. Niveau 1 = risque, 2 = risque fort ; la cause en attribut (`cause`). C’est une estimation d’après l’air, pas une mesure de la route | Se lever plus tôt, partir prudemment |
 | `binary_sensor.hestia_weather_canicule` | En France, la vigilance canicule de Météo-France : orange = canicule, rouge = canicule extrême (niveau 3). Ailleurs : ressenti ≥ 34 °C, ou 35 °C prévus dans les 24 h ou demain | Fermer les volets côté soleil |
 | `binary_sensor.hestia_weather_uv_fort` · *à activer* | Indice UV ≥ 6 (capteur UV nécessaire) | Rappel crème solaire |
 | `sensor.hestia_weather_incendie_proche` · *à activer* | Le feu le plus proche signalé par PyroVeille : `aucun`, `eteint`, `signale` ou `actif` ; distance, direction et fumée vers la maison en attributs | Fermer les fenêtres quand la fumée arrive |
@@ -144,7 +146,7 @@ Il part quand une alerte commence (`debut`), change de niveau (`change`) ou se t
 event_type: hestia_weather_alerte
 data:
   lieu: Gardanne
-  type: vent_fort     # vigilance, orage, vent_fort, pluie_forte, gel, canicule, uv_fort
+  type: vent_fort     # vigilance, orage, vent_fort, pluie_forte, gel, neige, verglas, canicule, uv_fort
   etat: debut         # debut, change ou fin
   niveau: 2           # 1 à surveiller, 2 sérieux, 3 vigilance rouge
   source: station
@@ -190,11 +192,14 @@ Elle est désactivée au départ : activez-la si une carte, un thermostat ou l�
 
 Ils sont sur GitHub, à importer en un clic. Vos réglages (téléphones, heure, plantes, appareils) se font dans le modèle, jamais dans l’intégration.
 
+Téléphones et enceintes se choisissent dans une liste : les téléphones de l’application Home Assistant, les enceintes avec une voix (« Google Translate », « Home Assistant Cloud »…). Un groupe `notify.famille` peut toujours s’ajouter à la main.
+
 | Modèle | Ce qu’il fait | |
 | --- | --- | --- |
 | **Notifier les alertes** | Un message au début, au changement et à la fin de chaque alerte choisie ; le message de fin remplace celui du début | [![Importer](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FhestiaFB%2Fhestia-weather-integration%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fhestia_weather%2Fnotifier_alertes.yaml) |
 | **Protéger avant le gel** | La veille au soir : ce qu’il faut rentrer, le givre du pare-brise, vos actions hors-gel | [![Importer](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FhestiaFB%2Fhestia-weather-integration%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fhestia_weather%2Fproteger_gel.yaml) |
 | **Le bulletin du matin** | À l’heure du réveil, le bulletin du jour et la vigilance en cours | [![Importer](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FhestiaFB%2Fhestia-weather-integration%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fhestia_weather%2Fbulletin_du_matin.yaml) |
+| **Réveil plus tôt si la route glisse** | La veille au soir, un réveil avancé quand le risque de neige ou de verglas est estimé à l’heure du départ ; confirmé ou annulé le matin | [![Importer](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FhestiaFB%2Fhestia-weather-integration%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fhestia_weather%2Freveil_route.yaml) |
 
 ## Noms techniques
 

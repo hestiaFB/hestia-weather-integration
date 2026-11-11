@@ -408,6 +408,8 @@
         "vent_fort": "Vent fort — oui/non",
         "pluie_forte": "Pluie forte — oui/non",
         "gel": "Gel — oui/non",
+        "neige": "Risque de neige — estimé d’après les prévisions, oui/non",
+        "verglas": "Risque de verglas — estimé : pluie verglaçante, regel, neige sur route froide, brouillard givrant",
         "canicule": "Canicule — oui/non ; en France, la vigilance Météo-France",
         "uv_fort": "UV forts — oui/non",
         "incendie_proche": "Incendie proche — les feux signalés autour de chez vous, via PyroVeille",
@@ -691,6 +693,20 @@
       },
       "gel": {
         "name": "Gel",
+        "state": {
+          "on": "Oui",
+          "off": "Non"
+        }
+      },
+      "neige": {
+        "name": "Risque de neige",
+        "state": {
+          "on": "Oui",
+          "off": "Non"
+        }
+      },
+      "verglas": {
+        "name": "Risque de verglas",
         "state": {
           "on": "Oui",
           "off": "Non"

@@ -6,7 +6,8 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from engine.catalogue import Item, night_end, rain_between
+from engine.catalogue import Item, SnowIce, night_end, rain_between
+from engine.nuances import describe
 from engine.compute import compute
 from engine.forecast import Day, Hour, Units, engine_rows
 from engine.prevision import NoForecast, forecast_window, window
@@ -263,3 +264,89 @@ def test_takes_the_forecast_uv_without_a_uv_sensor() -> None:
     # The sensor wins when it answers.
     c = run(SUMMER, {"sensor.t": 31, "sensor.h": 40, "sensor.uv": 3}, SUMMER_HOURS, SUMMER_DAYS, extra={"weather.home": weather})
     assert (c["uv_fort"].value, c["uv_fort"].source) == (False, "station")
+
+
+# Neige et verglas (issue #27) : des risques estimés, jamais une mesure de la route. Soirée d'hiver à 21 h, 3 °C.
+WINTER_READINGS = {"sensor.t": 3, "sensor.h": 90, "sensor.wind": 4, "sensor.gust": 8, "sensor.rate": 0}
+NEIGE_VERGLAS = {"sensor.vigilance": State("Jaune", {"attribution": "Data provided by Météo-France", "Neige-verglas": "Jaune", "Orages": "Vert"})}
+
+
+def winter(rows: list[tuple], condition: str = "cloudy", options: dict[str, Any] | None = None, extra: dict[str, State] | None = None,
+           readings: dict[str, Any] | None = None):
+    return run(WINTER, readings or WINTER_READINGS, hourly(WINTER, rows), WINTER_DAYS, condition=condition,
+               options={"uv_index_entity": "", **(options or {})}, extra=extra, elevation=-30)
+
+
+def test_a_dry_frosty_night_is_no_black_ice() -> None:
+    """−2 °C on a dry road: frost for the plants and the windscreen, not black ice."""
+    c = winter([(1, 0, "clear-night")] * 4 + [(-1, 0, "clear-night")] * 4 + [(-2, 0, "clear-night")] * 2 + [(4, 0, "sunny")] * 8, "clear-night")
+    assert c["gel"].value is True
+    assert c["verglas"].value is False and c["verglas"].reason == "Aucun risque de verglas estimé d’ici 18 h (minimale -2 °C)"
+    assert c["neige"].value is False and c["neige"].reason == "Pas de neige prévue dans les 24 h"
+
+
+def test_rain_then_frost_is_a_refreezing_risk() -> None:
+    c = winter([(2, 1.0, "rainy")] * 2 + [(1, 0, "cloudy")] * 4 + [(-1, 0, "cloudy")] * 4 + [(3, 0, "sunny")] * 8, "rainy")
+    ice = c["verglas"]
+    assert (ice.value, ice.level, ice.extra["cause"]) == (True, 2, "regel")
+    assert ice.reason == "Risque fort de regel vers 3 h : -1 °C prévus après 2 mm de pluie"
+    assert ice.start == WINTER + timedelta(hours=6)
+
+
+def test_a_drizzle_then_frost_is_only_a_risk() -> None:
+    c = winter([(2, 0.3, "rainy")] + [(1, 0, "cloudy")] * 5 + [(-1, 0, "cloudy")] * 4 + [(3, 0, "sunny")] * 8, "cloudy")
+    assert (c["verglas"].value, c["verglas"].level) == (True, 1)
+    assert c["verglas"].reason.startswith("Risque de regel vers 3 h")
+
+
+def test_freezing_rain_is_a_strong_risk() -> None:
+    c = winter([(1, 0, "cloudy")] * 6 + [(-1, 0.6, "snowy-rainy")] * 3 + [(2, 0, "cloudy")] * 9)
+    assert (c["verglas"].value, c["verglas"].level, c["verglas"].extra["cause"]) == (True, 2, "pluie_verglacante")
+    assert c["verglas"].reason == "Risque fort de pluie verglaçante vers 3 h (-1 °C prévus)"
+
+
+def test_meteo_france_freezing_rain_now() -> None:
+    """Météo-France's own description wins: « Pluie verglaçante » now, even at +0.5 °C under shelter."""
+    assert describe("Pluie verglaçante") == ("snowy-rainy", "freezing-rain")
+    risk = SnowIce("snowy-rainy", "freezing-rain", 0.5, True, None, 0, hourly(WINTER, [(1, 0.5, "snowy-rainy")] * 18), WINTER, PARIS).ice(1)
+    assert (risk.value, risk.level, risk.start) == (True, 2, None)
+    assert risk.reason == "Risque fort de pluie verglaçante en ce moment"
+
+
+def test_snow_that_settles_on_a_cold_road() -> None:
+    c = winter([(1, 0, "cloudy")] * 8 + [(0, 0.5, "snowy")] * 4 + [(1, 0, "cloudy")] * 6)
+    snow = c["neige"]
+    assert (snow.value, snow.level, snow.extra["tient_au_sol"]) == (True, 1, True)
+    assert snow.reason == "Risque de neige de 5 h à 9 h ; elle peut tenir au sol (0 °C prévus)"
+    assert (snow.start, snow.end) == (WINTER + timedelta(hours=8), WINTER + timedelta(hours=12))
+    assert c["verglas"].extra["cause"] == "neige" and c["verglas"].reason == "Risque fort de neige sur route froide vers 5 h (0 °C prévus)"
+
+
+def test_wet_snow_at_3_degrees_is_snow_but_no_black_ice() -> None:
+    c = winter([(4, 0, "cloudy")] * 20 + [(3, 0.5, "snowy")] * 3)
+    assert c["neige"].value is True and c["neige"].extra["tient_au_sol"] is False
+    assert c["neige"].reason == "Risque de neige demain de 17 h à 20 h"
+    assert c["verglas"].value is False
+
+
+def test_the_snow_ice_vigilance_comes_first_and_the_forecast_says_when() -> None:
+    dry = winter([(1, 0, "clear-night")] * 18, "clear-night", {"vigilance_entity": "sensor.vigilance"}, NEIGE_VERGLAS)
+    assert (dry["verglas"].value, dry["verglas"].level, dry["verglas"].source) == (True, 1, "vigilance")
+    assert dry["verglas"].reason == "Vigilance jaune neige-verglas"
+    wet = winter([(2, 1.0, "rainy")] * 2 + [(1, 0, "cloudy")] * 4 + [(-1, 0, "cloudy")] * 4 + [(3, 0, "sunny")] * 8, "rainy",
+                 {"vigilance_entity": "sensor.vigilance"}, NEIGE_VERGLAS)
+    assert wet["verglas"].reason == "Risque fort de regel vers 3 h : -1 °C prévus après 2 mm de pluie ; Vigilance jaune neige-verglas"
+    assert wet["verglas"].extra["causes"] == ["regel", "vigilance"]
+
+
+def test_snow_and_ice_stay_unknown_without_forecast() -> None:
+    c = run(AUTUMN, {}, [], condition="cloudy", options={k: "" for k in STATION if k.endswith("_entity")})
+    assert c["neige"].value is None and c["verglas"].value is None
+
+
+def test_snow_and_ice_are_alerts_with_an_end() -> None:
+    watch = AlertWatch()
+    events = watch.update({"verglas": Item(True, "Risque de regel vers 3 h", "prevision", level=2)}, WINTER)
+    assert [(e.type, e.phase, e.level) for e in events] == [("verglas", "debut", 2)]
+    events = watch.update({"verglas": Item(False, "Aucun risque")}, WINTER + timedelta(minutes=20))
+    assert [(e.type, e.phase, e.text) for e in events] == [("verglas", "fin", "Plus de risque de verglas estimé")]

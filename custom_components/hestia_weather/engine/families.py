@@ -8,7 +8,7 @@ from .settings import Settings
 FAMILIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("maintenant", ("feels_like", "temps_observe", "pluie_en_cours", "brouillard", "dew_point", "frost_point", "humidex", "pressure_trend",
                     "temperature_trend", "rain_24h", "max_gust_today")),
-    ("alertes", ("vigilance", "alert", "brief", "orage", "vent_fort", "pluie_forte", "gel", "canicule", "uv_fort", "incendie_proche", "riviere")),
+    ("alertes", ("vigilance", "alert", "brief", "orage", "vent_fort", "pluie_forte", "gel", "neige", "verglas", "canicule", "uv_fort", "incendie_proche", "riviere")),
     ("prochaines_heures", ("bulletin", "next_rain", "pluie_heure", "pluie_6h", "pluie_24h_prevue", "minimale_nuit", "maximale_demain", "rafales_6h")),
     ("jardin", ("pluie_7j", "restrictions_eau")),
     ("batiment", ("degres_jours_chauffe", "degres_jours_clim")),

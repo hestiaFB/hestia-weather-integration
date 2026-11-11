@@ -22,6 +22,8 @@ BINARY_SENSORS: tuple[BinarySensorEntityDescription, ...] = (
     BinarySensorEntityDescription(key="vent_fort", translation_key="vent_fort"),
     BinarySensorEntityDescription(key="pluie_forte", translation_key="pluie_forte"),
     BinarySensorEntityDescription(key="gel", translation_key="gel"),
+    BinarySensorEntityDescription(key="neige", translation_key="neige"),
+    BinarySensorEntityDescription(key="verglas", translation_key="verglas"),
     BinarySensorEntityDescription(key="canicule", translation_key="canicule"),
     BinarySensorEntityDescription(key="uv_fort", translation_key="uv_fort", entity_registry_enabled_default=False),
     BinarySensorEntityDescription(key="givre_pare_brise", translation_key="givre_pare_brise", entity_registry_enabled_default=False),

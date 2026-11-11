@@ -41,6 +41,11 @@ def _key(text: str) -> str:
     return " ".join(plain.lower().split())
 
 
+def describe(description: str | None) -> tuple[str, str] | None:
+    """Météo-France's description → (condition, nuance), None when it is not one of its 45 descriptions."""
+    return DESCRIPTIONS.get(_key(description)) if description else None
+
+
 def sky_detail(condition: str, description: str | None, rain: float | None, temperature: float | None) -> str:
     """The nuance for the sky drawn now. Météo-France's own description wins when it agrees with the condition shown
     (a rain gauge may have replaced it); otherwise the nuance comes from the figures: `rain` in mm per hour (measured,

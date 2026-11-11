@@ -408,6 +408,8 @@
         "vent_fort": "Starker Wind — ja/nein",
         "pluie_forte": "Starkregen — ja/nein",
         "gel": "Frost — ja/nein",
+        "neige": "Schneerisiko — aus der Vorhersage geschätzt, ja/nein",
+        "verglas": "Glatteisrisiko — geschätzt: gefrierender Regen, Überfrieren, Schnee auf kalter Straße, gefrierender Nebel",
         "canicule": "Hitzewelle — ja/nein; in Frankreich die Warnung von Météo-France",
         "uv_fort": "Hohe UV-Strahlung — ja/nein",
         "incendie_proche": "Brand in der Nähe — gemeldete Brände in Ihrer Umgebung, über PyroVeille",
@@ -691,6 +693,20 @@
       },
       "gel": {
         "name": "Frost",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      },
+      "neige": {
+        "name": "Schneerisiko",
+        "state": {
+          "on": "Ja",
+          "off": "Nein"
+        }
+      },
+      "verglas": {
+        "name": "Glatteisrisiko",
         "state": {
           "on": "Ja",
           "off": "Nein"

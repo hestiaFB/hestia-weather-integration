@@ -1,0 +1,227 @@
+blueprint:
+  name: Hestia Weather · Réveil plus tôt si la route glisse
+  description: >-
+    La veille au soir, si Hestia Weather estime un risque de verglas ou de neige qui tient au sol à l’heure
+    du départ : un message avec l’heure de réveil conseillée, et une aide « heure de réveil » avancée si vous en avez une.
+    Le matin, une seconde vérification confirme ou retire le message. C’est une estimation d’après les prévisions,
+    pas une mesure de la route.
+  domain: automation
+  source_url: https://github.com/hestiaFB/hestia-weather-integration/blob/main/blueprints/automation/hestia_weather/reveil_route.yaml
+  homeassistant:
+    min_version: "2025.1.0"
+  input:
+    capteurs:
+      name: Capteurs
+      icon: mdi:car-traction-control
+      input:
+        verglas:
+          name: Risque de verglas
+          selector:
+            entity:
+              filter:
+                integration: hestia_weather
+                domain: binary_sensor
+        neige:
+          name: Risque de neige (facultatif)
+          description: Compte seulement quand la neige peut tenir au sol (1 °C ou moins prévu).
+          default: ""
+          selector:
+            entity:
+              filter:
+                integration: hestia_weather
+                domain: binary_sensor
+        niveau:
+          name: À partir de
+          default: "1"
+          selector:
+            select:
+              options:
+                - { value: "1", label: Risque }
+                - { value: "2", label: Risque fort seulement }
+    horaires:
+      name: Horaires
+      icon: mdi:alarm
+      input:
+        depart:
+          name: Heure de départ
+          default: "07:30:00"
+          selector:
+            time:
+        reveil_normal:
+          name: Heure de réveil habituelle
+          default: "06:45:00"
+          selector:
+            time:
+        avance:
+          name: Se lever plus tôt de
+          default: 20
+          selector:
+            number:
+              min: 5
+              max: 90
+              step: 5
+              unit_of_measurement: min
+        jours:
+          name: Jours de départ
+          default: [mon, tue, wed, thu, fri]
+          selector:
+            select:
+              multiple: true
+              options:
+                - { value: mon, label: Lundi }
+                - { value: tue, label: Mardi }
+                - { value: wed, label: Mercredi }
+                - { value: thu, label: Jeudi }
+                - { value: fri, label: Vendredi }
+                - { value: sat, label: Samedi }
+                - { value: sun, label: Dimanche }
+        soir:
+          name: Vérification du soir
+          default: "21:00:00"
+          selector:
+            time:
+        matin:
+          name: Vérification du matin
+          description: Avant le réveil avancé.
+          default: "05:30:00"
+          selector:
+            time:
+        aide_reveil:
+          name: Aide « heure de réveil » (facultatif)
+          description: >-
+            Une aide Date et heure (heure seulement). Elle reçoit l’heure avancée, ou l’heure habituelle quand la route
+            ne glisse pas : votre automatisation de réveil (lumière, enceinte…) peut la suivre.
+          default: ""
+          selector:
+            entity:
+              filter:
+                domain: input_datetime
+    prevenir:
+      name: Prévenir
+      icon: mdi:cellphone-message
+      input:
+        telephones:
+          name: Téléphones
+          description: Les téléphones qui ont l’application Home Assistant.
+          default: []
+          selector:
+            device:
+              multiple: true
+              filter:
+                - integration: mobile_app
+        notifier:
+          name: Autres notifications (facultatif)
+          description: Un groupe comme notify.famille, à taper.
+          default: []
+          selector:
+            text:
+              multiple: true
+        en_plus:
+          name: Autres actions (facultatif)
+          description: >-
+            Ce que vous voulez faire en plus. Les variables texte, reveil (« 06:25 ») et risque (vrai ou faux) sont disponibles.
+          default: []
+          selector:
+            action:
+
+mode: single
+
+triggers:
+  - trigger: time
+    at: !input soir
+    id: soir
+  - trigger: time
+    at: !input matin
+    id: matin
+
+variables:
+  verglas: !input verglas
+  neige: !input neige
+  niveau_min: !input niveau
+  heure_depart: !input depart
+  reveil_normal: !input reveil_normal
+  avance: !input avance
+  jours: !input jours
+  aide_reveil: !input aide_reveil
+  telephones: !input telephones
+  notifier: !input notifier
+  depart: >-
+    {% set d = today_at(heure_depart) %}
+    {{ (d if d > now() else d + timedelta(days=1)).isoformat() }}
+  jour_ok: "{{ ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][as_datetime(depart).weekday()] in jours }}"
+  # A risk counts when it starts before the departure (or 30 minutes after) and is serious enough.
+  verglas_ok: >-
+    {% set debut = state_attr(verglas, 'debut') %}
+    {{ is_state(verglas, 'on') and (state_attr(verglas, 'niveau') | int(1)) >= niveau_min | int(1)
+       and (debut is none or as_datetime(debut) <= as_datetime(depart) + timedelta(minutes=30)) }}
+  neige_ok: >-
+    {% set debut = state_attr(neige, 'debut') if neige else none %}
+    {{ neige != '' and is_state(neige, 'on') and state_attr(neige, 'tient_au_sol') == true
+       and (state_attr(neige, 'niveau') | int(1)) >= niveau_min | int(1)
+       and (debut is none or as_datetime(debut) <= as_datetime(depart) + timedelta(minutes=30)) }}
+  risque: "{{ verglas_ok or neige_ok }}"
+  reveil: >-
+    {% set r = today_at(reveil_normal) - timedelta(minutes=avance | int(0)) if risque else today_at(reveil_normal) %}
+    {{ r.strftime('%H:%M') }}
+  dit_reveil: "{{ reveil[:2] | int }} h {{ reveil[3:] }}"
+  raisons: >-
+    {% set r = [] %}
+    {% if verglas_ok %}{% set r = r + [state_attr(verglas, 'raison')] %}{% endif %}
+    {% if neige_ok %}{% set r = r + [state_attr(neige, 'raison')] %}{% endif %}
+    {{ r | join('. ') }}
+  titre: "{{ 'Route glissante ce matin' if trigger.id == 'matin' else 'Route glissante demain matin' }}"
+  texte: "Réveil conseillé à {{ dit_reveil }} ({{ avance }} min plus tôt). {{ raisons }}."
+
+conditions:
+  - condition: template
+    value_template: "{{ jour_ok }}"
+
+actions:
+  - if:
+      - condition: template
+        value_template: "{{ aide_reveil != '' }}"
+    then:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: "{{ aide_reveil }}"
+        data:
+          time: "{{ reveil }}:00"
+  - if:
+      - condition: template
+        value_template: "{{ risque }}"
+    then:
+      - repeat:
+          for_each: "{{ telephones }}"
+          sequence:
+            - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+              continue_on_error: true
+              data:
+                title: "{{ titre }}"
+                message: "{{ texte }}"
+                data:
+                  tag: hestia_weather_reveil_route
+      - repeat:
+          for_each: "{{ notifier }}"
+          sequence:
+            - action: "{{ repeat.item }}"
+              continue_on_error: true
+              data:
+                title: "{{ titre }}"
+                message: "{{ texte }}"
+    else:
+      # In the morning the road no longer looks slippery: the evening's message is withdrawn.
+      - if:
+          - condition: trigger
+            id: matin
+        then:
+          - repeat:
+              for_each: "{{ telephones }}"
+              sequence:
+                - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                  continue_on_error: true
+                  data:
+                    message: clear_notification
+                    data:
+                      tag: hestia_weather_reveil_route
+  - choose: []
+    default: !input en_plus

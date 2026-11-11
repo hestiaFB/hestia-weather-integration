@@ -130,6 +130,18 @@
           "on": "mdi:snowflake-alert"
         }
       },
+      "neige": {
+        "default": "mdi:snowflake-off",
+        "state": {
+          "on": "mdi:weather-snowy-heavy"
+        }
+      },
+      "verglas": {
+        "default": "mdi:car-outline",
+        "state": {
+          "on": "mdi:car-traction-control"
+        }
+      },
       "canicule": {
         "default": "mdi:thermometer",
         "state": {

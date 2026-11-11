@@ -408,6 +408,8 @@
         "vent_fort": "Strong wind — yes/no",
         "pluie_forte": "Heavy rain — yes/no",
         "gel": "Frost — yes/no",
+        "neige": "Snow risk — estimated from the forecast, yes/no",
+        "verglas": "Black ice risk — estimated: freezing rain, refreezing, snow on a cold road, freezing fog",
         "canicule": "Heatwave — yes/no; in France, Météo-France's vigilance",
         "uv_fort": "High UV — yes/no",
         "incendie_proche": "Nearby fire — fires reported around your home, through PyroVeille",
@@ -691,6 +693,20 @@
       },
       "gel": {
         "name": "Frost",
+        "state": {
+          "on": "Yes",
+          "off": "No"
+        }
+      },
+      "neige": {
+        "name": "Snow risk",
+        "state": {
+          "on": "Yes",
+          "off": "No"
+        }
+      },
+      "verglas": {
+        "name": "Black ice risk",
         "state": {
           "on": "Yes",
           "off": "No"
