@@ -62,7 +62,7 @@ export interface Bulletin { summary: string; periods: BulletinPeriod[] }
 export interface ComfortView {
   feels: number; temperature?: number; word: string; humidity: string; gap?: number;
   factors: Chip[]; source: string; entity?: string;
-  /** Today's calculation in words: « 22,4 °C (humidex) + 1,2 °C (soleil) = 23,6 °C ressentis ». */
+  /** Today's calculation in words: « 28,0 °C (thermomètre) + 1,4 °C (humidité) + 1,2 °C (soleil) = 30,6 °C ressentis ». */
   example: string;
 }
 export interface RainDay { date: string; label: string; value?: number; partial: boolean }

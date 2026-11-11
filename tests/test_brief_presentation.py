@@ -100,7 +100,7 @@ SETTINGS = Settings.from_options({"weather_entity": "weather.test", "temperature
 
 def built(feels: float = 20, wind: float | None = None, rain: float | None = None, hours: dict[float, float] | None = None, days: list[Day] | None = None,
           precipitation: float | None = None) -> Brief:
-    w = replace(weather(temperature=20, feels=feels, humidex=20, wind=wind, rain=rain))
+    w = replace(weather(temperature=20, feels=feels, heat_index=20, wind=wind, rain=rain))
     points = [Hour(time=NOW + timedelta(hours=h), temperature=t, precipitation=precipitation) for h, t in (hours or {}).items()]
     return build_brief(w, SETTINGS, {}.get, points, days or [], NOW, ZONE)
 

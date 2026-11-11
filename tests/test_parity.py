@@ -42,7 +42,7 @@ def legacy(w: LocalWeather) -> dict[str, Any]:
     def missing(value: Any) -> Any:
         return -999 if value is None else value
     return {
-        "ressenti": missing(w.feel.value), "base": "humidex" if w.feel.base == "humidex" else "thermometre",
+        "ressenti": missing(w.feel.value), "base": "humidex" if w.feel.base == "heat_index" else "thermometre",
         "effet_vent": w.feel.effects.wind, "effet_soleil": w.feel.effects.sun, "effet_pluie": w.feel.effects.rain, "effet_nuit": w.feel.effects.night,
         "ecart_thermometre": missing(w.feel.gap), "condition": w.condition, "cond_source": "station" if w.observed else "prevision",
         "titre": w.title, "niveau": "optimise" if w.level is Level.OPTIMIZED else str(w.level), "alerte": ALERTS.get(w.alert, ""),
@@ -74,9 +74,10 @@ def test_matches_the_original_template(index: int) -> None:
         value = fixture["values"].get(key)
         states[f"sensor.{key}"] = State("unknown" if value is None else str(value))
     hours = [Hour(temperature=p["t"], precipitation=p["p"], condition=p["c"]) for p in fixture["hours"]]
-    # The original template read the humidex from Thermal Comfort: the fixture's value is handed over unchanged.
+    # The original template started the feel from Thermal Comfort's humidex; the engine now starts from the heat index.
+    # The fixture's humidex is handed over as that base, so the rest of the calculation is still compared to the template.
     weather = build_local(states.get, Settings.from_options(options), hours, {}, datetime(2026, 10, 4, 10, tzinfo=timezone.utc),
-                          ZoneInfo("UTC"), humidex_given=fixture["values"].get("humidex"))
+                          ZoneInfo("UTC"), heat_index_given=fixture["values"].get("humidex"))
     result, expected = legacy(weather), fixture["expected"]
     for key, value in result.items():
         if key == "phrase_ressenti":

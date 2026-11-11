@@ -46,7 +46,8 @@ class Measures:
 
     temperature: float | None = None
     humidity: float | None = None
-    humidex: float | None = None
+    heat_index: float | None = None
+    """The heat index when it raises the thermometer: the feel starts from it."""
     wind_speed: float | None = None
     wind_gust: float | None = None
     solar_radiation: float | None = None
@@ -87,7 +88,7 @@ WET = ("rainy", "pouring", "lightning-rainy", "snowy", "snowy-rainy", "hail")
 
 def verdict(m: Measures, forecast_condition: str | None, hours: Sequence[Hour] = ()) -> Verdict:
     """The feel, its causes, the condition seen at home and the alert, from the station and the forecast."""
-    base = m.humidex if m.humidex is not None else m.temperature
+    base = m.heat_index if m.heat_index is not None else m.temperature
     wind, gust, solar, elevation = m.wind_speed, m.wind_gust, m.solar_radiation, m.sun_elevation
     forecast = normalise_condition(forecast_condition)
 

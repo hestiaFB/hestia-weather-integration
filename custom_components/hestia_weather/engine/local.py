@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 from .feel import Alert, Effects, Level, Measures, verdict
 from .forecast import Hour, parse_time
-from .moisture import comfort_word, dew_point, frost_point, humidex, humidex_feel, humidity_feel
+from .moisture import comfort_word, dew_point, frost_point, heat_index, humidex, humidex_feel, humidity_feel, relative_humidity
 from .settings import Settings
 from .trends import Change, Trend, trend
 from .i18n import N_, t
@@ -59,7 +59,7 @@ BEAUFORT_LIMITS = (1, 6, 12, 20, 29, 39, 50, 62, 75, 89, 103, 118)
 class Feel:
     value: float | None
     base: str
-    """« humidex » when the humidex raises the thermometer, else « thermometer »."""
+    """« heat_index » when the heat index raises the thermometer, else « thermometer »."""
     effects: Effects
     gap: float | None
     """Feel minus thermometer."""
@@ -110,7 +110,8 @@ class LocalWeather:
     """« station », « bulletin » or None when the humidity is unknown."""
     dew_point: float | None
     frost_point: float | None
-    humidex: float | None
+    heat_index: float | None
+    """The heat index, kept only when it raises the thermometer: what the humidity adds to the feel."""
     feel: Feel
     wind: Wind
     rain: Rain
@@ -147,7 +148,7 @@ _UNSET: Any = object()
 
 
 def build_local(get: Getter, settings: Settings, hours: Sequence[Hour], history: Mapping[str, Sequence[Change]],
-                now: datetime, zone: ZoneInfo, *, humidex_given: float | None = _UNSET) -> LocalWeather:
+                now: datetime, zone: ZoneInfo, *, heat_index_given: float | None = _UNSET) -> LocalWeather:
     """Everything known about the weather at home now. `hours` are the next forecast hours, first one first."""
     values: dict[str, float | None] = {}
     sources: dict[str, str] = {}
@@ -181,12 +182,12 @@ def build_local(get: Getter, settings: Settings, hours: Sequence[Hour], history:
         local = moment.astimezone(zone)
         return round(local.hour + local.minute / 60, 2)
 
-    # Humidity, dew point, frost point and humidex are computed here: no Thermal Comfort needed. Station first; without
+    # Humidity, dew point, frost point, heat index and humidex are computed here: no Thermal Comfort needed. Station first; without
     # a station humidity, the bulletin's own temperature and humidity give the dew point, which varies least from place to place.
     bulletin_t = measurement(bulletin.get("temperature"), bulletin.get("temperature_unit"), Kind.TEMPERATURE)
     bulletin_h = finite(bulletin.get("humidity"))
     station_h = value("humidity")
-    use_bulletin = humidex_given is _UNSET and not settings.humidity_entity and bulletin_h is not None
+    use_bulletin = heat_index_given is _UNSET and not settings.humidity_entity and bulletin_h is not None
     humidity = station_h
     if use_bulletin:
         humidity = bulletin_h
@@ -204,18 +205,22 @@ def build_local(get: Getter, settings: Settings, hours: Sequence[Hour], history:
         sources["dew_point"] = sources.get("humidity", settings.weather_entity)
     humidity_source = ("station" if station_h is not None or (settings.dew_point_entity and dew_value is not None)
                        else "bulletin" if use_bulletin else None)
-    # Humidex measures heat discomfort only: in cold or dry air it falls below the thermometer and would make the feel
-    # colder for no reason. The feel then starts from the thermometer, the humidity being known but not a factor.
-    if humidex_given is not _UNSET:
-        humidex_value = finite(humidex_given)
+    # The feel starts from the heat index, a felt temperature: next to nothing below about 26 °C, a lot in hot muggy air.
+    # The humidex, a discomfort score, said +4,5 °C at 20 °C and 74 %; it stays a sensor of its own. In cool or dry air the
+    # index falls below the thermometer: the feel then starts from the thermometer, the humidity known but not a factor.
+    if heat_index_given is not _UNSET:
+        heat_value = finite(heat_index_given)
     else:
-        computed = round(humidex(temperature, dew), 1) if temperature is not None and dew is not None else None
-        humidex_value = computed if computed is not None and computed > temperature else None
-    if humidex_value is not None:
-        sources["humidex"] = sources.get("humidity") or sources.get("dew_point") or settings.weather_entity
+        rh = humidity if humidity is not None else relative_humidity(temperature, dew) if temperature is not None and dew is not None else None
+        computed = heat_index(temperature, rh) if temperature is not None and rh is not None else None
+        computed = round(computed, 1) if computed is not None else None
+        heat_value = computed if computed is not None and computed > temperature else None
+    if heat_value is not None:
+        sources["heat_index"] = sources.get("humidity") or sources.get("dew_point") or settings.weather_entity
+    humidex_value = round(humidex(temperature, dew), 1) if temperature is not None and dew is not None else None
     frost = round(frost_point(temperature, dew), 1) if temperature is not None and dew is not None else None
 
-    v = verdict(Measures(temperature=temperature, humidity=humidity, humidex=humidex_value, wind_speed=value("wind_speed"),
+    v = verdict(Measures(temperature=temperature, humidity=humidity, heat_index=heat_value, wind_speed=value("wind_speed"),
                          wind_gust=value("wind_gust"), solar_radiation=value("solar"), sun_elevation=elevation, rain_rate=value("rain_rate"),
                          # Observed fog needs the station's own moisture, never the bulletin's.
                          dew_point=dew_value if humidity_source == "station" else None, uv_index=value("uv"),
@@ -236,10 +241,10 @@ def build_local(get: Getter, settings: Settings, hours: Sequence[Hour], history:
         return str(state.attributes.get("unit_of_measurement") or "") if state else ""
 
     feel_value = v.feels
-    feel = Feel(value=feel_value, base="humidex" if humidex_value is not None else "thermometer", effects=v.effects,
+    feel = Feel(value=feel_value, base="heat_index" if heat_value is not None else "thermometer", effects=v.effects,
                 gap=None if temperature is None or feel_value is None else round(feel_value - temperature, 1),
                 word=comfort_word(feel_value), humidity_word=humidity_feel(dew, humidity, feel_value),
-                humidex_word=humidex_feel(humidex_value) if humidex_value is not None else "", phrase="")
+                humidex_word=humidex_feel(humidex_value) if humidex_value is not None and humidex_value > (temperature or 0) else "", phrase="")
     wind_info = Wind(speed=wind, gust=value("wind_gust"), max_today=value("max_gust"), effective=v.effective_wind, bearing=bearing,
                      beaufort=beaufort, beaufort_text=t(BEAUFORT[beaufort]) if beaufort is not None else "",
                      rose=ROSES[sector_index] if sector_index is not None else "", sector=sector,
@@ -253,7 +258,7 @@ def build_local(get: Getter, settings: Settings, hours: Sequence[Hour], history:
     # The verdict only sees fog with the station's own moisture, and never under rain measured or announced.
     observed_fog = v.observed and v.condition == "fog"
     local = LocalWeather(
-        temperature=temperature, humidity=humidity, humidity_source=humidity_source, dew_point=dew_value, frost_point=frost, humidex=humidex_value,
+        temperature=temperature, humidity=humidity, humidity_source=humidity_source, dew_point=dew_value, frost_point=frost, heat_index=heat_value,
         feel=feel, wind=wind_info, rain=rain, pressure=pressure,
         pressure_trend=trend(history.get(settings.pressure_entity or "", ()), pressure, now_seconds, Kind.PRESSURE, unit_of(settings.pressure_entity)),
         temperature_trend=value("temperature_trend"), solar=solar, sunshine=solar is not None and solar >= 350, uv=uv, uv_text=uv_text, lux=value("lux"),
@@ -326,7 +331,8 @@ def feel_phrase(w: LocalWeather) -> str:
         return "Ressenti égal au thermomètre"
     e = w.feel.effects
     if gap > 0:
-        cause = "du vent chaud" if e.wind > 0.3 else "du soleil" if e.sun >= 1.5 else "de l’humidité"
+        humid = w.heat_index - w.temperature if w.heat_index is not None else 0
+        cause = "du vent chaud" if e.wind > 0.3 else "du soleil" if e.sun >= 1.5 or e.sun > humid else "de l’humidité"
         return f"{size} °C de plus qu’au thermomètre, à cause {cause}"
     wind, rain, night = abs(e.wind), abs(e.rain), abs(e.night)
     cause = "de la pluie" if rain >= wind and rain > 0.4 else "du ciel dégagé" if night > wind and night > 0.4 else "du vent"

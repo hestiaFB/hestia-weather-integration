@@ -40,7 +40,7 @@ def _feels(s: Snapshot) -> float | None:
 
 
 def _humidex(s: Snapshot) -> float | None:
-    # The engine keeps the humidex only when it raises the feel; the sensor always gives it, like Thermal Comfort.
+    # The feel starts from the heat index; the humidex, a discomfort score, is its own sensor, always given like Thermal Comfort.
     w = s.local
     return round(humidex(w.temperature, w.dew_point), 1) if w.temperature is not None and w.dew_point is not None else None
 

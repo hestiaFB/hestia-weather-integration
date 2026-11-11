@@ -101,10 +101,10 @@ def test_shows_the_vigilance_and_the_rain_measured_at_home_together_without_repe
 
 def test_explains_the_feel_with_its_causes_and_today_s_calculation() -> None:
     v = view({"temperature_entity": "sensor.t", "humidity_entity": "sensor.h", "wind_speed_entity": "sensor.wind"},
-             {"sensor.t": sensor(25, "°C"), "sensor.h": sensor(85, "%"), "sensor.wind": sensor(20, "km/h")})
+             {"sensor.t": sensor(30, "°C"), "sensor.h": sensor(70, "%"), "sensor.wind": sensor(10, "km/h")})
     assert v.comfort.source == "Station locale"
     assert "humidité" in [f.label for f in v.comfort.factors]
-    assert re.match(r"^[\d,]+ °C \(humidex\).* = [\d,]+ °C ressentis$", v.comfort.example)
+    assert re.match(r"^[\d,]+ °C \(thermomètre\).* = [\d,]+ °C ressentis$", v.comfort.example)
     assert v.comfort.gap > 0
 
 

@@ -188,9 +188,9 @@ def build_brief(w: LocalWeather, settings: Settings, get: Callable[[str], Any], 
         if abs(delta) >= 0.6:
             if abs(effect[0]) >= 0.6:
                 current += t((warmer if effect[0] > 0 else cooler)[effect[1]])
-            elif w.humidex is not None and w.humidex - temp >= 0.6:
+            elif w.heat_index is not None and w.heat_index - temp >= 0.6:
                 current += t(" L’humidité accentue la chaleur.")
-    if feels is not None and not w.humidity_source and w.humidex is None:
+    if feels is not None and not w.humidity_source and w.heat_index is None:
         caveats.append(t("Humidité inconnue : le ressenti n’en tient pas compte."))
     if feels is not None and (feels >= 34 or feels <= 2):
         add(Signal("temperature", "now", 2 if feels >= 38 or feels <= -3 else 1,

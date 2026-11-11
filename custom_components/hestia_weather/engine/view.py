@@ -63,7 +63,7 @@ class ComfortView:
     source: str
     entity: str | None
     example: str
-    """Today's calculation in words: « 22,4 °C (humidex) + 1,2 °C (soleil) = 23,6 °C ressentis »."""
+    """Today's calculation in words: « 28,0 °C (thermomètre) + 1,4 °C (humidité) + 1,2 °C (soleil) = 30,6 °C ressentis »."""
 
 
 @dataclass(frozen=True)
@@ -394,17 +394,16 @@ def _comfort(get: Getter, settings: Settings, w: LocalWeather) -> ComfortView | 
     feels, temperature, sources, effects = w.feel.value, w.temperature, w.sources, w.feel.effects
     provider = weather_source_label(get, settings)
     source = provider if not settings.temperature_entity else t("{station} · humidité {provider}", station=t(STATION), provider=provider) if w.humidity_source == "bulletin" else t(STATION)
-    humidex = w.humidex if w.feel.base == "humidex" else None
-    terms = ((humidex - temperature if humidex is not None and temperature is not None else None, "rain", "mdi:water-percent", t("humidité"), sources.get("humidex")),
+    hot = w.heat_index if w.feel.base == "heat_index" else None
+    terms = ((hot - temperature if hot is not None and temperature is not None else None, "rain", "mdi:water-percent", t("humidité"), sources.get("heat_index")),
              (effects.wind, "wind", "mdi:weather-windy", t("vent"), sources.get("wind_speed")),
              (effects.sun, "level1", "mdi:white-balance-sunny", t("soleil"), sources.get("solar")),
              (effects.rain, "rain", "mdi:weather-pouring", t("pluie"), sources.get("rain_rate")),
              (effects.night, "cold", "mdi:weather-night", t("ciel clair"), sources.get("weather")))
     significant = [term for term in terms if term[0] is not None and abs(term[0]) >= 0.1]
-    base = humidex if humidex is not None else temperature
-    example = "" if base is None else (
-        t("{value} °C ({source})", value=french(base, 1, 1), source=t("humidex") if humidex is not None else t("thermomètre"))
-        + "".join(t(" {sign} {value} °C ({label})", sign="+" if v > 0 else "−", value=french(abs(v), 1, 1), label=label) for v, _, _, label, _ in significant if label != t("humidité"))
+    example = "" if temperature is None else (
+        t("{value} °C ({source})", value=french(temperature, 1, 1), source=t("thermomètre"))
+        + "".join(t(" {sign} {value} °C ({label})", sign="+" if v > 0 else "−", value=french(abs(v), 1, 1), label=label) for v, _, _, label, _ in significant)
         + t(" = {value} °C ressentis", value=french(feels, 1, 1)))
     return ComfortView(feels, temperature, w.feel.word, w.feel.humidity_word, None if temperature is None else feels - temperature,
                        tuple(Chip(theme, icon, label, f"{signed(v)} °C", entity) for v, theme, icon, label, entity in significant),

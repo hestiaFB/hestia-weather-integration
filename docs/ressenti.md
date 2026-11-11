@@ -12,13 +12,13 @@ Le ressenti dit quelle température l’air **donne l’impression** d’avoir :
 
 ## Le calcul
 
-Le calcul part de l’**humidex**, calculé à partir de la température et de l’humidité extérieures (formule d’Environnement Canada, la même que Thermal Comfort, vérifiée au centième sur un historique réel). Il y ajoute les effets estimés du vent, du soleil, de la pluie et d’une nuit claire, quand leurs données existent.
+Le calcul part de l’**indice de chaleur**, calculé à partir de la température et de l’humidité extérieures (formule du service météo américain, la NOAA). C’est une température ressentie : l’humidité n’ajoute presque rien sous 26 °C, puis beaucoup quand il fait chaud et lourd (30 °C et 60 % d’humidité donnent 32,8 °C). Il y ajoute les effets estimés du vent, du soleil, de la pluie et d’une nuit claire, quand leurs données existent.
 
-L’humidex ne mesure que la gêne due à la chaleur : par temps frais ou sec, il descend sous le thermomètre. Le calcul part alors du thermomètre.
+Par temps frais ou sec, l’indice descend sous le thermomètre : le calcul part alors du thermomètre.
 
-**Formule : ressenti = humidex (ou température) + vent + soleil + pluie + nuit.**
+**Formule : ressenti = indice de chaleur (ou température) + vent + soleil + pluie + nuit.**
 
-L’humidité n’est pas ajoutée une seconde fois à l’humidex. Une correction dont les données manquent reste nulle. Chaque correction et le résultat sont arrondis au dixième.
+L’humidex reste un capteur à part (`sensor.hestia_weather_humidex`) : c’est une note de gêne, pas une température ressentie. À 20 °C et 74 % d’humidité, il dit 25 °C quand on ressent 20 °C. Une correction dont les données manquent reste nulle. Chaque correction et le résultat sont arrondis au dixième.
 
 | Effet | Règle |
 | --- | --- |
@@ -27,7 +27,7 @@ L’humidité n’est pas ajoutée une seconde fois à l’humidex. Une correcti
 | Pluie | Dès 0,3 mm/h mesurés : −1,5 × min(intensité ÷ 2, 1) × (1 + min(vent effectif, 30) ÷ 60), jusqu’à −2,25 °C. |
 | Nuit | Si le soleil est à 3° ou plus sous l’horizon et la couverture nuageuse sous 40 % : −1 × (1 − couverture ÷ 40), jusqu’à −1 °C. |
 
-Exemple : un humidex de **29 °C**, un vent qui retire **0,4 °C** et un soleil qui ajoute **1 °C** donnent **29,6 °C ressentis**.
+Exemple : **30 °C** au thermomètre et 60 % d’humidité donnent un indice de chaleur de **32,8 °C** ; un vent qui retire **0,4 °C** et un soleil qui ajoute **1 °C** donnent **33,4 °C ressentis**.
 
 La pression, les UV, la pollution et les pollens n’entrent pas dans ce chiffre : ils peuvent en revanche nourrir la synthèse.
 

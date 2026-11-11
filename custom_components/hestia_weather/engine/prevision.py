@@ -10,7 +10,7 @@ from .catalogue import HOUR, rain_between
 from .feel import Measures, normalise_condition, verdict
 from .forecast import Day, Hour
 from .local import CONDITION_TITLES
-from .moisture import dew_point, humidex
+from .moisture import heat_index
 
 # From the condition that matters most to the one that matters least: a window gets the most important sky it contains.
 SEVERITY = ("hail", "lightning-rainy", "lightning", "pouring", "snowy-rainy", "snowy", "rainy", "fog", "exceptional", "windy-variant", "windy",
@@ -47,9 +47,9 @@ def _worst(conditions: Sequence[str]) -> str | None:
 def _feel(h: Hour) -> float | None:
     if h.temperature is None:
         return None
-    dew = dew_point(h.temperature, h.humidity) if h.humidity is not None else None
-    hot = humidex(h.temperature, dew) if dew is not None else None
-    return verdict(Measures(temperature=h.temperature, humidity=h.humidity, humidex=hot if hot is not None and hot > h.temperature else None,
+    hot = heat_index(h.temperature, h.humidity) if h.humidity is not None else None
+    hot = round(hot, 1) if hot is not None and hot > h.temperature else None
+    return verdict(Measures(temperature=h.temperature, humidity=h.humidity, heat_index=hot,
                             wind_speed=h.wind_speed, wind_gust=h.wind_gust, rain_rate=h.precipitation), h.condition).feels
 
 

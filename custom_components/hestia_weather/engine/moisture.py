@@ -32,6 +32,32 @@ def humidex(temperature: float, dew: float) -> float:
     return temperature + 0.5555 * (6.11 * math.exp(5417.7530 * (1 / 273.16 - 1 / (273.15 + dew))) - 10)
 
 
+def relative_humidity(temperature: float, dew: float) -> float:
+    """Relative humidity (%) from temperature and dew point (Magnus), for stations giving only a dew point."""
+    return min(100.0, 100 * math.exp(17.625 * dew / (243.04 + dew) - 17.625 * temperature / (243.04 + temperature)))
+
+
+def heat_index(temperature: float, humidity: float) -> float | None:
+    """Heat index (°C) of the US National Weather Service, from temperature (°C) and relative humidity (%).
+
+    Unlike the humidex, a discomfort score, it is a felt temperature: it adds next to nothing below about 26 °C and
+    climbs fast in hot, muggy air (30 °C at 60 % → 32,8 °C, where the humidex says 39 °C).
+    """
+    if not (0 < humidity <= 100) or not math.isfinite(temperature):
+        return None
+    f = temperature * 9 / 5 + 32
+    index = 0.5 * (f + 61 + (f - 68) * 1.2 + humidity * 0.094)
+    if (index + f) / 2 >= 80:
+        index = (-42.379 + 2.04901523 * f + 10.14333127 * humidity - 0.22475541 * f * humidity - 6.83783e-3 * f * f
+                 - 5.481717e-2 * humidity * humidity + 1.22874e-3 * f * f * humidity + 8.5282e-4 * f * humidity * humidity
+                 - 1.99e-6 * f * f * humidity * humidity)
+        if humidity < 13 and 80 <= f <= 112:
+            index -= (13 - humidity) / 4 * math.sqrt((17 - abs(f - 95)) / 17)
+        elif humidity > 85 and 80 <= f <= 87:
+            index += (humidity - 85) / 10 * (87 - f) / 5
+    return (index - 32) * 5 / 9
+
+
 def humidity_feel(dew: float | None, humidity: float | None, feels: float | None) -> str:
     """How the moisture feels, from the dew point; said only when it changes the experience."""
     if dew is None or feels is None:

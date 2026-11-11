@@ -25,12 +25,12 @@ class State:
     last_updated: datetime | None = None
 
 
-def weather(temperature: float | None = 20, feels: float | None = 20, humidex: float | None = 20, wind: float | None = None,
+def weather(temperature: float | None = 20, feels: float | None = 20, heat_index: float | None = 20, wind: float | None = None,
             gust: float | None = None, rain: float | None = None, uv: float | None = None, wind_effect: float = 0,
             humidity_source: str | None = None, condition: str = "sunny", observed: bool = False) -> LocalWeather:
     return LocalWeather(
-        temperature=temperature, humidity=None, humidity_source=humidity_source, dew_point=None, frost_point=None, humidex=humidex,
-        feel=Feel(feels, "humidex" if humidex is not None else "thermometer", Effects(wind=wind_effect), None if feels is None or temperature is None else feels - temperature,
+        temperature=temperature, humidity=None, humidity_source=humidity_source, dew_point=None, frost_point=None, heat_index=heat_index,
+        feel=Feel(feels, "heat_index" if heat_index is not None else "thermometer", Effects(wind=wind_effect), None if feels is None or temperature is None else feels - temperature,
                   "", "", "", ""),
         wind=Wind(wind, gust, None, None, None, None, "", "", "", "", NO_TREND),
         rain=Rain(rain, 0, None, None, None, None, None, None, "", None, None), pressure=None, pressure_trend=NO_TREND, temperature_trend=None,
@@ -61,12 +61,12 @@ def test_explains_the_feel_without_inventing_reassuring_forecasts() -> None:
 
 
 def test_explains_humidex_heat_and_flags_missing_humidity() -> None:
-    assert "L’humidité accentue" in brief(weather(feels=23, humidex=23)).summary
-    assert "Humidité inconnue" in " ".join(brief(weather(humidex=None)).caveats)
+    assert "L’humidité accentue" in brief(weather(feels=23, heat_index=23)).summary
+    assert "Humidité inconnue" in " ".join(brief(weather(heat_index=None)).caveats)
 
 
 def test_does_not_count_missing_sensors_as_calm_or_comfortable() -> None:
-    b = brief(weather(temperature=None, feels=None, humidex=None))
+    b = brief(weather(temperature=None, feels=None, heat_index=None))
     assert not b.available and b.color == "150,150,150" and "Ressenti indisponible" in b.summary
 
 

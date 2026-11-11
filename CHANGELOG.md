@@ -1,3 +1,10 @@
+## 3.8.1 — Un ressenti plus juste
+
+### Corrections
+
+- Ressenti trop chaud par temps doux et humide : il partait de l'humidex, une note de gêne, qui ajoutait jusqu'à +5 °C dès 20 °C (20,6 °C et 74 % donnaient 25,7 °C ressentis). Il part maintenant de l'indice de chaleur, une vraie température ressentie : l'humidité ne compte presque plus sous 26 °C et pèse toujours dans la chaleur lourde. Même correction pour le ressenti des prévisions. Le capteur Humidex ne change pas.
+- La phrase du ressenti cite le soleil quand c'est lui qui réchauffe le plus, et plus l'humidité par défaut.
+
 ## 3.8.0 — Neige, verglas et réveil plus tôt
 
 ### Nouveautés

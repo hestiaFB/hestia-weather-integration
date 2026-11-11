@@ -416,7 +416,6 @@ DE: dict[str, str] = {
     "grand frais": "steifer Wind",
     "grand soleil": "strahlender Sonnenschein",
     "grêle": "Hagel",
-    "humidex": "Humidex",
     "humidité": "Luftfeuchtigkeit",
     "il se rapproche": "es kommt näher",
     "il s’éloigne": "es zieht ab",

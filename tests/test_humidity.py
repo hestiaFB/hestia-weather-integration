@@ -7,7 +7,7 @@ import pytest
 from engine.brief import build_brief
 from engine.forecast import Hour
 from engine.local import build_local
-from engine.moisture import comfort_word, dew_point, frost_point, humidex, humidex_feel, humidity_feel
+from engine.moisture import comfort_word, dew_point, frost_point, heat_index, humidex, humidex_feel, humidity_feel, relative_humidity
 from engine.settings import Settings
 from test_brief import NOW, ZONE, State, weather
 
@@ -34,16 +34,32 @@ def local(states: dict[str, State], **options: str):
     return build_local(states.get, Settings.from_options({"weather_entity": "weather.city", **options}), [], {}, NOW, ZONE)
 
 
-def test_computes_humidex_from_the_station_then_the_bulletin_never_over_a_configured_sensor() -> None:
+def test_heat_index_matches_the_weather_service_tables() -> None:
+    # NWS table: 90 °F at 70 % → 106 °F; 80 °F at 40 % → 80 °F; below 26 °C the humidity adds next to nothing.
+    assert heat_index(32.2, 70) == pytest.approx(41.1, abs=0.3)
+    assert heat_index(26.7, 40) == pytest.approx(26.7, abs=0.3)
+    assert heat_index(20.6, 74) == pytest.approx(20.6, abs=0.15)
+    assert heat_index(20, 0) is None
+    assert relative_humidity(20, dew_point(20, 74)) == pytest.approx(74, abs=0.3)
+
+
+def test_a_mild_humid_day_does_not_feel_five_degrees_warmer() -> None:
+    # Gardanne, 11/11/2026: 20,6 °C and 74 % gave 25,7 °C « ressentis » through the humidex (+4,5 °C of humidity alone).
+    w = local({"weather.city": State("cloudy"), "sensor.t": State("20.6"), "sensor.h": State("74")}, temperature_entity="sensor.t", humidity_entity="sensor.h")
+    assert w.feel.value is not None and w.feel.value - 20.6 < 0.3
+    assert w.feel.phrase == "Ressenti égal au thermomètre"
+
+
+def test_computes_heat_index_from_the_station_then_the_bulletin_never_over_a_configured_sensor() -> None:
     city = State("cloudy", {"temperature": 18, "humidity": 90})
     station = local({"weather.city": city, "sensor.t": State("30"), "sensor.h": State("60")}, temperature_entity="sensor.t", humidity_entity="sensor.h")
-    assert (station.humidity_source, station.feel.base, station.feel.word) == ("station", "humidex", "Chaleur intense")
-    assert station.humidex == pytest.approx(humidex(30, dew_point(30, 60)), abs=0.05)
+    assert (station.humidity_source, station.feel.base, station.feel.word) == ("station", "heat_index", "Très chaud")
+    assert station.heat_index == pytest.approx(heat_index(30, 60), abs=0.05)
     bulletin = local({"weather.city": city})
-    assert (bulletin.humidity_source, bulletin.feel.base, bulletin.humidity) == ("bulletin", "humidex", 90)
+    assert (bulletin.humidity_source, bulletin.feel.base, bulletin.humidity) == ("bulletin", "heat_index", 90)
     assert bulletin.dew_point == pytest.approx(dew_point(18, 90), abs=0.05)
     broken = local({"weather.city": city, "sensor.h": State("unavailable")}, humidity_entity="sensor.h")
-    assert (broken.feel.base, broken.humidex) == ("thermometer", None)
+    assert (broken.feel.base, broken.heat_index) == ("thermometer", None)
     assert broken.feel.phrase == "Humidité inconnue : non prise en compte"
 
 
