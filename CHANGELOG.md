@@ -1,3 +1,16 @@
+## 3.8.0 — Neige, verglas et réveil plus tôt
+
+### Nouveautés
+
+- Nouveau capteur « Risque de neige » (#27, famille Alertes) : la neige prévue dans les 24 h, avec son heure de début et de fin, et si elle peut tenir au sol.
+- Nouveau capteur « Risque de verglas » (#27, famille Alertes) : dans les 18 h, la pluie verglaçante, le regel après la pluie, la neige sur route froide ou le brouillard givrant. Deux niveaux, « risque » et « risque fort » ; la vigilance neige-verglas de Météo-France passe en premier. C'est une estimation d'après les prévisions, pas une mesure de la route.
+- Nouveau modèle « Réveil plus tôt si la route glisse » : la veille au soir, l'heure de réveil conseillée quand la route risque de glisser au départ ; le matin, le message est confirmé ou retiré.
+
+### Améliorations
+
+- Modèles d'automatisation (#19) : les téléphones et les enceintes se choisissent dans une liste, avec la voix des enceintes. Ce qui était tapé avant reste dans « Autres notifications ».
+- « Notifier les alertes » transmet aussi la neige et le verglas, et les enceintes se taisent la nuit (de 21 h 30 à 8 h, à régler).
+
 ## 3.7.0 — Feux de forêt et rivière
 
 **En bref**
