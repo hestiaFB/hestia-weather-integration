@@ -1,3 +1,9 @@
+## À venir
+
+### Améliorations
+
+- Modèles d’automatisation (#19) : sur les téléphones, une icône selon le message (un éclair pour un orage, un flocon pour le gel…), à changer si vous voulez, et pour les alertes la couleur du niveau (Android). Chaque modèle peut aussi joindre l’image d’une caméra et ouvrir une page de votre choix quand on touche le message. Réimportez le modèle pour voir ces réglages ; vos automatisations actuelles ne changent pas.
+
 ## 3.9.0 — Feux, eau, rivière et une Mini à votre goût
 
 **En bref**
