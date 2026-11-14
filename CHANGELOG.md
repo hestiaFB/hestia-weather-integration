@@ -1,4 +1,10 @@
-## À venir
+## 3.9.0b1 — Feux, eau, rivière et une Mini à votre goût
+
+**En bref**
+
+- **Trois nouvelles cartes à la pièce : les feux de forêt, les restrictions d’eau et la rivière.**
+- **La Mini : la température à gauche ou à droite, sans le temps en mots si vous voulez.**
+- **Mini et Alerte : choisissez les alertes qu’elles ne montrent jamais, comme les restrictions d’eau.**
 
 ### Nouveautés
 
