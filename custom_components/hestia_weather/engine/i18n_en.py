@@ -621,6 +621,7 @@ EN: dict[str, str] = {
     "WAQI n’est pas installée.": "WAQI is not installed.",
     "Choisissez une station WAQI disponible.": "Choose an available WAQI station.",
     "Ce capteur n’existe plus dans Home Assistant.": "This sensor no longer exists in Home Assistant.",
+    "aucun éclair récent": "no recent lightning",
     "Ce capteur ne répond pas pour l’instant.": "This sensor is not answering for now.",
     "Obligatoire": "Required",
     "Conseillé": "Recommended",

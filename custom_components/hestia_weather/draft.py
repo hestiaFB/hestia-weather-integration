@@ -269,12 +269,15 @@ class Draft(_SourceSteps):
 
     # ---- What the tab shows ----
 
-    def _entity(self, entity_id: str | None) -> dict[str, Any] | None:
+    def _entity(self, entity_id: str | None, quiet: str = "") -> dict[str, Any] | None:
+        """`quiet`: what « unknown » means for a sensor that waits for an event (Blitzortung between storms), where it is no failure."""
         if not entity_id:
             return None
         state = self.hass.states.get(entity_id)
         if state is None:
             return {"id": entity_id, "name": entity_id, "state": "", "available": False, "missing": True}
+        if quiet and state.state == "unknown":
+            return {"id": entity_id, "name": str(state.attributes.get("friendly_name") or entity_id), "state": quiet, "available": True, "missing": False}
         available = state.state not in ("unavailable", "unknown")
         unit = state.attributes.get("unit_of_measurement")
         value = state.state if available else "indisponible"
@@ -284,14 +287,16 @@ class Draft(_SourceSteps):
     def _field(self, key: str, label: str, ids: list[str], *, required: bool = False, warning: str = "",
                better: str = "", recognized: list[str] | None = None) -> dict[str, Any]:
         value = self.sources.get(key) or ""
-        entity = self._entity(value)
+        # Blitzortung's distance is « unknown » between storms: its quiet state, not a sensor that stopped answering (#28).
+        quiet = t("aucun éclair récent") if key == "lightning_entity" else ""
+        entity = self._entity(value, quiet)
         if not warning and entity:
             warning = (t("Ce capteur n’existe plus dans Home Assistant.") if entity["missing"]
                        else t("Ce capteur ne répond pas pour l’instant.") if not entity["available"] else "")
         allowed = sorted(set(ids) | ({value} if value else set()))
         return {"key": key, "label": label, "help": t(HELP[key]) if key in HELP else "", "value": value, "entity": entity,
                 "need": t("Obligatoire") if required else t("Conseillé") if key in RECOMMENDED else t("Facultatif"),
-                "options": [e for e in map(self._entity, allowed) if e], "warning": warning,
+                "options": [e for e in (self._entity(i, quiet) for i in allowed) if e], "warning": warning,
                 # Recognised by their name and measure: listed first, the others after.
                 "recognized": [i for i in recognized or [] if i in allowed],
                 "better": self._entity(better) if better else None}

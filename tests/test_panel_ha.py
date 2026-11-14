@@ -111,6 +111,23 @@ class PanelTests(unittest.IsolatedAsyncioTestCase):
         proposed = {x["id"]: x for x in Draft.start(self.hass, entry).view()["extensions"]}
         self.assertFalse(proposed["blitzortung"]["configured"])
 
+    async def test_blitzortung_unknown_between_storms_is_not_a_failure(self):
+        # #28: Blitzortung's distance is « unknown » while no storm is near; the panel must not call it a sensor that stopped answering.
+        registry = er.async_get(self.hass)
+        e = registry.async_get_or_create("sensor", "blitzortung", "home-distance", translation_key="distance")
+        self.hass.states.async_set(e.entity_id, "unknown", {"unit_of_measurement": "km", "friendly_name": "Distance des éclairs"})
+        draft = Draft(self.hass, {"weather_entity": "weather.maison", "lightning_entity": e.entity_id})
+        field = next(f for f in draft.view()["prevision"]["fields"] if f["key"] == "lightning_entity")
+        self.assertEqual(field["warning"], "")
+        self.assertTrue(field["entity"]["available"])
+        self.assertEqual(field["entity"]["state"], "aucun éclair récent")
+        self.assertTrue(all(o["available"] for o in field["options"]))
+        # « unavailable » is still a failure.
+        self.hass.states.async_set(e.entity_id, "unavailable", {"unit_of_measurement": "km"})
+        field = next(f for f in draft.view()["prevision"]["fields"] if f["key"] == "lightning_entity")
+        self.assertEqual(field["warning"], "Ce capteur ne répond pas pour l’instant.")
+        self.assertFalse(field["entity"]["available"])
+
     async def test_atmo_reports_air_and_pollen_selection_independently(self):
         from custom_components.hestia_weather.extensions import inventory
         extensions = inventory(self.hass, {"air_source": "atmo", "atmo_air_entity": "sensor.air", "pollen_source": "none"})
