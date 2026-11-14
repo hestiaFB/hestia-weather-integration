@@ -12,9 +12,11 @@ import { airPanel } from './air';
 import { pressureComing, rainComing, renderForecastCard, stormComing, temperatureComing, windComing } from './compact';
 import { around, comfortPanel, leftExtras, measurePanel, pressurePanel, rainPanel, windPanel } from './today';
 import { lightningPanel } from './lightning';
+import { fireMissing, firePanel } from './fire';
+import { waterMissing, waterPanel } from './water';
 import '../ui/frise';
 
-export type SingleFormat = 'comfort' | 'temperature' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'events';
+export type SingleFormat = 'comfort' | 'temperature' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'fire' | 'water' | 'air' | 'forecast' | 'events';
 export interface SingleOptions {
   uid: string; entity: string;
   /** A local thermometer: the feel is compared with it rather than with the bulletin. */
@@ -74,6 +76,9 @@ export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardB
         <p>${t('Cette carte montre les éclairs autour de chez vous grâce à Blitzortung, un réseau de détecteurs bénévoles. Installez l’extension depuis HACS, puis choisissez-la dans les réglages de Hestia Weather.')}</p>
         <div class="links"><a href="https://github.com/mrk-its/homeassistant-blitzortung" target="_blank" rel="noopener noreferrer">${t('Installer Blitzortung')}</a>
           <a class="second" href=${SETTINGS}>${t('Réglages de Hestia Weather')}</a></div></section>`;
+  // PyroVeille (issue #23) and Vigieau (issue #25): their card, or what they bring and where to choose them.
+  else if (format === 'fire') body = v.fire ? firePanel(v.fire, parts) : fireMissing(SETTINGS);
+  else if (format === 'water') body = v.water ? waterPanel(v.water, parts) : waterMissing(SETTINGS);
   else {
     const panels = airPanels(v, blocks);
     body = panels.length ? html`<div class="panels-two">${panels.map(p => airPanel(p))}</div>` : empty(t('Air et pollens indisponibles pour le moment.'));

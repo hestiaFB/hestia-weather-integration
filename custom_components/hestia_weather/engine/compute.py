@@ -38,7 +38,7 @@ def compute(get: Callable[[str], Any], settings: Settings, hours: Sequence[Hour]
     upcoming = [h for h in hours if h.time is None or h.time.timestamp() > now.timestamp() - 3600][:18]
     local = build_local(get, settings, upcoming, history, now, zone)
     derived = derive_station(get, settings, statistics, statistics_unit, {**history, **rain_history}, now, zone) if settings.station_history else None
-    fires = None
+    fires = wind = None
     if settings.fire_entity:
         # The fires around the home, with the wind blowing now: whether their smoke comes this way.
         weather = get(settings.weather_entity)
@@ -46,6 +46,6 @@ def compute(get: Callable[[str], Any], settings: Settings, hours: Sequence[Hour]
         fires = fire.read(get, settings, latitude, longitude, wind)
     brief = build_brief(local, settings, get, hours, days, now, zone, platforms, lightning, fires)
     view = build_view(get, settings, local, brief, hours, days, history, rain_history, derived, now, zone, latitude, elevation,
-                      original_condition, lightning)
+                      original_condition, lightning, fires, wind)
     catalogue = build_catalogue(local, brief, derived, settings, get, hours, days, now, zone, platforms, lightning, fires, original_condition)
     return Result(local, brief, derived, view, catalogue)

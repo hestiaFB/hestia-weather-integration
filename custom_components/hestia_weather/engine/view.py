@@ -11,7 +11,7 @@ from enum import Enum
 from typing import Any, Callable, Mapping, Sequence
 from zoneinfo import ZoneInfo
 
-from . import alerts, polleninfo, waqi
+from . import alerts, fire, polleninfo, water, waqi
 from .atmo import METRICS, POLLEN_METRICS, POLLUTANT_METRICS, Reading, read_metric
 from .brief import Brief
 from .bulletin import Bulletin, build_bulletin
@@ -264,6 +264,54 @@ class LightningView:
 
 
 @dataclass(frozen=True)
+class FirePoint:
+    """A fire PyroVeille reports: where it burns, how far and in which direction from the home."""
+    place: str
+    status: int
+    """1 extinguished, 2 reported, 3 active."""
+    distance: float | None
+    azimuth: float | None
+    """Degrees from the north, from the home towards the fire."""
+    url: str | None
+
+
+@dataclass(frozen=True)
+class FireView:
+    """The fires around the home, from PyroVeille (issue #23): the card's radar, the nearest fire and the smoke."""
+    source: str
+    entity: str
+    level: int
+    """0 nothing to do, 1 to watch, 2 an active fire close or whose smoke comes this way."""
+    state: int
+    """The nearest fire's status: 0 none, 1 extinguished, 2 reported, 3 active."""
+    headline: str
+    radius: float | None
+    smoke: bool
+    wind_from: float | None
+    """Where the wind comes from now, in degrees, when it blows."""
+    fires: tuple[FirePoint, ...]
+    """Nearest first, at most MAX_FIRES."""
+
+
+MAX_FIRES = 30
+
+
+@dataclass(frozen=True)
+class WaterView:
+    """The water restrictions of the day, from Vigieau (issue #25): the level and the restricted uses."""
+    source: str
+    entity: str
+    level: int
+    """0 no restriction to 4 crisis."""
+    label: str
+    headline: str
+    usages: tuple[str, ...]
+    watering: bool
+    order: str | None
+    """The link to the prefect's order."""
+
+
+@dataclass(frozen=True)
 class WeatherView:
     location: str
     date_label: str
@@ -292,6 +340,8 @@ class WeatherView:
     lightning: LightningView | None = None
     temperature: MeasureView | None = None
     humidity: MeasureView | None = None
+    fire: FireView | None = None
+    water: WaterView | None = None
 
 
 def place_name(name: str) -> str:
@@ -314,7 +364,8 @@ def signed(value: float, digits: int = 1) -> str:
 def build_view(get: Getter, settings: Settings, w: LocalWeather, brief: Brief | None, hours: Sequence[Hour], days: Sequence[Day],
                history: Mapping[str, Sequence[Change]], rain_history: Mapping[str, Sequence[Change]], derived: Derived | None,
                now: datetime, zone: ZoneInfo, latitude: float | None = None, elevation: float = 0,
-               original_condition: str | None = None, lightning: Lightning | None = None) -> WeatherView:
+               original_condition: str | None = None, lightning: Lightning | None = None, fires: fire.Fires | None = None,
+               wind_from: float | None = None) -> WeatherView:
     """`hours` and `days` are the whole parsed forecasts; `history` covers six hours (and today for gusts), `rain_history` eight days."""
     weather = get(settings.weather_entity)
     attributes: Mapping[str, Any] = weather.attributes if weather else {}
@@ -338,7 +389,25 @@ def build_view(get: Getter, settings: Settings, w: LocalWeather, brief: Brief | 
         bulletin=build_bulletin(hours, now, zone), comfort=_comfort(get, settings, w), rain=rain, wind=wind, pressure=pressure,
         extras=_extras(get, settings, w, now, zone), hours=forecast_slots(hours, now, zone, w.sunrise, w.sunset), days=forecast_days(days, hours, now, zone),
         air=Air(_air(get, settings, now, zone, False), _air(get, settings, now, zone, True)),
-        lightning=_lightning(settings, lightning), temperature=temperature, humidity=humidity)
+        lightning=_lightning(settings, lightning), temperature=temperature, humidity=humidity,
+        fire=_fire(fires, wind_from), water=_water(water.read(get, settings)))
+
+
+def _fire(seen: fire.Fires | None, wind_from: float | None) -> FireView | None:
+    """The fires' radar, when PyroVeille is chosen and answers."""
+    if seen is None:
+        return None
+    return FireView("PyroVeille", seen.entity_id, seen.level, seen.state, seen.text, seen.radius, seen.smoke,
+                    None if wind_from is None else round(wind_from),
+                    tuple(FirePoint(f.place, f.status, f.distance, None if f.azimuth is None else round(f.azimuth), f.url)
+                          for f in seen.fires[:MAX_FIRES]))
+
+
+def _water(seen: water.Restriction | None) -> WaterView | None:
+    """The restrictions' card, when Vigieau is chosen and answers."""
+    if seen is None:
+        return None
+    return WaterView("Vigieau", seen.entity_id, seen.level, seen.label, seen.text, seen.usages, seen.watering, seen.order)
 
 
 def _lightning(settings: Settings, seen: Lightning | None) -> LightningView | None:

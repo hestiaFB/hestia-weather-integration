@@ -11,8 +11,12 @@ export interface HassConnection {
   subscribeMessage<T>(callback: (message: T) => void, message: Record<string, unknown>): Promise<() => Promise<void>>;
 }
 
+/** What Home Assistant's frontend knows of an entity's registry entry (the River card finds CrueVeille's sensors of a station with it). */
+export interface HassEntityEntry { entity_id: string; device_id?: string | null; platform?: string; translation_key?: string | null }
+
 export interface HomeAssistant {
   states: Record<string, HassEntity>;
+  entities?: Record<string, HassEntityEntry>;
   language: string;
   locale: { language: string };
   connection?: HassConnection;
@@ -27,7 +31,7 @@ export type TodayBlock = 'comfort' | 'rain' | 'wind' | 'pressure' | 'lightning' 
 export type ForecastBlock = 'hours' | 'days' | 'air';
 /** What a card on its own shows (comfort, rain, wind, pressure, air, forecast), each format with its own parts. */
 export type CardBlock = 'now' | 'chart' | 'radar' | 'stats' | 'ahead' | 'feel' | 'gauge' | 'factors' | 'extras'
-  | 'air_today' | 'pollen_today' | 'air_tomorrow' | 'pollen_tomorrow' | 'hours' | 'days' | 'humidity';
+  | 'air_today' | 'pollen_today' | 'air_tomorrow' | 'pollen_tomorrow' | 'hours' | 'days' | 'humidity' | 'list' | 'flow';
 
 /** The card's own settings: what it shows and how. Its sources (weather, station, air) are set in the Hestia Weather integration. */
 /** What a press does: the full weather over the page, the weather page, fold or unfold the tile, or nothing. */
@@ -40,9 +44,14 @@ export interface WeatherCardConfig {
   /** full (default): the weather page. tile: one band that unfolds on tap. intermediate: the same tile, unfolded at first.
    *  mini: one line. forecast: the hours and the days alone. rain: the rain to come and the rain that fell.
    *  comfort, wind, pressure, air: that part of the full card alone. events: the timeline (« frise ») alone. records: the records of the station
-   *  and of the place (issue #17). alert: only while there is a vigilance or an alert, hidden otherwise.
+   *  and of the place (issue #17). fire: PyroVeille's fires on a radar (issue #23). water: Vigieau's restrictions (issue #25).
+   *  river: CrueVeille's rivers, their height and flow (issue #18). alert: only while there is a vigilance or an alert, hidden otherwise.
    *  On the small formats a long press (a tap on mini and alert) does what hold_action says. */
-  format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'comfort' | 'temperature' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'events' | 'records' | 'alert';
+  format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'comfort' | 'temperature' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'events' | 'records' | 'fire' | 'water' | 'river' | 'alert';
+  /** The River card (issue #18): CrueVeille's « Alerte inondation » sensors to show, one per station, in this order. Unset: every station. */
+  rivers?: string[];
+  /** The River card's curves: six hours, a day, two days (default) or a week. */
+  river_span?: '6h' | '1d' | '2d' | '7d';
   /** The Records card: this month, this year, all time, or this year and all time (both, default). */
   records_period?: 'month' | 'year' | 'all' | 'both';
   /** The Records card: the station (default), the place since 1940 (Open-Meteo's archive), or both. */

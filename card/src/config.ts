@@ -10,6 +10,9 @@ export const CARD_BLOCKS: Partial<Record<NonNullable<WeatherCardConfig['format']
   lightning: ['ahead', 'now', 'radar', 'stats'],
   air: ['air_today', 'pollen_today', 'air_tomorrow', 'pollen_tomorrow'],
   forecast: ['hours', 'days'],
+  fire: ['now', 'radar', 'list'],
+  water: ['now', 'list'],
+  river: ['now', 'chart', 'flow', 'stats'],
 };
 /** What a card on its own shows: its chosen parts that its format has, everything when none is chosen.
  *  Parts left from another format (the format changed by hand) count as none chosen. */

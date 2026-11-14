@@ -160,6 +160,31 @@ export interface LightningView {
   month?: number;
 }
 
+/** A fire PyroVeille reports, placed from the home. */
+export interface FirePoint { place: string; status: 1 | 2 | 3; distance?: number; azimuth?: number; url?: string }
+/** The fires around the home, from PyroVeille (issue #23, integration 3.9.0 and later). */
+export interface FireView {
+  source: string; entity: string;
+  /** 0 nothing to do, 1 to watch, 2 an active fire close or whose smoke comes this way. */
+  level: 0 | 1 | 2;
+  /** The nearest fire's status: 0 none, 1 extinguished, 2 reported, 3 active. */
+  state: 0 | 1 | 2 | 3;
+  headline: string; radius?: number; smoke: boolean;
+  /** Where the wind comes from now, in degrees, when it blows. */
+  windFrom?: number;
+  /** Nearest first. */
+  fires: FirePoint[];
+}
+/** The water restrictions of the day, from Vigieau (issue #25, integration 3.9.0 and later). */
+export interface WaterView {
+  source: string; entity: string;
+  /** 0 no restriction to 4 crisis. */
+  level: 0 | 1 | 2 | 3 | 4;
+  label: string; headline: string; usages: string[]; watering: boolean;
+  /** The link to the prefect's order. */
+  order?: string;
+}
+
 export interface WeatherView {
   location: string; dateLabel: string; provider: string; forecastSource: string;
   /** Opened when the forecast is tapped. */
@@ -177,6 +202,8 @@ export interface WeatherView {
   air: { today: AirPanel[]; tomorrow: AirPanel[] };
   /** Blitzortung's storm, when it is chosen in the integration (from 2.9). */
   lightning?: LightningView;
+  /** PyroVeille's fires and Vigieau's restrictions, when chosen in the integration (from 3.9). */
+  fire?: FireView; water?: WaterView;
 }
 
 /** One message of the integration's `hestia_weather/subscribe`. */
