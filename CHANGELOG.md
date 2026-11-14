@@ -1,4 +1,4 @@
-## 3.9.0b1 — Feux, eau, rivière et une Mini à votre goût
+## 3.9.0 — Feux, eau, rivière et une Mini à votre goût
 
 **En bref**
 
@@ -20,6 +20,7 @@
 ### Corrections
 
 - Carte Records : le réglage « Titres » manquait (#21). Décoché, la carte n’a plus de titre ; avec une seule source, le titre de sa partie disparaît aussi.
+- Éclairs (Blitzortung) : entre deux orages, le capteur de distance vaut « inconnu », ce qui est normal. Les réglages de Hestia le signalaient à tort comme en panne ; ils affichent maintenant « aucun éclair récent » (#28).
 
 ## 3.8.1 — Un ressenti plus juste
 
