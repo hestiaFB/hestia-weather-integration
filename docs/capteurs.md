@@ -194,6 +194,8 @@ Ils sont sur GitHub, à importer en un clic. Vos réglages (téléphones, heure,
 
 Téléphones et enceintes se choisissent dans une liste : les téléphones de l’application Home Assistant, les enceintes avec une voix (« Google Translate », « Home Assistant Cloud »…). Un groupe `notify.famille` peut toujours s’ajouter à la main.
 
+Sur les téléphones, le message a une icône qui dit de quoi il parle (un éclair pour un orage, un flocon pour le gel…), à changer si vous voulez. Pour les alertes, elle prend aussi la couleur du niveau : jaune, orange, rouge, et vert quand c’est fini (Android). Chaque modèle peut joindre l’image d’une caméra, prise à l’envoi, et ouvrir la page de votre choix quand on touche le message, par exemple `/lovelace/meteo`.
+
 | Modèle | Ce qu’il fait | |
 | --- | --- | --- |
 | **Notifier les alertes** | Un message au début, au changement et à la fin de chaque alerte choisie ; le message de fin remplace celui du début | [![Importer](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FhestiaFB%2Fhestia-weather-integration%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fhestia_weather%2Fnotifier_alertes.yaml) |
