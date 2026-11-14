@@ -488,4 +488,18 @@ export const DE: Record<string, string> = {
   'Lire l’arrêté préfectoral': 'Erlass der Präfektur lesen',
   'Cette carte montre les restrictions d’eau de votre commune grâce à Vigieau. Installez l’extension depuis HACS, puis choisissez-la dans les réglages de Hestia Weather.': 'Diese Karte zeigt die Wassereinschränkungen Ihrer Gemeinde über Vigieau. Installieren Sie die Erweiterung über HACS und wählen Sie sie in den Einstellungen von Hestia Weather.',
   'Installer Vigieau': 'Vigieau installieren',
+  // The Mini's temperature, words and alerts left out (issue #22)
+  'Place de la température': 'Position der Temperatur',
+  'Le temps qu’il fait en mots': 'Wetter in Worten',
+  'Alertes à ne pas montrer': 'Nicht angezeigte Warnungen',
+  'Le lieu et le temps du moment, à côté du rond. Décoché, la ligne garde le rond et les valeurs ; une alerte garde ses mots.': 'Ort und aktuelles Wetter neben dem Kreis. Abgewählt behält die Zeile den Kreis und die Werte; eine Warnung behält ihre Worte.',
+  'Cochées, ces alertes ne s’affichent jamais sur cette carte, même sérieuses. Elles restent sur la carte complète.': 'Ausgewählte Warnungen erscheinen auf dieser Karte nie, auch ernste nicht. Auf der vollständigen Karte bleiben sie.',
+  'Orages': 'Gewitter',
+  'Chaleur, froid et gel': 'Hitze, Kälte und Frost',
+  'Brouillard': 'Nebel',
+  'Restrictions d’eau (Vigieau)': 'Wassereinschränkungen (Vigieau)',
+  'Feux de forêt (PyroVeille)': 'Waldbrände (PyroVeille)',
+  'Rivière (CrueVeille)': 'Fluss (CrueVeille)',
+  'À droite, en fin de ligne': 'Rechts, am Zeilenende',
+  'À gauche, après le rond': 'Links, nach dem Kreis',
 };

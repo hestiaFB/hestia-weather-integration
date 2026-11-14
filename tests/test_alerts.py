@@ -114,3 +114,10 @@ def test_keeps_the_eight_most_important_forecast_points_in_time_order() -> None:
     assert [p.text for p in timeline_points(b)] == [f"Point {h}" for h in range(8)]
     assert [p.text for p in timeline_points(brief(*(dated(f"p{h}", "future", 0 if h < 2 else 1, f"P{h}", at(h), "x", f"P{h}") for h in range(10))))] == [
         f"P{h}" for h in range(2, 10)]
+
+
+def test_each_alert_and_point_says_which_signal_it_is() -> None:
+    """Issue #22: the cards leave out the kinds of alerts they are set not to show (Vigieau, pollens…)."""
+    b = brief(signal("official", "official", 1, "Vigilance jaune · orages"), signal("water", "now", 2), signal("storm", "future", 1))
+    assert [a.key for a in alert_points(b)] == ["official", "water"]
+    assert [p.key for p in ticker_points(b)] == ["water", "storm"]

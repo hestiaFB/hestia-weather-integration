@@ -60,6 +60,12 @@ export interface WeatherCardConfig {
   mini_values?: MiniValue[];
   /** Mini: the alerts its line shows: the official vigilances only (default), every alert, or none. */
   mini_alerts?: 'official' | 'all' | 'none';
+  /** Mini: the large temperature at the end of the line (right, default) or just after the round (left) (issue #22). */
+  mini_temperature?: 'left' | 'right';
+  /** Mini: the place and the weather in words (shown by default); off, the line keeps the round and the values. An alert keeps its words. */
+  mini_words?: boolean;
+  /** Mini and Alert: the kinds of alerts left out, whatever their level (issue #22): « water » for Vigieau, « air » for the air and pollens… */
+  hidden_alerts?: AlertKind[];
   /** The Records card: one line per record (list, default) or four cases (cases). */
   records_layout?: 'list' | 'cases';
   /** The cards on their own: what they show, in this order. Unset, everything their format has. */
@@ -116,6 +122,10 @@ export interface WeatherCardConfig {
   /** Before 2.0 the card held its sources; they stay in old dashboards, for the integration to take over. */
   weather_entity?: string;
 }
+
+/** The kinds of alerts a card can leave out (issue #22). */
+export const ALERT_KINDS = ['official', 'storm', 'rain', 'wind', 'temperature', 'fog', 'uv', 'air', 'water', 'fire', 'river'] as const;
+export type AlertKind = typeof ALERT_KINDS[number];
 
 /** What the Mini's line can show (issue #22). */
 export const MINI_VALUES = ['temperature', 'feel', 'wind', 'gust', 'rain', 'humidity', 'pressure', 'uv'] as const;

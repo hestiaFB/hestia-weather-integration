@@ -26,6 +26,8 @@ class Point:
     """« 20 h », « midi », « demain »: the banner's label for that time."""
     alert: bool = False
     """On the timeline: the point that needs attention most, shown with the alert's halo."""
+    key: str | None = None
+    """The brief's signal (« water », « storm-near »…): a card can leave out the kinds of alerts it is set not to show (issue #22)."""
 
 
 @dataclass(frozen=True)
@@ -40,6 +42,8 @@ class AlertPoint:
     entity: str | None = None
     at: float | None = None
     clock: str | None = None
+    key: str | None = None
+    """The brief's signal (« official », « water »…), as on Point."""
 
 
 def label(s: Signal) -> str:
@@ -128,7 +132,7 @@ def ticker_points(brief: Brief | None) -> list[Point]:
     for s in (*p.selected, p.context, p.outlook, *secondary(brief, p)):
         if s is not None and s.group != "official" and s not in seen:
             seen.append(s)
-            points.append(Point(s.group, label(s), s.icon, s.text, s.severity, theme_of(s), s.entity, s.at, s.clock))
+            points.append(Point(s.group, label(s), s.icon, s.text, s.severity, theme_of(s), s.entity, s.at, s.clock, key=s.key))
     return points[:4]
 
 
@@ -166,10 +170,10 @@ def alert_points(brief: Brief | None) -> list[AlertPoint]:
     official = next((s for s in brief.signals if s.key == "official" and s.severity > 0), None)
     if official:
         level, detail = vigilance_parts(official.text)
-        alerts.append(AlertPoint(official.severity, level, detail, phenomenon_icon(detail) if level else "mdi:alert-outline", official.text, True, official.entity))
+        alerts.append(AlertPoint(official.severity, level, detail, phenomenon_icon(detail) if level else "mdi:alert-outline", official.text, True, official.entity, key="official"))
     top = sorted((s for s in brief.signals if s.group != "official" and s.severity > 0), key=lambda s: -s.severity)
     if top:
-        alerts.append(AlertPoint(top[0].severity, label(top[0]), top[0].text, top[0].icon, top[0].text, False, top[0].entity, top[0].at, top[0].clock))
+        alerts.append(AlertPoint(top[0].severity, label(top[0]), top[0].text, top[0].icon, top[0].text, False, top[0].entity, top[0].at, top[0].clock, top[0].key))
     return alerts
 
 
@@ -200,4 +204,4 @@ def timeline_points(brief: Brief | None) -> list[Point]:
     # The most important forecast points when there are too many, shown in time order.
     coming = sorted((s for s in signals if s.at is not None and wanted(s)), key=lambda s: (-s.severity, s.at))[:FUTURE_MAX]
     coming.sort(key=lambda s: s.at)
-    return [Point(s.group, label(s), s.icon, s.short or s.text, s.severity, theme_of(s), s.entity, s.at, s.clock, s is top) for s in (*present, *coming)]
+    return [Point(s.group, label(s), s.icon, s.short or s.text, s.severity, theme_of(s), s.entity, s.at, s.clock, s is top, s.key) for s in (*present, *coming)]

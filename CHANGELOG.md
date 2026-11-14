@@ -6,6 +6,11 @@
 - Nouvelle carte à la pièce « Restrictions d’eau » (#25) : le niveau Vigieau de votre commune, si l’arrosage est restreint, les usages restreints un par un (l’arrosage en premier) et le lien vers l’arrêté.
 - Nouvelle carte à la pièce « Rivière » (#18) : toutes vos stations CrueVeille (une par entrée), leur hauteur, leur montée, leur débit, leurs courbes et le plus haut jour connu de Home Assistant.
 
+### Améliorations
+
+- Carte Mini (#22) : la température en grand à gauche, juste après le rond, ou à droite comme avant ; le lieu et le temps en mots peuvent se masquer.
+- Cartes Mini et Alerte (#22) : des sortes d’alertes à ne jamais montrer, par exemple les restrictions d’eau ou les pollens. Quand l’alerte la plus sérieuse est écartée, la Mini montre la suivante.
+
 ### Corrections
 
 - Carte Records : le réglage « Titres » manquait (#21). Décoché, la carte n’a plus de titre ; avec une seule source, le titre de sa partie disparaît aussi.

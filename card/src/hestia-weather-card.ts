@@ -143,7 +143,7 @@ export class HestiaWeatherCard extends LitElement {
   }
   /** Tile and intermediate formats: one band that unfolds. */
   private get tile(): boolean { return this.config?.format === 'tile' || this.config?.format === 'intermediate'; }
-  private hasAlert(v: WeatherView): boolean { const { alerts, points } = alertItems(v); return alerts.length + points.length > 0; }
+  private hasAlert(v: WeatherView): boolean { const { alerts, points } = alertItems(v, this.config?.hidden_alerts); return alerts.length + points.length > 0; }
   private rememberedTab(config: WeatherCardConfig): 'hours' | 'days' {
     try { const v = localStorage.getItem(`hestia-weather:tab:${config.entry_id ?? ''}`); if (v === 'hours' || v === 'days') return v; } catch { /* private browsing */ }
     return config.forecast_tab ?? 'hours';
@@ -302,7 +302,7 @@ export class HestiaWeatherCard extends LitElement {
       case 'mini':
         return html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${renderMini(view, holdTarget, config)}</div>${dialog()}</ha-card>`;
       case 'alert': {
-        const body = renderAlert(view, this.editing);
+        const body = renderAlert(view, this.editing, config.hidden_alerts);
         return body === nothing ? nothing : html`<ha-card><div @click=${this.tap} @keydown=${this.tapKey}>${body}</div>${dialog()}</ha-card>`;
       }
     }
