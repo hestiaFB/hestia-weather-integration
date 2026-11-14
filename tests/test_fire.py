@@ -123,3 +123,19 @@ def test_only_the_alert_is_a_candidate_and_is_proposed():
     assert detect_sources(STATES, REGISTRY, {})["fire_entity"] == "binary_sensor.alerte_incendie_proche"
     # A deliberate opt-out stays.
     assert "fire_entity" not in detect_sources(STATES, REGISTRY, {"fire_entity": ""})
+
+
+def test_the_fire_card_gets_every_fire_placed_around_the_home():
+    """Issue #23: the card's radar, nearest first, with the wind and the smoke."""
+    view = run([NORTH_EAST, OUT, SOUTH_WEST], wind_from=225).view
+    assert view.fire is not None and view.fire.entity == "binary_sensor.alerte_incendie_proche" and view.fire.source == "PyroVeille"
+    assert view.fire.level == 2 and view.fire.state == fire.ACTIVE and view.fire.smoke and view.fire.wind_from == 225 and view.fire.radius == 30
+    assert [(f.place, f.status) for f in view.fire.fires] == [("Lattes 34", fire.INACTIVE), ("Gignac 34", fire.ACTIVE), ("Lunel 34", fire.REPORTED)]
+    gignac = view.fire.fires[1]
+    assert gignac.distance == 4.6 and 200 < gignac.azimuth < 250 and gignac.url == "https://feuxdeforet.fr/1"
+    assert view.fire.headline.startswith("Feu actif à 4,6 km au sud-ouest (Gignac 34)")
+
+
+def test_no_fire_card_without_pyroveille():
+    assert run(None).view.fire is None
+    assert run([]).view.fire.fires == () and run([]).view.fire.headline == "Aucun feu signalé dans le secteur"

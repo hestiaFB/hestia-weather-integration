@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alertItems, miniAlert, miniItems, pressureAhead, rainAhead, temperatureAhead, windAhead } from '../src/views/compact';
+import { alertItems, alertKind, miniAlert, miniItems, shown, pressureAhead, rainAhead, temperatureAhead, windAhead } from '../src/views/compact';
 import { airPanels } from '../src/views/single';
 import { displayed } from '../src/display';
 import type { AlertPoint, Slot, TickerPoint, WeatherView } from '../src/view';
@@ -95,5 +95,31 @@ describe('The Temperature card (issue #21)', () => {
     const hours = [14, 15, 16, 17, 18].map((hour, i) => ({ ...slot(hour, 0), temperature: [12, 15.5, 16.2, 13, 9.4][i] }));
     expect(temperatureAhead(view({ hours }))).toEqual({ high: { value: 16.2, hour: '16 h' }, low: { value: 9.4, hour: '18 h' } });
     expect(temperatureAhead(view({ hours: [slot(14, 0)] }))).toBeUndefined();
+  });
+});
+
+describe('The alerts a card leaves out (issue #22)', () => {
+  const water: AlertPoint = { level: 2, label: 'Eau', text: 'Alerte renforcée', icon: 'mdi:x', source: '', official: false, key: 'water' };
+  const storm: TickerPoint = { group: 'future', label: 'À venir', icon: 'mdi:x', text: 'Orage vers 18 h', level: 2, key: 'storm' };
+  const pollen: TickerPoint = { group: 'environment', label: 'Pollens', icon: 'mdi:x', text: 'Pollens forts', level: 2, key: 'pollen-false' };
+  it('knows the kind of each signal', () => {
+    expect(['official', 'storm-near', 'rain-now', 'wind-rain', 'wind-future', 'frost-night', 'fog-later', 'air-true', 'legacy-sensor.x', 'pressure'].map(alertKind))
+      .toEqual(['official', 'storm', 'rain', 'rain', 'wind', 'temperature', 'fog', 'air', 'air', undefined]);
+  });
+  it('the Mini skips Vigieau and shows the next point that needs attention', () => {
+    const v = view({ alerts: [water], points: [storm] });
+    expect(miniAlert(v, 'all')?.key).toBe('water');
+    expect(miniAlert(v, 'all', ['water'])?.text).toBe('Orage vers 18 h');
+    expect(miniAlert(v, 'all', ['water', 'storm'])).toBeUndefined();
+    expect(miniAlert(view({ alerts: [{ ...vigilance, key: 'official' }] }), 'official', ['official'])).toBeUndefined();
+  });
+  it('the Alert card hides what is left out, and stays hidden when nothing else is serious', () => {
+    const v = view({ alerts: [water], points: [storm, pollen] });
+    expect(alertItems(v, ['water', 'air'])).toEqual({ alerts: [], points: [storm] });
+    expect(alertItems(v, ['water', 'air', 'storm'])).toEqual({ alerts: [], points: [] });
+  });
+  it('an alert from an older integration, without its kind, always shows', () => {
+    expect(shown(['water'], { text: 'x' } as unknown as AlertPoint)).toBe(true);
+    expect(shown(['official'], vigilance)).toBe(false);
   });
 });

@@ -101,3 +101,15 @@ def test_among_several_zones_the_drinking_water_is_proposed():
     assert detect_sources(STATES, REGISTRY, {}, DEVICES)["water_restriction_entity"] == "sensor.alert_level_gardanne"
     # Two zones and none for drinking water: the user chooses.
     assert "water_restriction_entity" not in detect_sources(STATES, REGISTRY, {}, {"d1": {"name": "Vigieau Gardanne SUP"}, "d2": DEVICES["d2"]})
+
+
+def test_the_water_card_lists_the_restricted_uses():
+    """Issue #25: the level, the uses one by one, watering and the order."""
+    view = run("Alerte renforcée").view
+    assert view.water is not None and view.water.source == "Vigieau" and view.water.entity == "sensor.vigieau_gardanne"
+    assert view.water.level == 3 and view.water.label == "Alerte renforcée" and view.water.watering
+    assert view.water.usages[0] == "Arrosage des pelouses, massifs fleuris et espaces verts" and len(view.water.usages) == 3
+    assert view.water.order == "https://example.org/arrete.pdf"
+    quiet = run("Vigilance").view.water
+    assert quiet.level == 1 and quiet.usages == () and not quiet.watering
+    assert run(None).view.water is None

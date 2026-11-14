@@ -3,7 +3,7 @@
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { colon, hourText, t } from '../i18n';
 import type { AlertPoint, TickerPoint, WeatherView } from '../view';
-import type { MiniValue, WeatherCardConfig } from '../types';
+import type { AlertKind, MiniValue, WeatherCardConfig } from '../types';
 import { alertBubble, bubble, chip, label, nf, scrolling, tint } from '../ui/parts';
 import { hoursChart, week } from './forecasts';
 import type { PressTarget } from './tile';
@@ -39,11 +39,35 @@ export function miniItems(v: WeatherView, which: ReadonlyArray<MiniValue>): Mini
     return m && n !== undefined && Number.isFinite(n) ? [{ key, icon: m.icon, text: m.text(n), value: n, theme: m.theme(n) }] : [];
   });
 }
-/** The alert the line shows: the official vigilance only (default), the most serious of all, or none. */
-export function miniAlert(v: WeatherView, which: 'official' | 'all' | 'none' = 'official'): AlertPoint | undefined {
+/** The kind of an alert or a point, from its signal (issue #22); none for what no setting hides (the pressure). */
+export function alertKind(key?: string): AlertKind | undefined {
+  if (!key) return undefined;
+  if (key === 'official' || key === 'water' || key === 'fire' || key === 'river' || key === 'uv') return key;
+  if (key.startsWith('storm')) return 'storm';
+  if (key.startsWith('rain') || key === 'wind-rain') return 'rain';
+  if (key.startsWith('wind')) return 'wind';
+  if (key.startsWith('fog')) return 'fog';
+  if (key.startsWith('temperature') || key === 'comfort-gap' || key === 'freeze-future' || key === 'frost-night') return 'temperature';
+  if (/^(air|pollen|atmo|legacy)/.test(key)) return 'air';
+  return undefined;
+}
+/** Whether a card set to leave out `hidden` shows this alert or point; an alert from an integration older than 3.9 (no key) always shows,
+ *  but an official vigilance is known by its flag. */
+export const shown = (hidden: readonly AlertKind[] = [], a: { key?: string; official?: boolean }): boolean => {
+  const kind = a.official ? 'official' : alertKind(a.key);
+  return !kind || !hidden.includes(kind);
+};
+
+/** The alert the line shows: the official vigilance only (default), the most serious of all, or none; the kinds left out never.
+ *  When the most serious is left out, the next point that needs attention takes its place. */
+export function miniAlert(v: WeatherView, which: 'official' | 'all' | 'none' = 'official', hidden: readonly AlertKind[] = []): AlertPoint | undefined {
   if (which === 'none') return undefined;
-  const official = v.alerts.find(a => a.official);
-  return which === 'all' ? official ?? v.alerts[0] : official;
+  const alerts = v.alerts.filter(a => shown(hidden, a));
+  const official = alerts.find(a => a.official);
+  if (which !== 'all' || official) return official;
+  const point = v.points.find(p => p.level >= 1 && p.group !== 'official' && shown(hidden, p));
+  return alerts[0] ?? (point && { level: Math.min(3, point.level) as 1 | 2 | 3, label: point.label, text: point.text, icon: point.icon, source: '', official: false,
+    entity: point.entity, key: point.key });
 }
 /** The round's colour when no alert: the sky's own meaning. */
 const skyTheme = (c: string) => ['rainy', 'pouring', 'snowy', 'snowy-rainy', 'hail'].includes(c) ? 'rain' : ['lightning', 'lightning-rainy', 'windy', 'windy-variant'].includes(c) ? 'wind'
@@ -51,31 +75,36 @@ const skyTheme = (c: string) => ['rainy', 'pouring', 'snowy', 'snowy-rainy', 'ha
 
 /** One line, as Hestia Confort's (issue #22): a tinted round with the sky (or the vigilance), the place and the weather in words,
  *  the chosen values, then the temperature large. Words and values that do not fit scroll; the temperature always stays. */
-export function renderMini(v: WeatherView, holdTarget: PressTarget, c: Pick<WeatherCardConfig, 'mini_values' | 'mini_alerts'> = {}): TemplateResult {
-  const n = v.now, alert = miniAlert(v, c.mini_alerts), chosen = c.mini_values ?? ['temperature'];
+export function renderMini(v: WeatherView, holdTarget: PressTarget,
+                           c: Pick<WeatherCardConfig, 'mini_values' | 'mini_alerts' | 'mini_temperature' | 'mini_words' | 'hidden_alerts'> = {}): TemplateResult {
+  const n = v.now, alert = miniAlert(v, c.mini_alerts, c.hidden_alerts), chosen = c.mini_values ?? ['temperature'];
+  // Issue #22: the temperature just after the round, and the line without the weather in words (an alert keeps its words).
+  const left = c.mini_temperature === 'left', words = c.mini_words !== false || !!alert;
   const items = miniItems(v, chosen.filter(k => k !== 'temperature')), temp = chosen.includes('temperature') ? miniItems(v, ['temperature'])[0] : undefined;
   const place = v.location ? t('Météo à {place}', { place: v.location }) : t('Météo');
   const theme = alert ? `level${alert.level}` : skyTheme(n.condition);
-  const words = alert ? html`${alert.label ? `${alert.label} · ` : ''}${alert.text}` : n.label;
+  const said = alert ? html`${alert.label ? `${alert.label} · ` : ''}${alert.text}` : n.label;
   const values = items.map(i => html`<span class=${`mini-val${i.theme ? ' ink' : ''}`} style=${i.theme ? tint(i.theme) : ''}><ha-icon icon=${i.icon}></ha-icon>${i.text}</span>`);
-  return html`<div class=${`nw-mini${holdTarget === 'none' ? ' still' : ''}${alert ? ' alerting' : ''}`} role=${holdTarget === 'none' ? 'group' : 'button'} tabindex=${holdTarget === 'none' ? -1 : 0}
+  const big = temp ? html`<span class=${`mini-t${temp.theme ? ' ink' : ''}`} style=${temp.theme ? tint(temp.theme) : ''}>${nf(temp.value)}<small>°</small></span>` : nothing;
+  return html`<div class=${`nw-mini${holdTarget === 'none' ? ' still' : ''}${alert ? ' alerting' : ''}${left ? ' left' : ''}${words ? '' : ' wordless'}`} role=${holdTarget === 'none' ? 'group' : 'button'} tabindex=${holdTarget === 'none' ? -1 : 0}
       aria-label=${holdTarget === 'none' ? place : colon(place, holdTarget === 'page' ? t('appui pour la page météo') : t('appui pour la carte complète'))}>
     <span class="mini-orb" style=${tint(theme)} title=${alert?.source ?? ''}><ha-icon icon=${alert ? alert.icon : n.icon}></ha-icon></span>
-    <span class="mini-text">${v.location ? html`<span class="mini-place">${scrolling(v.location)}</span>` : nothing}
-      <b class=${alert ? 'ink' : ''} style=${alert ? tint(theme) : ''} role=${alert ? 'status' : nothing}>${scrolling(words)}</b></span>
+    ${left ? big : nothing}
+    ${words ? html`<span class="mini-text">${v.location ? html`<span class="mini-place">${scrolling(v.location)}</span>` : nothing}
+      <b class=${alert ? 'ink' : ''} style=${alert ? tint(theme) : ''} role=${alert ? 'status' : nothing}>${scrolling(said)}</b></span>` : nothing}
     ${values.length ? html`<hestia-weather-marquee class="mini-vals"><span class="run">${values}</span><span class="run" aria-hidden="true">${values}</span></hestia-weather-marquee>` : nothing}
-    ${temp ? html`<span class=${`mini-t${temp.theme ? ' ink' : ''}`} style=${temp.theme ? tint(temp.theme) : ''}>${nf(temp.value)}<small>°</small></span>` : nothing}
+    ${left ? nothing : big}
   </div>`;
 }
 
 /** What deserves to be seen now: the vigilances, the alert measured at home, then the serious points of the coming hours. */
-export function alertItems(v: WeatherView): { alerts: WeatherView['alerts']; points: TickerPoint[] } {
-  return { alerts: v.alerts, points: v.points.filter(p => p.level >= 2 && p.group !== 'official') };
+export function alertItems(v: WeatherView, hidden: readonly AlertKind[] = []): { alerts: WeatherView['alerts']; points: TickerPoint[] } {
+  return { alerts: v.alerts.filter(a => shown(hidden, a)), points: v.points.filter(p => p.level >= 2 && p.group !== 'official' && shown(hidden, p)) };
 }
 
 /** Only while there is something serious; the card hides itself otherwise (a placeholder while the dashboard is being edited). */
-export function renderAlert(v: WeatherView, editing: boolean): TemplateResult | typeof nothing {
-  const { alerts, points } = alertItems(v);
+export function renderAlert(v: WeatherView, editing: boolean, hidden: readonly AlertKind[] = []): TemplateResult | typeof nothing {
+  const { alerts, points } = alertItems(v, hidden);
   if (!alerts.length && !points.length) return editing
     ? html`<div class="nw-alertcard quiet-card"><ha-icon icon="mdi:shield-check-outline"></ha-icon><span><b>${t('Aucune alerte en ce moment.')}</b> ${t('Cette carte reste cachée tant que tout est calme.')}</span></div>`
     : nothing;
@@ -216,6 +245,9 @@ export const compactStyles = css`
   .mini-val ha-icon { display:flex; }
   .mini-val.ink, .mini-t.ink { color:color-mix(in oklab, var(--c) 60%, var(--nw-fg)); }
   .mini-val.ink { font-weight:650; }
+  /* The temperature just after the round (issue #22): the values then take the end of the line. */
+  .nw-mini.left .mini-t { margin-left:-4px; }
+  .nw-mini.left .mini-vals, .nw-mini.wordless .mini-vals { margin-left:auto; }
   .mini-t { flex:none; font-size:var(--nw-fs-value); font-weight:700; letter-spacing:-.5px; line-height:1; white-space:nowrap; font-variant-numeric:tabular-nums; }
   .mini-t small { font-size:var(--nw-fs-small); font-weight:500; color:var(--nw-fg2); }
   .mini-t.ink small { color:inherit; opacity:.8; }

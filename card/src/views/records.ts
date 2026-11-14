@@ -122,8 +122,10 @@ export function renderRecords(r: RecordsMessage, c: WeatherCardConfig, uid: stri
   const period = c.records_period ?? 'both';
   const title = period === 'year' ? `${t('Records')} · ${today.getFullYear()}`
     : period === 'month' ? `${t('Records')} · ${dateFormat(currentLocale(), { month: 'long', year: 'numeric' }).format(today)}` : t('Records');
-  return html`<div class="nw-single records"><h2 class="nw-title">${title}</h2>
-    ${recordSources(c).map(source => panel(source, r[source], r.loading.includes(source), c, uid, today))}</div>`;
+  // Without titles (issue #21): no card title, and no panel head when one source is shown (with both, the heads tell them apart).
+  const titled = c.show_title !== false, sources = recordSources(c);
+  return html`<div class=${`nw-single records${titled ? '' : sources.length > 1 ? ' untitled' : ' untitled one'}`}>${titled ? html`<h2 class="nw-title">${title}</h2>` : nothing}
+    ${sources.map(source => panel(source, r[source], r.loading.includes(source), c, uid, today))}</div>`;
 }
 
 export const recordsStyles = css`
@@ -134,6 +136,7 @@ export const recordsStyles = css`
   .rk-panel { display:flex; flex-direction:column; }
   .rk-panel .rk-counts { margin-top:auto; padding-top:12px; }
   .nw-single.records .nw-title { margin:0 2px 2px; }
+  .nw-single.records.untitled.one .rk-panel .nw-panel-head { display:none; }
   .nw-single.records .rk-panel { background:var(--nw-surface); padding:14px 16px; border-radius:16px; }
   .rk-panel .nw-panel-head { margin-bottom:10px; }
   .rk-icon { --mdc-icon-size:18px; display:flex; flex:none; color:color-mix(in oklab, var(--c) 70%, var(--nw-fg)); }

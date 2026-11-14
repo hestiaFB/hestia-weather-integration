@@ -37,11 +37,15 @@ export interface SeasonView { info: Season; news?: string; tip: string }
 /** When a forecast point happens (seconds), and the banner's label for it (« 20 h », « midi », « demain »); absent for what is measured now. */
 export interface Timed { at?: number; clock?: string }
 /** An alert bubble: the official vigilance, or what the station measures at home. Both can show at once. */
-export interface AlertPoint extends Timed { level: 1 | 2 | 3; label?: string; text: string; icon: string; source: string; official: boolean; entity?: string }
+export interface AlertPoint extends Timed { level: 1 | 2 | 3; label?: string; text: string; icon: string; source: string; official: boolean; entity?: string;
+  /** The brief's signal (« official », « water », « storm-near »…), from integration 3.9 on: a card can leave out some kinds (issue #22). */
+  key?: string }
 /** A point of the scrolling bubble. */
 export interface TickerPoint extends Timed { group: string; label: string; icon: string; text: string; level: number; theme?: Theme; entity?: string;
   /** On the timeline: the point that needs attention most, with the alert's halo. */
-  alert?: boolean }
+  alert?: boolean;
+  /** The brief's signal, as on AlertPoint (integration 3.9 and later). */
+  key?: string }
 
 export interface BriefSignal extends Timed {
   key: string; group: 'now' | 'future' | 'environment' | 'official'; severity: 0 | 1 | 2 | 3;
@@ -160,6 +164,31 @@ export interface LightningView {
   month?: number;
 }
 
+/** A fire PyroVeille reports, placed from the home. */
+export interface FirePoint { place: string; status: 1 | 2 | 3; distance?: number; azimuth?: number; url?: string }
+/** The fires around the home, from PyroVeille (issue #23, integration 3.9.0 and later). */
+export interface FireView {
+  source: string; entity: string;
+  /** 0 nothing to do, 1 to watch, 2 an active fire close or whose smoke comes this way. */
+  level: 0 | 1 | 2;
+  /** The nearest fire's status: 0 none, 1 extinguished, 2 reported, 3 active. */
+  state: 0 | 1 | 2 | 3;
+  headline: string; radius?: number; smoke: boolean;
+  /** Where the wind comes from now, in degrees, when it blows. */
+  windFrom?: number;
+  /** Nearest first. */
+  fires: FirePoint[];
+}
+/** The water restrictions of the day, from Vigieau (issue #25, integration 3.9.0 and later). */
+export interface WaterView {
+  source: string; entity: string;
+  /** 0 no restriction to 4 crisis. */
+  level: 0 | 1 | 2 | 3 | 4;
+  label: string; headline: string; usages: string[]; watering: boolean;
+  /** The link to the prefect's order. */
+  order?: string;
+}
+
 export interface WeatherView {
   location: string; dateLabel: string; provider: string; forecastSource: string;
   /** Opened when the forecast is tapped. */
@@ -177,6 +206,8 @@ export interface WeatherView {
   air: { today: AirPanel[]; tomorrow: AirPanel[] };
   /** Blitzortung's storm, when it is chosen in the integration (from 2.9). */
   lightning?: LightningView;
+  /** PyroVeille's fires and Vigieau's restrictions, when chosen in the integration (from 3.9). */
+  fire?: FireView; water?: WaterView;
 }
 
 /** One message of the integration's `hestia_weather/subscribe`. */
