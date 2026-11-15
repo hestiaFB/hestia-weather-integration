@@ -93,6 +93,25 @@ class PanelTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(meteo({})["url"], "https://www.home-assistant.io/integrations/meteo_france/")
         self.assertNotIn("HACS", meteo({})["install"])
 
+    async def test_pirate_weather_is_a_recognised_weather_service(self):
+        # Issue #35: read as the place's weather service, no longer proposed « to ask for ».
+        from custom_components.hestia_weather.extensions import inventory, others
+        registry = er.async_get(self.hass)
+        def pirate(options):
+            return next(e for e in inventory(self.hass, options) if e["id"] == "pirateweather")
+        self.assertFalse(pirate({})["installed"])
+        weather = registry.async_get_or_create("weather", "pirateweather", "pirate-forecast")
+        other = registry.async_get_or_create("weather", "met", "home")
+        self.assertTrue(pirate({})["installed"])
+        self.assertTrue(pirate({"weather_entity": weather.entity_id})["configured"])
+        self.assertFalse(pirate({"weather_entity": other.entity_id})["configured"])
+        self.assertTrue(pirate({})["beta"])
+        self.assertTrue(pirate({})["weather_service"])  # chosen in « Sources météo », no switch to turn it off
+        self.assertEqual(pirate({})["url"], "https://github.com/Pirate-Weather/pirate-weather-ha")
+        self.assertIn("pirateweather.net", pirate({})["install"])
+        self.hass.config.components.add("pirateweather")
+        self.assertNotIn("pirateweather", [o["key"] for o in others(self.hass)])
+
     async def test_extensions_distinguish_saved_selection_from_detection(self):
         from types import SimpleNamespace
         from custom_components.hestia_weather.extensions import inventory

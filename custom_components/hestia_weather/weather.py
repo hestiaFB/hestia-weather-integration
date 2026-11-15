@@ -12,9 +12,11 @@ from homeassistant.const import UnitOfPrecipitationDepth, UnitOfPressure, UnitOf
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .coordinator import HestiaWeatherConfigEntry, HestiaWeatherCoordinator
 from .engine.catalogue import CONDITIONS
+from .engine.forecast import uv_now
 from .engine.units import Kind, finite, measurement
 from .sensor import device_info, device_name, first_enabled, prefix
 
@@ -108,7 +110,9 @@ class HestiaWeatherEntity(CoordinatorEntity[HestiaWeatherCoordinator], WeatherEn
     @property
     def uv_index(self) -> float | None:
         local = self.coordinator.data.local if self.coordinator.data else None
-        return local.uv if local and local.uv is not None else finite(self._bulletin.get("uv_index"))
+        if local and local.uv is not None:
+            return local.uv
+        return uv_now(self._bulletin.get("uv_index"), self.coordinator.hours, dt_util.utcnow())
 
     @property
     def cloud_coverage(self) -> float | None:

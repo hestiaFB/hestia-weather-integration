@@ -37,7 +37,7 @@ test('the entities switched on, and a sensor line that says when it is gone',()=
 
 test('extensions group by use and Atmo keeps separate air and pollen configuration and destinations',()=>{
  const shared={installed:true,configured:true,stage:2,field:'',description:'',name:'Atmo France'};
- const groups=extensionGroups([{...shared,id:'meteo_france',stage:0},{...shared,id:'atmo',air_configured:true,pollen_configured:false},{...shared,id:'waqi'},
+ const groups=extensionGroups([{...shared,id:'meteo_france',stage:0,weather_service:true},{...shared,id:'atmo',air_configured:true,pollen_configured:false},{...shared,id:'waqi'},
   {...shared,id:'polleninformation',stage:3},{...shared,id:'vigieau',stage:6},{...shared,id:'blitzortung',stage:0}]);
  assert.deepEqual(groups.map(g=>g.label),['Sources météo','Qualité de l’air','Pollens','Eau et jardin','Orages et éclairs']);
  assert.equal(groups[1].items[0].configured,true);
@@ -76,7 +76,10 @@ test('an extension switch turns its source on or off in the draft, and Météo-F
  assert.deepEqual(extensionSwitch(ext('irm_kmi',{configured:true}),view).off,[{op:'pollen',value:'none'}]);
  const storm=extensionSwitch(ext('blitzortung',{field:'lightning_entity'}),view);
  assert.deepEqual([storm.available,storm.on],[true,[{op:'set',key:'lightning_entity',value:'sensor.strikes'}]]);
- assert.equal(extensionSwitch(ext('meteo_france',{field:'weather_entity',configured:true}),view).shown,false);
+ assert.equal(extensionSwitch(ext('meteo_france',{field:'weather_entity',configured:true,weather_service:true}),view).shown,false);
+ // Pirate Weather is a weather service too: chosen in « Sources météo », never switched off.
+ assert.equal(extensionSwitch(ext('pirateweather',{field:'weather_entity',configured:true,weather_service:true}),view).shown,false);
+ assert.deepEqual(extensionGroups([ext('pirateweather',{stage:0,weather_service:true}),ext('meteo_france',{stage:0,weather_service:true})]).map(g=>[g.key,g.items.map(e=>e.id)]),[['weather',['pirateweather','meteo_france']]]);
  assert.equal(extensionSwitch(ext('vigieau',{installed:false,field:'water_restriction_entity'}),view).shown,false);
 });
 

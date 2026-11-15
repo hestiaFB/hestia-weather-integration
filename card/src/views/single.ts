@@ -1,5 +1,6 @@
 // The cards on their own: one part of the full card (the feel, the rain, the wind, the pressure, the air and pollens, the forecasts, the events),
 // showing only the parts chosen for it. The panels are the full card's, without their frame: the card is the frame.
+import { sunPanel } from './sun';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { t } from '../i18n';
 import type { AirPanel, WeatherView } from '../view';
@@ -16,7 +17,7 @@ import { fireMissing, firePanel } from './fire';
 import { waterMissing, waterPanel } from './water';
 import '../ui/frise';
 
-export type SingleFormat = 'comfort' | 'temperature' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'fire' | 'water' | 'air' | 'forecast' | 'events';
+export type SingleFormat = 'comfort' | 'temperature' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'fire' | 'water' | 'air' | 'forecast' | 'events' | 'sun';
 export interface SingleOptions {
   uid: string; entity: string;
   /** A local thermometer: the feel is compared with it rather than with the bulletin. */
@@ -70,7 +71,8 @@ export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardB
     const lead = parts.has('ahead') ? pressureComing(v, parts.size === 1) : nothing;
     body = v.pressure ? pressurePanel(v.pressure, o.uid, parts, lead) : lead === nothing ? empty(t('Pression indisponible pour le moment.'))
       : html`<section class="nw-panel" aria-label=${t('Pression')}>${panelHead('mdi:gauge', 'pressure', t('Pression'), v.provider)}${lead}</section>`;
-  } else if (format === 'lightning') body = v.lightning ? lightningPanel(v.lightning, parts, parts.has('ahead') ? stormComing(v) : nothing)
+  } else if (format === 'sun') body = v.astro ? sunPanel(v.astro, parts) : empty(t('Le lieu de Home Assistant est inconnu : réglez-le dans Paramètres › Système › Général.'));
+  else if (format === 'lightning') body = v.lightning ? lightningPanel(v.lightning, parts, parts.has('ahead') ? stormComing(v) : nothing)
     // Blitzortung is a third-party integration: the card says what it brings and where to choose it.
     : html`<section class="nw-panel lz-missing" aria-label=${t('Éclairs')}>${panelHead('mdi:flash', 'wind', t('Éclairs'), 'Blitzortung')}
         <p>${t('Cette carte montre les éclairs autour de chez vous grâce à Blitzortung, un réseau de détecteurs bénévoles. Installez l’extension depuis HACS, puis choisissez-la dans les réglages de Hestia Weather.')}</p>

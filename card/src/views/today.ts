@@ -1,4 +1,5 @@
 // « Aujourd'hui »: the feel, then rain, wind and pressure measured at home, each in the same panel model.
+import { sunPanel } from './sun';
 import { css, html, nothing, svg, type TemplateResult } from 'lit';
 import { colon, currentLocale, fr, t } from '../i18n';
 import type { ChartPeriodId, Chip, ComfortView, MeasureView, PressureView, RainDay, RainPeriodId, RainView, Season, SeasonName, Stat, WeatherView, WindView } from '../view';
@@ -205,7 +206,7 @@ const from = (deg: number) => t(FROM[Math.round(((deg % 360 + 360) % 360) / 45) 
 
 export const around = (v: WeatherView): Around => ({ wind: v.wind?.value, extras: v.extras, season: v.season.info });
 
-const TODAY: TodayBlock[] = ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'extras', 'air'];
+const TODAY: TodayBlock[] = ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'extras', 'air', 'sun'];
 
 export function renderToday(v: WeatherView, uid: string, station: boolean, air: TemplateResult | typeof nothing, blocks: TodayBlock[] = TODAY): TemplateResult {
   // Without Blitzortung there is no lightning panel: the measures keep their row of three.
@@ -226,6 +227,8 @@ export function renderToday(v: WeatherView, uid: string, station: boolean, air: 
     const extras = v.comfort && blocks.includes('comfort') ? [] : v.extras;
     if (b === 'extras' && extras.length) out.push(html`<div class="nw-chips extras">${extras.map(chip)}</div>`);
     if (b === 'air') out.push(air);
+    // The sun and the moon have their own row: their curve needs the width.
+    if (b === 'sun' && v.astro) out.push(sunPanel(v.astro));
   }
   flush();
   return html`${out}`;

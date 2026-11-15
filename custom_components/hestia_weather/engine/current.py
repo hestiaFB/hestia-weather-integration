@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Callable, Sequence
 
+from .atmo import normal
 from .conditions import CONDITIONS
+from .detection import PROVIDER_NAMES, WEATHER_PROVIDERS
 from .forecast import Hour
 from .i18n import N_, t
 from .lightning import Lightning
@@ -53,12 +55,11 @@ def _state(get: Getter, entity_id: str | None) -> Any:
 
 
 def weather_source_label(get: Getter, settings: Settings) -> str:
-    """Who publishes the forecast: « Météo-France » when recognisable, else the configured name."""
+    """Who publishes the forecast: « Météo-France » or « Pirate Weather » when recognisable, else the configured name."""
     weather = get(settings.weather_entity)
-    attribution = (weather.attributes.get("attribution") or "") if weather else ""
-    if re.search(r"m[eé]t[eé]o.?france", f"{attribution} {settings.weather_entity}", re.IGNORECASE):
-        return "Météo-France"
-    return settings.forecast_source or t("Bulletin météo")
+    said = normal(f"{(weather.attributes.get('attribution') or '') if weather else ''} {settings.weather_entity}")
+    return next((PROVIDER_NAMES[p] for p, pattern in WEATHER_PROVIDERS.items() if re.search(pattern, said)),
+                settings.forecast_source or t("Bulletin météo"))
 
 
 def meaningful_comfort(get: Getter, settings: Settings, w: LocalWeather) -> bool:

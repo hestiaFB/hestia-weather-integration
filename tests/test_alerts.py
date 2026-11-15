@@ -60,6 +60,8 @@ def test_without_vigilance_shows_the_point_needing_attention() -> None:
 def test_shows_the_vigilance_and_the_measured_alert_together() -> None:
     alerts = alert_points(brief(signal("rain-now", "now", 2, "Forte pluie : 8,2 mm/h"), signal("official", "official", 1, "Vigilance jaune · orages")))
     assert [a.label for a in alerts] == ["Vigilance jaune", "Maintenant"] and [a.official for a in alerts] == [True, False]
+    # The measured rain keeps the rain colour; only the vigilance wears yellow, orange or red (14 November).
+    assert [a.theme for a in alerts] == [None, "rain"]
 
 
 def test_gives_each_point_the_colour_of_its_theme() -> None:

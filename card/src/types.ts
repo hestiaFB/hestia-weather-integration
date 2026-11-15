@@ -27,10 +27,10 @@ export interface HomeAssistant {
 export type TileBlock = 'bulletin' | 'events' | 'moments' | 'forecast';
 /** The full card's three sections, always in this order, each with its own blocks: nothing moves from one to another. */
 export type BannerBlock = 'bulletin' | 'events' | 'moments' | 'forecast';
-export type TodayBlock = 'comfort' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'extras' | 'air';
+export type TodayBlock = 'comfort' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'extras' | 'air' | 'sun';
 export type ForecastBlock = 'hours' | 'days' | 'air';
 /** What a card on its own shows (comfort, rain, wind, pressure, air, forecast), each format with its own parts. */
-export type CardBlock = 'now' | 'chart' | 'radar' | 'stats' | 'ahead' | 'feel' | 'gauge' | 'factors' | 'extras'
+export type CardBlock = 'path' | 'sun' | 'moon' | 'now' | 'chart' | 'radar' | 'stats' | 'ahead' | 'feel' | 'gauge' | 'factors' | 'extras'
   | 'air_today' | 'pollen_today' | 'air_tomorrow' | 'pollen_tomorrow' | 'hours' | 'days' | 'humidity' | 'list' | 'flow';
 
 /** The card's own settings: what it shows and how. Its sources (weather, station, air) are set in the Hestia Weather integration. */
@@ -47,7 +47,7 @@ export interface WeatherCardConfig {
    *  and of the place (issue #17). fire: PyroVeille's fires on a radar (issue #23). water: Vigieau's restrictions (issue #25).
    *  river: CrueVeille's rivers, their height and flow (issue #18). alert: only while there is a vigilance or an alert, hidden otherwise.
    *  On the small formats a long press (a tap on mini and alert) does what hold_action says. */
-  format?: 'full' | 'intermediate' | 'tile' | 'mini' | 'comfort' | 'temperature' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'events' | 'records' | 'fire' | 'water' | 'river' | 'alert';
+  format?: 'full' | 'intermediate' | 'tile' | 'tile_window' | 'tile_immersive' | 'sun' | 'mini' | 'comfort' | 'temperature' | 'rain' | 'wind' | 'pressure' | 'lightning' | 'air' | 'forecast' | 'events' | 'records' | 'fire' | 'water' | 'river' | 'alert';
   /** The River card (issue #18): CrueVeille's « Alerte inondation » sensors to show, one per station, in this order. Unset: every station. */
   rivers?: string[];
   /** The River card's curves: six hours, a day, two days (default) or a week. */
@@ -64,7 +64,7 @@ export interface WeatherCardConfig {
   mini_temperature?: 'left' | 'right';
   /** Mini: the place and the weather in words (shown by default); off, the line keeps the round and the values. An alert keeps its words. */
   mini_words?: boolean;
-  /** Mini and Alert: the kinds of alerts left out, whatever their level (issue #22): « water » for Vigieau, « air » for the air and pollens… */
+  /** The kinds of alerts left out, whatever their level: Mini and Alert (issue #22), Events and tiles (issue #33). « water » for Vigieau, « air » for the air and pollens… */
   hidden_alerts?: AlertKind[];
   /** The Records card: one line per record (list, default) or four cases (cases). */
   records_layout?: 'list' | 'cases';
@@ -118,6 +118,16 @@ export interface WeatherCardConfig {
   /** Frosted glass over the sky (blur). Off, the glass is plain and more opaque: lighter for slow devices. */
   glass_effect?: boolean;
   weather_animation_quality?: 'low' | 'standard';
+  /** The tile opens unfolded when the dashboard loads (then folds and unfolds as usual). Was the « intermediate » format. */
+  tile_open?: boolean;
+  /** The sky alone, or set in a place: a house in the countryside, a village, the town, a block of flats, the mountain, the seaside. */
+  decor?: 'sky' | 'countryside' | 'village' | 'city' | 'apartment' | 'mountain' | 'seaside';
+  /** With a place chosen: hide the landscape and keep only its sky (the sun and the moon still on the hour). */
+  decor_sky_only?: boolean;
+  /** The stove or the heating: on, smoke rises from the chimney of the place. */
+  decor_smoke_entity?: string;
+  /** The home's lights: the windows follow them. Without it, they light up from dusk to bedtime. */
+  decor_lights_entity?: string;
   weather_path?: string;
   /** Before 2.0 the card held its sources; they stay in old dashboards, for the integration to take over. */
   weather_entity?: string;
@@ -128,5 +138,5 @@ export const ALERT_KINDS = ['official', 'storm', 'rain', 'wind', 'temperature', 
 export type AlertKind = typeof ALERT_KINDS[number];
 
 /** What the Mini's line can show (issue #22). */
-export const MINI_VALUES = ['temperature', 'feel', 'wind', 'gust', 'rain', 'humidity', 'pressure', 'uv'] as const;
+export const MINI_VALUES = ['temperature', 'feel', 'wind', 'gust', 'rain', 'humidity', 'pressure', 'uv', 'sunrise', 'sunset', 'moon'] as const;
 export type MiniValue = typeof MINI_VALUES[number];

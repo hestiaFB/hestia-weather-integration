@@ -13,8 +13,8 @@ export type TickerItem = TickerPoint | (AlertPoint & { alert: true });
 
 /** Every point stays 5 s. */
 const STEP = 5000;
-/** The point's colour: an alert takes its level's, a brief point its theme's. */
-const tone = (p: TickerItem) => `--tone:var(--nw-${'official' in p || ('alert' in p && p.alert) ? `level${Math.min(3, Math.max(1, p.level))}` : p.theme ?? (p.level >= 2 ? `level${Math.min(3, p.level)}` : 'calm')})`;
+/** The point's colour: the official vigilance takes its level's, everything else its meaning (rain, wind…); the level only without one (14 November). */
+const tone = (p: TickerItem) => `--tone:var(--nw-${'official' in p && p.official ? `level${Math.min(3, Math.max(1, p.level))}` : p.theme ?? (p.level >= 2 ? `level${Math.min(3, p.level)}` : 'calm')})`;
 
 /**
  * Shows the points one at a time, every 5 s, as the timeline's sentence (3 November, as the maquette's folded tile):
@@ -25,6 +25,8 @@ const tone = (p: TickerItem) => `--tone:var(--nw-${'official' in p || ('alert' i
 @define('hestia-ticker')
 export class HestiaTicker extends LitElement {
   @property({ attribute: false }) points: TickerItem[] = [];
+  /** Without its glass frame: the tile draws the line or the pill around it. */
+  @property({ type: Boolean, reflect: true }) bare = false;
   @state() private index = 0;
   @state() private leaving = false;
   /** One round of each sentence that scrolls, in ms, by its text. */
@@ -89,6 +91,7 @@ export class HestiaTicker extends LitElement {
     ha-icon { display:flex; line-height:0; }
     /* The timeline's frame is the charter's glass (.nw-glass): no shadow nor halo. */
     .say { display:flex; align-items:center; gap:12px; padding:12px 14px; box-sizing:border-box; }
+    :host([bare]) .say { padding:0; background:none; border:0; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
     .item { flex:1; min-width:0; display:flex; align-items:center; gap:12px; animation:swap .28s var(--nw-ease) both; transition:opacity .3s, transform .3s; }
     .item.out { opacity:0; transform:translateY(-6px); }
     @keyframes swap { from { opacity:0; transform:translateY(8px); } }

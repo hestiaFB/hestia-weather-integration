@@ -20,7 +20,7 @@ const createSections=order.map(stage=>sections.find(x=>x.stage===stage)??{stage,
 const repository='https://github.com/hestiaFB/hestia-weather-integration';
 const sectionStage=(section:string)=>categories.indexOf(section);
 // The same words and colours as Hestia Confort's general settings: blue when used, orange when something is to do.
-const extIcon:Record<string,string>={hestia_comfort:'home',meteo_france:'weather',open_meteo:'weather',atmo:'air',waqi:'air',vigieau:'pollen',blitzortung:'weather',pyroveille:'weather',crueveille:'weather',polleninformation:'pollen',irm_kmi:'pollen',swiss_pollen:'pollen',kleenex_pollenradar:'pollen'};
+const extIcon:Record<string,string>={hestia_comfort:'home',meteo_france:'weather',pirateweather:'weather',open_meteo:'weather',atmo:'air',waqi:'air',vigieau:'pollen',blitzortung:'weather',pyroveille:'weather',crueveille:'weather',polleninformation:'pollen',irm_kmi:'pollen',swiss_pollen:'pollen',kleenex_pollenradar:'pollen'};
 const hacsUrl=(url:string)=>{const [owner,repository]=url.replace('https://github.com/','').split('/');return `https://my.home-assistant.io/redirect/hacs_repository/?owner=${owner}&repository=${repository}&category=integration`;};
 
 @customElement('hestia-weather-setup')

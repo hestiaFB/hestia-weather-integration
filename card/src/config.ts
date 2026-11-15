@@ -13,6 +13,7 @@ export const CARD_BLOCKS: Partial<Record<NonNullable<WeatherCardConfig['format']
   fire: ['now', 'radar', 'list'],
   water: ['now', 'list'],
   river: ['now', 'chart', 'flow', 'stats'],
+  sun: ['path', 'sun', 'moon'],
 };
 /** What a card on its own shows: its chosen parts that its format has, everything when none is chosen.
  *  Parts left from another format (the format changed by hand) count as none chosen. */
@@ -30,7 +31,7 @@ export function sections(c: WeatherCardConfig): Sections {
     // The banner and its animated sky always stay; only an older card that switched it off keeps it hidden.
     hero: c.banner_blocks !== undefined || c.show_synthesis !== false,
     banner: c.banner_blocks ?? (c.show_synthesis === false ? [] : [...(c.show_bulletin === false ? [] : ['bulletin' as const]), 'events']),
-    today: c.today_blocks ?? (c.show_today === false ? [] : ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'extras', 'air']),
+    today: c.today_blocks ?? (c.show_today === false ? [] : ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'extras', 'air', 'sun']),
     forecasts: c.forecast_blocks ?? (c.show_predictions === false ? [] : ['hours', 'days', ...(c.show_atmo_tomorrow === false ? [] : ['air' as const])]),
   };
 }
@@ -62,7 +63,7 @@ export function cleanConfig(config: WeatherCardConfig): WeatherCardConfig {
 /** The sections' blocks in the card's own order: a block checked later takes its place there, not the end of the list. */
 export const BLOCK_ORDERS: Partial<Record<keyof WeatherCardConfig, string[]>> = {
   banner_blocks: ['bulletin', 'events', 'moments', 'forecast'],
-  today_blocks: ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'extras', 'air'],
+  today_blocks: ['comfort', 'rain', 'wind', 'pressure', 'lightning', 'extras', 'air', 'sun'],
   forecast_blocks: ['hours', 'days', 'air'],
 };
 /** `next` with its newly checked blocks moved just after the last block that precedes them in `order`; the rest keeps the order dragged. */

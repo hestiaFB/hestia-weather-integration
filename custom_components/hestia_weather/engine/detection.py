@@ -46,6 +46,16 @@ ANY_DEVICE = frozenset({"uv_index_entity"})
 SOURCE_FIELDS = ("weather_entity", "vigilance_entity", "sun_entity", "sun_elevation_entity", "season_entity", "water_restriction_entity",
                  "lightning_entity", "fire_entity", "river_entity")
 CATEGORY_FIELDS: dict[str, tuple[str, ...]] = {"weather": SOURCE_FIELDS, "station": STATION_FIELDS, "atmo": ATMO_KEYS}
+WEATHER_PROVIDERS: dict[str, str] = {"meteo_france": r"meteo.france", "pirateweather": r"pirate.?weather"}
+"""The weather services Hestia Weather recognises, by integration domain, with what their attribution says; the first one is
+preferred: Météo-France, then Pirate Weather (prévisions hors de France, issue #35)."""
+PROVIDER_NAMES: dict[str, str] = {"meteo_france": "Météo-France", "pirateweather": "Pirate Weather"}
+"""How the card names each of them as the source of the forecast."""
+
+
+def is_provider(state: StateLike, entry: Mapping[str, Any], provider: str) -> bool:
+    """A weather entity of this integration, by its registry entry or, recopied from another Home Assistant, by its attribution."""
+    return entry.get("platform") == provider or bool(re.search(WEATHER_PROVIDERS[provider], normal(state.attributes.get("attribution"))))
 
 _WIND_UNITS = r"^(km/h|m/s|mph|kn|kt|kts|knots?)$"
 _PHYSICAL: dict[str, tuple[tuple[str, ...], str]] = {
@@ -645,7 +655,7 @@ def _is_vigilance(state: StateLike, entry: Mapping[str, Any]) -> bool:
         return False
     if entry.get("platform") == "swissweather":
         return str(entry.get("unique_id") or "").endswith(".warnings")
-    if not (entry.get("platform") == "meteo_france" or re.search(r"meteo.france", normal(state.attributes.get("attribution")))):
+    if not is_provider(state, entry, "meteo_france"):
         return False
     return bool(re.search(r"weather_alert|vigilance|alerte",
                           normal(f"{state.entity_id} {entry.get('unique_id')} {entry.get('translation_key')} {entry.get('original_name')}")))
@@ -702,14 +712,18 @@ def _is_river(state: StateLike, entry: Mapping[str, Any]) -> bool:
 
 
 def detect_sources(states: Sequence[StateLike], registry: Registry, options: Mapping[str, Any], devices: Devices | None = None) -> dict[str, str]:
-    """The weather service (Météo-France first), its vigilance, the sun, the season, Vigieau, Blitzortung, PyroVeille and CrueVeille, each
-    only when there is a single choice (for Vigieau, the drinking water zone among several)."""
+    """The weather service (Météo-France first, then Pirate Weather), its vigilance, the sun, the season, Vigieau, Blitzortung, PyroVeille
+    and CrueVeille, each only when there is a single choice (for Vigieau, the drinking water zone among several)."""
     detected: dict[str, str] = {}
     # Hestia Weather's own weather entity is a result, never a source.
     weather = [s for s in states if s.entity_id.startswith("weather.") and (registry.get(s.entity_id) or {}).get("platform") != "hestia_weather"]
-    preferred = [s for s in weather if (registry.get(s.entity_id) or {}).get("platform") == "meteo_france"
-                 or re.search(r"meteo.france", normal(s.attributes.get("attribution")))]
-    choices = preferred if len(preferred) == 1 else weather
+    choices = weather
+    # The first recognised service found once wins; found twice, the user chooses (the next one is not looked at).
+    for provider in WEATHER_PROVIDERS:
+        preferred = [s for s in weather if is_provider(s, registry.get(s.entity_id) or {}, provider)]
+        if preferred:
+            choices = preferred if len(preferred) == 1 else weather
+            break
     if options.get("weather_entity") is None and len(choices) == 1:
         detected["weather_entity"] = choices[0].entity_id
     weather_id = detected.get("weather_entity") or options.get("weather_entity") or ""

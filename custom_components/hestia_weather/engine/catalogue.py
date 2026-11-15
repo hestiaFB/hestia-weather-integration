@@ -14,7 +14,7 @@ from . import atmo, polleninfo, river, water
 from .brief import COLOR_NAMES, Brief, Vigilance, number, read_vigilance
 from .feel import STORMY, normalise_condition
 from .fire import Fires
-from .forecast import Day, Hour
+from .forecast import Day, Hour, uv_now
 from .lightning import NEAR_KM, Lightning
 from .local import CONDITION_TITLES, LocalWeather
 from .nuances import describe
@@ -354,9 +354,10 @@ def build_catalogue(w: LocalWeather, brief: Brief, derived: Derived | None, sett
     else:
         items["canicule"] = Item(False, "Pas de forte chaleur", "prevision" if hottest else "station")
 
-    # The UV sensor first; without it (or while it is silent), the weather service's index.
+    # The UV sensor first; without it (or while it is silent), the weather service's index now (uv_now).
     weather = get(settings.weather_entity) if settings.weather_entity else None
-    forecast_uv = finite(weather.attributes.get("uv_index")) if weather is not None and weather.state not in ("unavailable", "unknown") else None
+    forecast_uv = uv_now(weather.attributes.get("uv_index") if weather is not None and weather.state not in ("unavailable", "unknown") else None,
+                         upcoming, now)
     uv, uv_source = (w.uv, "station") if w.uv is not None else (forecast_uv, "prevision")
     if uv is None:
         items["uv_fort"] = Item(None, "Capteur UV indisponible" if settings.uv_index_entity else "Pas de capteur UV ni d’indice prévu", "station")
