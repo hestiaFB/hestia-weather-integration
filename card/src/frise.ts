@@ -47,7 +47,7 @@ export function buildFrise(points: TickerPoint[], alerts: AlertPoint[], hours: S
   const timed = (at?: number, clock?: string) => ({ at, clock: clock ?? (at === undefined ? '' : hourLabel(new Date(at * 1000).getHours())), now: at === undefined || at <= now + SOON });
   const point = (p: TickerPoint): FriseItem => ({ label: p.label, icon: p.icon, text: p.text, theme: p.theme,
     alert: p.alert ? level(p.level) : p.level >= 2 ? level(p.level) : undefined, ...timed(p.at, p.clock) });
-  const measured = alerts.filter(a => !a.official).map((a): FriseItem => ({ label: a.label ?? t('Maintenant'), icon: a.icon, text: a.text, alert: level(a.level), ...timed(a.at, a.clock) }));
+  const measured = alerts.filter(a => !a.official).map((a): FriseItem => ({ label: a.label ?? t('Maintenant'), icon: a.icon, text: a.text, theme: a.theme, alert: level(a.level), ...timed(a.at, a.clock) }));
   const all = timeline ? timeline.map(point) : [...measured, ...points.map(point)];
   const items = [...all.filter(i => i.now), ...all.filter(i => !i.now).sort((a, b) => a.at! - b.at!)];
 

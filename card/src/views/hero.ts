@@ -67,6 +67,14 @@ export const heroStyles = css`
   .nw-hero { position:relative; isolation:isolate; overflow:hidden; padding:20px 24px 24px; display:grid; grid-template-columns:minmax(0,1fr) auto;
     grid-template-areas:"head now" "main now" "blocks blocks"; column-gap:24px; row-gap:12px; color:var(--nw-fg); }
   .nw-hero .sky { --k:1; }
+  /* With a place (decor): the scene fills the top of the banner (title, bulletin, « En ce moment ») and its ground lands just above the blocks,
+     which sit on the card's background. Only a side veil keeps the text readable. */
+  .nw-hero:has(> .sky hestia-weather-scene) { grid-template-rows:auto minmax(196px, auto) auto; }
+  .nw-hero:has(> .sky hestia-weather-scene) > :is(.sky, .veil) { grid-row:1 / 3; grid-column:1 / -1; top:-20px; left:-24px; right:-24px; bottom:-12px; width:auto; height:auto; transform:none; }
+  .nw-hero:has(> .sky hestia-weather-scene) > .veil { background:linear-gradient(90deg, var(--nw-bg) 0%, color-mix(in srgb, var(--nw-bg) 88%, transparent) 24%,
+    color-mix(in srgb, var(--nw-bg) 30%, transparent) 44%, transparent 56%); }
+  .nw-hero:has(> .sky hestia-weather-scene) > .hero-blocks { margin-top:20px; }
+  .nw-hero:has(> .sky hestia-weather-scene) hestia-frise { --nw-glass-clear:var(--nw-surface); --nw-frost:none; --nw-frame-line:transparent; }
   /* The text side stays readable; the bottom fades softly towards the next section, light enough for the ground (puddles, snow) to show. */
   .nw-hero .veil { background:linear-gradient(90deg, var(--nw-bg) 0%, color-mix(in srgb, var(--nw-bg) 92%, transparent) 30%,
     color-mix(in srgb, var(--nw-bg) 45%, transparent) 55%, transparent 78%),
@@ -101,6 +109,11 @@ export const heroStyles = css`
   .brief-group li ha-icon { --mdc-icon-size:15px; color:var(--nw-fg2); margin-top:1px; }
   @media (prefers-reduced-motion:reduce) { .nw-hero .nw-bulletin { animation:none; } }
   @container (max-width:650px) {
+    /* A place on a phone: the scene behind the title and « En ce moment » only; the bulletin and the blocks under it. */
+    .nw-hero:has(> .sky hestia-weather-scene) { grid-template-rows:minmax(200px, auto) auto auto; }
+    .nw-hero:has(> .sky hestia-weather-scene) > :is(.sky, .veil) { grid-row:1 / 2; left:-14px; right:-14px; top:-16px; bottom:-8px; }
+    .nw-hero:has(> .sky hestia-weather-scene)::after { display:none; }
+    .nw-hero:has(> .sky hestia-weather-scene) > .veil { background:radial-gradient(ellipse 70% 62% at 0 0, color-mix(in srgb, var(--nw-bg) 85%, transparent), transparent 70%); }
     /* On a phone, as the folded tile (3 November): the title on the left, « En ce moment » in a small glass frame on the right,
        the sun moved between them so the sky stays in sight; a light, long veil under them keeps the text readable and the sky alive. */
     .nw-hero { grid-template-areas:"head now" "main main" "blocks blocks"; column-gap:12px; padding:16px 14px 18px; --nw-orb-x:44%; }

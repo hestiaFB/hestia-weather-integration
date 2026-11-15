@@ -44,6 +44,8 @@ class AlertPoint:
     clock: str | None = None
     key: str | None = None
     """The brief's signal (« official », « water »…), as on Point."""
+    theme: str | None = None
+    """What the station measures keeps the colour of its meaning (rain, wind…): the vigilance colours belong to Météo-France."""
 
 
 def label(s: Signal) -> str:
@@ -173,7 +175,8 @@ def alert_points(brief: Brief | None) -> list[AlertPoint]:
         alerts.append(AlertPoint(official.severity, level, detail, phenomenon_icon(detail) if level else "mdi:alert-outline", official.text, True, official.entity, key="official"))
     top = sorted((s for s in brief.signals if s.group != "official" and s.severity > 0), key=lambda s: -s.severity)
     if top:
-        alerts.append(AlertPoint(top[0].severity, label(top[0]), top[0].text, top[0].icon, top[0].text, False, top[0].entity, top[0].at, top[0].clock, top[0].key))
+        alerts.append(AlertPoint(top[0].severity, label(top[0]), top[0].text, top[0].icon, top[0].text, False, top[0].entity, top[0].at, top[0].clock,
+                                 key=top[0].key, theme=theme_of(top[0])))
     return alerts
 
 

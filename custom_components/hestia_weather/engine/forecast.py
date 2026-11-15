@@ -25,6 +25,26 @@ class Hour:
     cloud_coverage: float | None = None
     pressure: float | None = None
     """Sea-level pressure in hPa, when the provider gives it (Météo-France does not)."""
+    precipitation_probability: float | None = None
+    """Chance of rain during the hour, in %, when the provider gives it (Pirate Weather does, Météo-France has its own sensor)."""
+    uv_index: float | None = None
+    """UV index of the hour, when the provider gives it (Pirate Weather gives it per hour, not in its current attributes)."""
+
+
+HOUR = timedelta(hours=1)
+
+
+def current_hour(hours: Sequence[Hour], now: datetime) -> Hour | None:
+    """The forecast hour now falls in, if the forecast still covers it."""
+    return next((h for h in hours if h.time is not None and h.time <= now < h.time + HOUR), None)
+
+
+def uv_now(attribute: Any, hours: Sequence[Hour], now: datetime) -> float | None:
+    """The weather service's UV index now: its current attribute, else this hour's forecast (Pirate Weather gives it per hour only)."""
+    value = finite(attribute)
+    if value is None and (hour := current_hour(hours, now)) is not None:
+        value = hour.uv_index
+    return value
 
 
 @dataclass(frozen=True)
@@ -82,12 +102,24 @@ def _condition(value: Any) -> str:
     return str(value or "").replace("_", "-")
 
 
+def _percent(value: Any) -> float | None:
+    """A percentage, or None when it is not one (a provider's « -1 » or 250 is not a chance of rain)."""
+    number = finite(value)
+    return number if number is not None and 0 <= number <= 100 else None
+
+
+def _non_negative(value: Any) -> float | None:
+    number = finite(value)
+    return number if number is not None and number >= 0 else None
+
+
 def parse_hours(rows: Iterable[Mapping[str, Any]], units: Units = Units()) -> list[Hour]:
     return [Hour(time=parse_time(r.get("datetime")), temperature=measurement(r.get("temperature"), units.temperature, Kind.TEMPERATURE),
                  precipitation=measurement(r.get("precipitation"), units.precipitation, Kind.RAIN), condition=_condition(r.get("condition")),
                  wind_speed=measurement(r.get("wind_speed"), units.wind, Kind.WIND), wind_gust=measurement(r.get("wind_gust_speed"), units.wind, Kind.WIND),
                  wind_bearing=finite(r.get("wind_bearing")), humidity=finite(r.get("humidity")), cloud_coverage=finite(r.get("cloud_coverage")),
-                 pressure=measurement(r.get("pressure"), units.pressure, Kind.PRESSURE))
+                 pressure=measurement(r.get("pressure"), units.pressure, Kind.PRESSURE),
+                 precipitation_probability=_percent(r.get("precipitation_probability")), uv_index=_non_negative(r.get("uv_index")))
             for r in rows]
 
 

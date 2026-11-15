@@ -4,8 +4,12 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import { colon, hourText, t } from '../i18n';
 import type { AlertPoint, TickerPoint, WeatherView } from '../view';
 import type { AlertKind, MiniValue, WeatherCardConfig } from '../types';
+import { shown } from '../alert-kinds';
+export { alertKind, shown } from '../alert-kinds';
 import { alertBubble, bubble, chip, label, nf, scrolling, tint } from '../ui/parts';
 import { hoursChart, week } from './forecasts';
+import { clock, phaseIndex } from './sun';
+import { litOf } from '../astro';
 import type { PressTarget } from './tile';
 
 /** One value of the Mini's line: its icon, its words and, when it deserves a look, the colour of its meaning. */
@@ -22,7 +26,10 @@ const lastGust = (v: WeatherView): number | undefined => {
   return p ? p[1]! : undefined;
 };
 /** Grey while ordinary; the colour of its meaning past these marks (the same as the maquette of issue #22). */
-const MINI: Record<MiniValue, { icon: string; read: (v: WeatherView) => number | undefined; text: (n: number) => string; theme: (n: number) => string | undefined }> = {
+/** The moon's icon for its phase (0 new, .5 full). */
+const MOON_ICONS = ['mdi:moon-new', 'mdi:moon-waxing-crescent', 'mdi:moon-first-quarter', 'mdi:moon-waxing-gibbous', 'mdi:moon-full', 'mdi:moon-waning-gibbous', 'mdi:moon-last-quarter', 'mdi:moon-waning-crescent'];
+const moonIcon = (phase: number) => MOON_ICONS[phaseIndex(phase)];
+const MINI: Record<MiniValue, { icon: string; iconOf?: (n: number) => string; read: (v: WeatherView) => number | undefined; text: (n: number) => string; theme: (n: number) => string | undefined }> = {
   temperature: { icon: 'mdi:thermometer', read: v => v.now.temperature, text: n => `${nf(n)}°`, theme: n => n >= 35 ? 'level3' : n >= 30 ? 'heat' : n <= 0 ? 'cold' : undefined },
   feel: { icon: 'mdi:human-handsdown', read: v => v.now.feels ?? v.comfort?.feels, text: n => `${nf(n)}°`, theme: n => n >= 35 ? 'level3' : n >= 27 ? 'heat' : n <= 8 ? 'cold' : undefined },
   wind: { icon: 'mdi:weather-windy', read: v => v.now.wind ?? v.wind?.value, text: n => `${nf(n, 0)} km/h`, theme: n => n >= 40 ? 'wind' : undefined },
@@ -31,32 +38,18 @@ const MINI: Record<MiniValue, { icon: string; read: (v: WeatherView) => number |
   humidity: { icon: 'mdi:water-percent', read: v => chipNumber(v, 'mdi:water-percent'), text: n => `${nf(n, 0)} %`, theme: n => n >= 90 || n <= 25 ? 'watch' : undefined },
   pressure: { icon: 'mdi:gauge', read: v => v.pressure?.value, text: n => `${nf(n, 0)} hPa`, theme: n => n <= 995 ? 'pressure' : undefined },
   uv: { icon: 'mdi:white-balance-sunny', read: v => chipNumber(v, 'mdi:sun-wireless-outline'), text: n => `UV ${nf(n, 0)}`, theme: n => n >= 8 ? 'level3' : n >= 6 ? 'heat' : undefined },
+  // The sun and the moon (issue #34), computed for the place of Home Assistant: the times of today, the moon's phase and how much of it is lit.
+  sunrise: { icon: 'mdi:weather-sunset-up', read: v => v.astro?.sun.sunrise?.valueOf(), text: n => clock(new Date(n)), theme: () => undefined },
+  sunset: { icon: 'mdi:weather-sunset-down', read: v => v.astro?.sun.sunset?.valueOf(), text: n => clock(new Date(n)), theme: () => undefined },
+  moon: { icon: 'mdi:moon-full', iconOf: moonIcon, read: v => v.astro?.moon.phase, text: n => `${Math.round(litOf(n) * 100)} %`, theme: () => undefined },
 };
 /** The chosen values that are known, in the chosen order. */
 export function miniItems(v: WeatherView, which: ReadonlyArray<MiniValue>): MiniItem[] {
   return which.flatMap(key => {
     const m = MINI[key], n = m?.read(v);
-    return m && n !== undefined && Number.isFinite(n) ? [{ key, icon: m.icon, text: m.text(n), value: n, theme: m.theme(n) }] : [];
+    return m && n !== undefined && Number.isFinite(n) ? [{ key, icon: m.iconOf ? m.iconOf(n) : m.icon, text: m.text(n), value: n, theme: m.theme(n) }] : [];
   });
 }
-/** The kind of an alert or a point, from its signal (issue #22); none for what no setting hides (the pressure). */
-export function alertKind(key?: string): AlertKind | undefined {
-  if (!key) return undefined;
-  if (key === 'official' || key === 'water' || key === 'fire' || key === 'river' || key === 'uv') return key;
-  if (key.startsWith('storm')) return 'storm';
-  if (key.startsWith('rain') || key === 'wind-rain') return 'rain';
-  if (key.startsWith('wind')) return 'wind';
-  if (key.startsWith('fog')) return 'fog';
-  if (key.startsWith('temperature') || key === 'comfort-gap' || key === 'freeze-future' || key === 'frost-night') return 'temperature';
-  if (/^(air|pollen|atmo|legacy)/.test(key)) return 'air';
-  return undefined;
-}
-/** Whether a card set to leave out `hidden` shows this alert or point; an alert from an integration older than 3.9 (no key) always shows,
- *  but an official vigilance is known by its flag. */
-export const shown = (hidden: readonly AlertKind[] = [], a: { key?: string; official?: boolean }): boolean => {
-  const kind = a.official ? 'official' : alertKind(a.key);
-  return !kind || !hidden.includes(kind);
-};
 
 /** The alert the line shows: the official vigilance only (default), the most serious of all, or none; the kinds left out never.
  *  When the most serious is left out, the next point that needs attention takes its place. */
@@ -82,7 +75,7 @@ export function renderMini(v: WeatherView, holdTarget: PressTarget,
   const left = c.mini_temperature === 'left', words = c.mini_words !== false || !!alert;
   const items = miniItems(v, chosen.filter(k => k !== 'temperature')), temp = chosen.includes('temperature') ? miniItems(v, ['temperature'])[0] : undefined;
   const place = v.location ? t('Météo à {place}', { place: v.location }) : t('Météo');
-  const theme = alert ? `level${alert.level}` : skyTheme(n.condition);
+  const theme = alert ? (!alert.official && alert.theme) || `level${alert.level}` : skyTheme(n.condition);
   const said = alert ? html`${alert.label ? `${alert.label} · ` : ''}${alert.text}` : n.label;
   const values = items.map(i => html`<span class=${`mini-val${i.theme ? ' ink' : ''}`} style=${i.theme ? tint(i.theme) : ''}><ha-icon icon=${i.icon}></ha-icon>${i.text}</span>`);
   const big = temp ? html`<span class=${`mini-t${temp.theme ? ' ink' : ''}`} style=${temp.theme ? tint(temp.theme) : ''}>${nf(temp.value)}<small>°</small></span>` : nothing;
@@ -110,7 +103,8 @@ export function renderAlert(v: WeatherView, editing: boolean, hidden: readonly A
     : nothing;
   return html`<div class="nw-alertcard" role="button" tabindex="0" aria-label=${t('Alertes météo : appui pour la carte complète')}>
     ${v.location ? html`<span class="place">${v.location}</span>` : nothing}
-    ${alerts.map(a => alertBubble(a))}${points.map(p => bubble(p))}
+    ${alerts.map(a => a.official || !a.theme ? alertBubble(a)
+      : bubble({ group: 'now', label: a.label ?? t('Maintenant'), icon: a.icon, text: a.text, level: a.level, theme: a.theme }))}${points.map(p => bubble(p))}
   </div>`;
 }
 

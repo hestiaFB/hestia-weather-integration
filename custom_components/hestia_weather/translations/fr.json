@@ -34,7 +34,7 @@
           "river_entity": "Rivière (CrueVeille, bêta)"
         },
         "data_description": {
-          "weather_entity": "Météo-France, MétéoSuisse ou un autre fournisseur.",
+          "weather_entity": "Météo-France, MétéoSuisse, Pirate Weather ou un autre fournisseur.",
           "location": "Affiché en haut de la carte.",
           "vigilance_entity": "Facultatif : Météo-France ou MeteoSwiss (capteur regroupant les alertes).",
           "season_entity": "Facultatif. Sans capteur, la saison suit la date.",
@@ -198,7 +198,7 @@
           "river_entity": "Rivière (CrueVeille, bêta)"
         },
         "data_description": {
-          "weather_entity": "Météo-France, MétéoSuisse ou un autre fournisseur.",
+          "weather_entity": "Météo-France, MétéoSuisse, Pirate Weather ou un autre fournisseur.",
           "location": "Affiché en haut de la carte.",
           "vigilance_entity": "Facultatif : Météo-France ou MeteoSwiss (capteur regroupant les alertes).",
           "season_entity": "Facultatif. Sans capteur, la saison suit la date.",

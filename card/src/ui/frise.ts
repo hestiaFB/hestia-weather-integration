@@ -157,7 +157,7 @@ export class HestiaFrise extends LitElement {
     return html`<div class=${`panel${this.bare ? '' : ' nw-glass'}${this.paused ? ' paused' : ''}`} @pointerenter=${this.pause} @pointerleave=${this.resume} @focusin=${this.pause} @focusout=${this.resume}>
       ${items.length ? html`<div class="head" aria-hidden="true">
         <div class="say" @nw-marquee=${this.measured} @animationiteration=${this.lap}>${items.map((i, n) => html`<div class=${`item${n === this.index ? ' on' : n === this.leaving ? ' off' : ''}${i.alert ? ' al' : ''}`}
-          style=${`${tone(i)}${i.alert ? `;--al:var(--nw-level${i.alert})` : ''}`}>
+          style=${tone(i)}>
           <span class="badge"><ha-icon icon=${i.icon}></ha-icon></span><div><div class="when">${when(i)}</div><div class="x">${scrolling(i.text)}</div></div></div>`)}</div>
         ${items.length > 1 ? html`<div class="progress" style=${`--step:${this.step}ms`}>${items.map((_, n) => html`<i class=${n === this.index ? 'on' : n < this.index ? 'done' : ''}></i>`)}</div>` : nothing}
       </div>` : nothing}
@@ -168,7 +168,7 @@ export class HestiaFrise extends LitElement {
           const active = g.items.includes(this.index), lead = items[active ? this.index : g.items[0]];
           const shown = g.items;
           return html`<button type="button" class=${`pin${active ? ' on' : ''}${g.alert ? ' al' : ''}`} data-x=${g.x}
-            style=${`left:${(g.x * 100).toFixed(2)}%;--k:${k};${tone(lead)}${g.alert ? `;--al:var(--nw-level${g.alert})` : ''}`}
+            style=${`left:${(g.x * 100).toFixed(2)}%;--k:${k};${tone(lead)}`}
             aria-label=${g.items.map(n => colon(when(items[n]), items[n].text)).join(t(' ; '))} @click=${() => this.pick(g)} @pointerdown=${stop}>
             <span class="chip">${shown.map(n => html`<ha-icon class=${active && g.items.length > 1 ? (n === this.index ? 'cur' : 'dim') : ''} icon=${items[n].icon}></ha-icon>`)}${g.clock === t('Maintenant') ? nothing : html`<span class="clock">${g.clock}</span>`}${g.items.length > 1 ? html`<span class="count">${g.items.length}</span>` : nothing}</span>
             <span class="stem"></span></button>`;
@@ -212,8 +212,6 @@ export class HestiaFrise extends LitElement {
     .item:not(.on) hestia-weather-marquee .run { animation:none; }
     .badge { display:grid; place-items:center; width:36px; height:36px; flex:none; border-radius:11px; background:color-mix(in oklab, var(--tone) 34%, transparent); }
     .badge ha-icon { --mdc-icon-size:18px; color:color-mix(in oklab, var(--tone) 40%, var(--nw-fg)); }
-    .item.al .badge { background:color-mix(in oklab, var(--al) 40%, transparent); }
-    .item.al .badge ha-icon { color:color-mix(in oklab, var(--al) 30%, var(--nw-fg)); }
     /* One bar per point: the one on show fills while it stays. */
     .progress { display:flex; gap:4px; flex:none; }
     .progress i { position:relative; width:16px; height:3px; border-radius:2px; background:var(--nw-line); overflow:hidden; }

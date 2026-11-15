@@ -15,6 +15,8 @@ from .engine.i18n import N_, t
 # id, integration domain, name, benefit, repository, configuration stage, sensor setting
 CATALOGUE = (
     ("meteo_france", "meteo_france", "Météo-France", N_("Prévisions du lieu et vigilance officielle."), "", 0, "weather_entity"),
+    ("pirateweather", "pirateweather", "Pirate Weather", N_("Prévisions heure par heure et jour par jour, et pluie à venir, hors de France."),
+     "Pirate-Weather/pirate-weather-ha", 0, "weather_entity"),
     ("atmo", "atmofrance", "Atmo France", N_("Qualité de l’air et pollens de votre commune."), "sebcaps/atmofrance", 2, ""),
     ("vigieau", "vigieau", "Vigieau", N_("Restrictions d’eau et usages concernés."), "kamaradclimber/vigieau", 6, "water_restriction_entity"),
     ("blitzortung", "blitzortung", "Blitzortung", N_("Éclairs à proximité, distance et direction de l’orage."), "mrk-its/homeassistant-blitzortung", 0, "lightning_entity"),
@@ -26,13 +28,23 @@ CATALOGUE = (
     ("swiss_pollen", "swiss_pollen", "Swiss Pollen", N_("Mesures de pollens en Suisse."), "frimtec/hass-swiss-pollen", 3, ""),
     ("kleenex_pollenradar", "kleenex_pollenradar", "Kleenex / Scottex", N_("Pollens en France et dans les pays couverts."), "MarcoGos/kleenex_pollenradar", 3, ""),
 )
-BETA = frozenset({"crueveille"})
+# The weather services a place takes its forecast from, with the settings their entities can fill: chosen in « Sources météo »,
+# they have no switch, turning one off would leave the place without forecasts.
+WEATHER_SERVICES: dict[str, tuple[str, ...]] = {"meteo_france": ("weather_entity", "vigilance_entity"), "pirateweather": ("weather_entity",)}
+# How to install an extension, when the plain « add the integration » is not enough.
+INSTALL = {
+    "blitzortung": N_("Dans HACS, cherchez « Blitzortung.org Lightning Detector » et téléchargez-le. Redémarrez Home Assistant, "
+                      "puis ajoutez l’intégration « Blitzortung » dans Paramètres → Appareils et services. Choisissez votre maison."),
+    "pirateweather": N_("Dans HACS, cherchez « Pirate Weather » et téléchargez-le. Redémarrez Home Assistant, puis ajoutez l’intégration "
+                        "« Pirate Weather » dans Paramètres → Appareils et services, avec la clé gratuite obtenue sur pirateweather.net. "
+                        "Choisissez ensuite son entité météo comme service météo de ce lieu."),
+}
+BETA = frozenset({"crueveille", "pirateweather"})
 """Extensions Weather reads while they are young: their sensors may still change, the panel says so."""
 # Integrations Weather could read one day: listed only when Home Assistant has them loaded (socle 1.18, « Demander »).
 OTHERS = (
     {"key": "vigicrues", "name": "Vigicrues", "use": N_("Pourrait dire la hauteur de la rivière proche et sa vigilance crues.")},
     {"key": "meteoalarm", "name": "Meteoalarm", "use": N_("Pourrait donner les vigilances officielles hors de France.")},
-    {"key": "pirateweather", "name": "Pirate Weather", "use": N_("Pourrait donner les prévisions et la pluie à venir hors de France.")},
 )
 
 
@@ -88,9 +100,9 @@ def inventory(hass: HomeAssistant, options: Mapping[str, Any]) -> list[dict[str,
     installed = platforms | {e.domain for e in hass.config_entries.async_entries()}
     result = []
     for key, domain, name, benefit, repository, stage, field in CATALOGUE:
-        if key == "meteo_france":
-            chosen = any((entity := entities.get(options.get(setting, ""))) is not None and entity.platform == domain
-                         for setting in ("weather_entity", "vigilance_entity"))
+        if key in WEATHER_SERVICES:
+            # Chosen when one of the settings it can fill (the weather service, Météo-France's vigilance) holds one of its entities.
+            chosen = any((entity := entities.get(options.get(setting, ""))) is not None and entity.platform == domain for setting in WEATHER_SERVICES[key])
         elif field:
             chosen = bool(options.get(field))
         elif key == "atmo":
@@ -116,10 +128,10 @@ def inventory(hass: HomeAssistant, options: Mapping[str, Any]) -> list[dict[str,
                        "stage": stage, "field": field, "beta": key in BETA,
                        "url": f"https://github.com/{repository}" if repository else f"https://www.home-assistant.io/integrations/{domain}/" if key in ("waqi", "meteo_france") else "",
                        "integration": domain,
-                       "install": (t("Dans HACS, cherchez « Blitzortung.org Lightning Detector » et téléchargez-le. Redémarrez Home Assistant, "
-                                     "puis ajoutez l’intégration « Blitzortung » dans Paramètres → Appareils et services. Choisissez votre maison.")
-                                   if key == "blitzortung" else t("Ajoutez l’intégration « {name} » dans Paramètres → Appareils et services.", name=name)
-                                   + (" " + t("Si elle n’apparaît pas, téléchargez-la dans HACS, redémarrez Home Assistant, puis revenez l’ajouter.") if repository else ""))})
+                       "weather_service": key in WEATHER_SERVICES,
+                       "install": t(INSTALL[key]) if key in INSTALL else
+                       t("Ajoutez l’intégration « {name} » dans Paramètres → Appareils et services.", name=name)
+                       + (" " + t("Si elle n’apparaît pas, téléchargez-la dans HACS, redémarrez Home Assistant, puis revenez l’ajouter.") if repository else "")})
     result.append(online_service(options))
     return result
 

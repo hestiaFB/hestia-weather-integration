@@ -1,5 +1,6 @@
 import type { AirPanel, ChartPeriodId, MeasureView, PressureView, RainPeriodId, RainView, WeatherView, WindView } from './view';
 import type { WeatherCardConfig } from './types';
+import { shown } from './alert-kinds';
 
 /** The view as this card shows it: the integration computes everything, the card's display settings leave out what they hide. */
 /** The pressure over the chosen period, when the integration sends it; six hours otherwise. */
@@ -31,11 +32,17 @@ export function displayed(v: WeatherView, config: WeatherCardConfig, tile: boole
   // A full card whose blocks are chosen keeps everything: its blocks decide what shows (the timeline only with « events »).
   const chosen = !tile && !!config.banner_blocks;
   const brief = tile || chosen || (config.smart_brief !== false && config.show_synthesis !== false);
+  const hidden = config.hidden_alerts ?? [];
+  const keep = <T extends { key?: string; icon?: string; official?: boolean; group?: string }>(list: T[]) => hidden.length ? list.filter(a => shown(hidden, a)) : list;
   // Without details, the whole « Détail » fold goes: its list and the publication date it also holds.
   const details = (panels: AirPanel[]) => config.show_atmo_details === false ? panels.map(p => ({ ...p, details: [], updated: '' })) : panels;
   return {
     ...v,
-    brief: brief ? v.brief : undefined, alerts: brief ? v.alerts : [], points: brief ? v.points : [], timeline: brief ? v.timeline : [],
+    // The families left out on this card (issue #33): gone from the bubble, the timeline and the line; the full card keeps them elsewhere.
+    brief: brief ? v.brief : undefined,
+    alerts: brief ? keep(v.alerts) : [],
+    points: brief ? keep(v.points) : [],
+    timeline: brief ? v.timeline && keep(v.timeline) : [],
     // A tile whose blocks are chosen keeps the bulletin: its moments come from it.
     bulletin: config.show_bulletin === false && !(tile && config.tile_blocks?.length) && !chosen ? undefined : v.bulletin,
     pressure: v.pressure && pressureOver(v.pressure, config.pressure_span ?? '6h'),

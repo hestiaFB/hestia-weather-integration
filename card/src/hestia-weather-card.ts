@@ -4,12 +4,14 @@ import { define } from './ui/define';
 import { cardBlocks, cleanConfig, sections } from './config';
 import { displayed } from './display';
 import { bubbles, pieces, tokens, shared } from './ui/charter';
-import { DEFAULT_BLOCKS, renderTile, tileStyles, type PressTarget } from './views/tile';
+import { DEFAULT_BLOCKS, renderTile, tileStyles, type PressTarget, type TileStyle } from './views/tile';
 import { alertItems, compactStyles, renderAlert, renderMini } from './views/compact';
 import { renderSingle, singleStyles, type SingleFormat } from './views/single';
 import { fullStyles, renderFull, type SectionId } from './views/full';
 import { heroStyles } from './views/hero';
 import { todayStyles } from './views/today';
+import { sunStyles } from './views/sun';
+import { astro, hourOf, type AstroView } from './astro';
 import { forecastStyles } from './views/forecasts';
 import { airStyles } from './views/air';
 import { lightningStyles } from './views/lightning';
@@ -21,6 +23,7 @@ import { traitStyles } from './ui/trait';
 import { marqueeStyles } from './ui/marquee';
 import { watchOffscreen } from './ui/offscreen';
 import './ui/weather-sky';
+import './ui/weather-scene';
 import './editor/hestia-weather-card-editor';
 import { VIEW_VERSION, type WeatherView } from './view';
 import { follow, type StreamError, type StreamMessage } from './stream';
@@ -130,19 +133,26 @@ export class HestiaWeatherCard extends LitElement {
     return this.tile || this.single || format === 'records' || format === 'river' || format === 'alert' ? { columns: 12, rows: 'auto', min_columns: 6 } : { columns: 'full', rows: 'auto' };
   }
   /** One part of the full card on its own: the feel, the rain, the wind, the pressure, the air and pollens, the forecasts, the events. */
-  private get single(): boolean { return ['comfort', 'temperature', 'rain', 'wind', 'pressure', 'lightning', 'fire', 'water', 'air', 'forecast', 'events'].includes(this.config?.format ?? ''); }
+  private get single(): boolean { return ['comfort', 'temperature', 'rain', 'wind', 'pressure', 'lightning', 'fire', 'water', 'air', 'forecast', 'events', 'sun'].includes(this.config?.format ?? ''); }
   /** The lightning card set to show only storms, while none is within 30 km; the fire card, only fires, while none burns in the radius. */
   private calm(v: WeatherView): boolean {
     if (this.config?.hide_when_calm !== true) return false;
     return this.config.format === 'lightning' ? !!v.lightning && v.lightning.step === 0 : this.config.format === 'fire' ? !!v.fire && v.fire.level === 0 : false;
   }
+  /** The sun and the moon for the place of Home Assistant, now; undefined while its latitude is unknown. */
+  private astroNow(): AstroView | undefined {
+    const c = (this.hass as unknown as { config?: { latitude?: number; longitude?: number } } | undefined)?.config;
+    return typeof c?.latitude === 'number' && typeof c?.longitude === 'number' ? astro(new Date(), c.latitude, c.longitude) : undefined;
+  }
 
   /** A tile that no press folds stays as its format starts, whatever was remembered. */
   private get unfolded(): boolean {
-    return this.tapTarget === 'toggle' || this.holdTarget === 'toggle' ? this.open : this.config?.format === 'intermediate';
+    return this.tapTarget === 'toggle' || this.holdTarget === 'toggle' ? this.open : this.config?.format === 'intermediate' || this.config?.tile_open === true;
   }
   /** Tile and intermediate formats: one band that unfolds. */
-  private get tile(): boolean { return this.config?.format === 'tile' || this.config?.format === 'intermediate'; }
+  private get tile(): boolean { return ['tile', 'intermediate', 'tile_window', 'tile_immersive'].includes(this.config?.format ?? ''); }
+  /** Which of the three tiles: the postcard (tile, intermediate), the window, the immersive one. */
+  private get tileStyle(): TileStyle { return this.config?.format === 'tile_window' ? 'window' : this.config?.format === 'tile_immersive' ? 'immersive' : 'postcard'; }
   private hasAlert(v: WeatherView): boolean { const { alerts, points } = alertItems(v, this.config?.hidden_alerts); return alerts.length + points.length > 0; }
   private rememberedTab(config: WeatherCardConfig): 'hours' | 'days' {
     try { const v = localStorage.getItem(`hestia-weather:tab:${config.entry_id ?? ''}`); if (v === 'hours' || v === 'days') return v; } catch { /* private browsing */ }
@@ -155,10 +165,15 @@ export class HestiaWeatherCard extends LitElement {
   private key(config = this.config!) { return `hestia-weather:open:${config.format}:${config.entry_id ?? config.weather_entity ?? ''}`; }
   private remembered(config: WeatherCardConfig): boolean {
     try { const v = localStorage.getItem(this.key(config)); if (v !== null) return v === '1'; } catch { /* private browsing */ }
-    return config.format === 'intermediate';
+    return config.format === 'intermediate' || config.tile_open === true;
   }
 
-  public connectedCallback(): void { super.connectedCallback(); this.picker = this.inPicker(); this.subscribe(); this.unwatch = watchOffscreen(this); }
+  public connectedCallback(): void { super.connectedCallback();
+    // A place follows the hour: it is redrawn every 3 minutes (the sun and the moon move, the windows light up).
+    window.clearInterval(this.decorTimer);
+    // The sun and the moon move too: the full card and the « Soleil et lune » card follow them.
+    this.decorTimer = window.setInterval(() => { if (this.place || ['full', 'sun'].includes(this.config?.format ?? 'full')) this.requestUpdate('decorTick'); }, 180000);
+    this.picker = this.inPicker(); this.subscribe(); this.unwatch = watchOffscreen(this); }
   /** Stops watching whether the card is in view (its animations pause out of view). */
   private unwatch?: () => void;
   /** In the « Add card » window Home Assistant flags nothing: the card finds the window among its ancestors. */
@@ -170,10 +185,42 @@ export class HestiaWeatherCard extends LitElement {
   }
   /** Being edited or chosen: the alert card shows what it would hide. */
   private get editing(): boolean { return this.editMode || this.preview || this.picker; }
-  public disconnectedCallback(): void { super.disconnectedCallback(); this.unwatch?.(); this.cancelPress(); this.unsubscribe(); this.stopRecords(); }
+  public disconnectedCallback(): void { super.disconnectedCallback(); window.clearInterval(this.decorTimer); this.unwatch?.(); this.cancelPress(); this.unsubscribe(); this.stopRecords(); }
   /** The language this card was last drawn in: Home Assistant's changes, the card redraws in it. */
   private language?: string;
+  /** What the place needs from Home Assistant: the hour, the sun's times (sun.sun), the moon (computed), the stove and the lights. */
+  private decorState() {
+    const now = new Date(), sky = this.astroNow();
+    const sun = this.hass?.states['sun.sun']?.attributes as Record<string, string> | undefined;
+    const at = (k: string, fallback: number) => { const v = sun?.[k]; const d = v ? new Date(v) : undefined; return d && !isNaN(+d) ? hourOf(d)! : fallback; };
+    const sunrise = at('next_rising', 7), sunset = at('next_setting', 19);
+    // With the place known, the true phase, moonrise and moonset of the day (issue #34); the sun's times from sun.sun stay.
+    // Without it, the moon's age from a known new moon (6 January 2000, 18:14 UTC): a new moon rises with the sun, a full moon at sunset.
+    const age = (((+now - Date.UTC(2000, 0, 6, 18, 14)) / 864e5 / 29.530588853) % 1 + 1) % 1;
+    const moon = sky?.moon.phase ?? age;
+    const moonrise = hourOf(sky?.moon.rise) ?? (sunrise + age * 24.8) % 24;
+    const moonset = hourOf(sky?.moon.set) ?? (moonrise + 12.4) % 24;
+    const state = (id?: string) => id ? this.hass?.states[id] : undefined;
+    const stove = state(this.config?.decor_smoke_entity);
+    const smoke = !!stove && (['on', 'heat', 'heating', 'true', 'open'].includes(stove.state) || stove.attributes?.hvac_action === 'heating'
+      || (!isNaN(parseFloat(stove.state)) && parseFloat(stove.state) > 0));
+    const lamp = state(this.config?.decor_lights_entity);
+    const lights = !lamp ? 'auto' : lamp.state === 'on' ? 'on' : 'off';
+    return { hour: Math.round(hourOf(now)! * 20) / 20, sunrise, sunset, moon: Math.round(moon * 100) / 100, moonrise: Math.round(moonrise * 20) / 20, moonset: Math.round(moonset * 20) / 20, smoke, lights };
+  }
+  /** The place chosen for the sky (« sky »: none). */
+  private get place(): Exclude<WeatherCardConfig['decor'], 'sky'> | undefined { const d = this.config?.decor; return d && d !== 'sky' ? d : undefined; }
+  /** What the place shows, worked out once per update (shouldUpdate) and drawn by render. */
+  private decor?: ReturnType<HestiaWeatherCard['decorState']>;
+  /** The place redraws when what it shows changes (every 3 minutes for the hour, at once for the stove and the lights). */
+  private decorKey = '';
+  private decorTimer?: number;
   protected shouldUpdate(changed: PropertyValues): boolean {
+    this.decor = this.place ? this.decorState() : undefined;
+    if (this.decor) {
+      const key = JSON.stringify(this.decor);
+      if (key !== this.decorKey) { this.decorKey = key; changed.set('decorTick', undefined); }
+    }
     if (changed.has('hass') || changed.has('config')) this.subscribe();
     const language = this.hass && `${this.hass.language}|${this.hass.locale?.language ?? ''}`;
     if (language && language !== this.language) { this.language = language; setLanguage(this.hass!.language, this.hass!.locale?.language); return true; }
@@ -281,13 +328,19 @@ export class HestiaWeatherCard extends LitElement {
     // What this drawing reads of the view is noted (shouldUpdate). The displayed view keeps the view's part names.
     const read = new Set<string>(), drawnView = this.view;
     this.readParts = read; this.drawnView = drawnView;
-    const config = this.config, view = new Proxy(displayed(drawnView, config, this.tile), {
+    const config = this.config, view = new Proxy({ ...displayed(drawnView, config, this.tile), astro: this.astroNow() }, {
       get(target, key, receiver) { if (typeof key === 'string') read.add(key); return Reflect.get(target, key, receiver); } });
     // Gusts for the sky: the station's last measure, else the forecast for this hour.
     const measured = view.wind?.gust.at(-1)?.[1];
     const gust = measured ?? view.hours[0]?.gust ?? 0;
-    const sky = html`<hestia-weather-sky .condition=${view.now.condition} .phase=${view.now.phase} .animated=${config.weather_animations !== false}
-      .quality=${config.weather_animation_quality ?? (this.tile && LIGHT_SKY.matches ? 'low' : 'standard')} .wind=${view.now.wind ?? 0} .gust=${gust} .detail=${view.now.detail ?? ''} .season=${view.season.info.season}></hestia-weather-sky>`;
+    const decor = this.decor, quality = config.weather_animation_quality ?? (this.tile && LIGHT_SKY.matches ? 'low' : 'standard');
+    const sky = decor ? html`<hestia-weather-scene .place=${config.decor} .skyOnly=${config.decor_sky_only === true} .condition=${view.now.condition} .detail=${view.now.detail ?? ''} .season=${view.season.info.season}
+      .wind=${view.now.wind ?? 0} .gust=${gust} .animated=${config.weather_animations !== false}
+      .quality=${quality}
+      .hour=${decor.hour} .sunrise=${decor.sunrise} .sunset=${decor.sunset} .moonPhase=${decor.moon} .moonrise=${decor.moonrise} .moonset=${decor.moonset}
+      .smoke=${decor.smoke} .lights=${decor.lights}></hestia-weather-scene>`
+      : html`<hestia-weather-sky .condition=${view.now.condition} .phase=${view.now.phase} .animated=${config.weather_animations !== false}
+      .quality=${quality} .wind=${view.now.wind ?? 0} .gust=${gust} .detail=${view.now.detail ?? ''} .season=${view.season.info.season}></hestia-weather-sky>`;
     const full = () => renderFull(view, { sky, uid: this.uid, entity: view.weatherEntity, station: view.station,
       sections: sections(config), tab: this.tab, onTab: this.setTab, clock: config.clock, nowFrame: config.now_frame,
       folded: this.folded, onFold: id => { this.folded = { ...this.folded, [id]: !this.folded[id] }; },
@@ -315,7 +368,7 @@ export class HestiaWeatherCard extends LitElement {
     return html`<ha-card>
       <div @pointerdown=${this.down} @pointermove=${this.move} @pointerup=${this.up} @pointercancel=${this.cancelPress} @pointerleave=${this.cancelPress}
         @contextmenu=${this.noMenu} @keydown=${this.tileKey}>
-        ${renderTile(view, sky, { open: this.unfolded, tapTarget: this.tapTarget, holdTarget, blocks, tab: this.tab, onTab: this.setTab })}</div>
+        ${renderTile(view, sky, { open: this.unfolded, tapTarget: this.tapTarget, holdTarget, blocks, tab: this.tab, onTab: this.setTab, style: this.tileStyle })}</div>
       ${dialog()}
     </ha-card>`;
   }
@@ -427,7 +480,7 @@ export class HestiaWeatherCard extends LitElement {
     e.preventDefault(); this.openEntity(e);
   };
 
-  static styles = [tokens, shared, marqueeStyles, pieces, bubbles, tileStyles, compactStyles, heroStyles, fullStyles, todayStyles, forecastStyles, airStyles, singleStyles, lightningStyles, fireStyles, waterStyles, recordsStyles, traitStyles, css`
+  static styles = [tokens, shared, marqueeStyles, pieces, bubbles, tileStyles, compactStyles, heroStyles, fullStyles, todayStyles, sunStyles, forecastStyles, airStyles, singleStyles, lightningStyles, fireStyles, waterStyles, recordsStyles, traitStyles, css`
     :host { display:block; }
     :host([hidden]) { display:none; }
     :host([fill]) { height:100%; }
@@ -480,8 +533,8 @@ export class HestiaWeatherCard extends LitElement {
 // Each format has its own element (`hestia-weather-<format>-card`, intermediate → `hestia-weather-tile-open-card`): a card written by hand
 // with that type keeps its format. Home Assistant's « Add card » window offers three of them, one per kind of card, as the editor
 // classes them; the picker takes the type from getStubConfig, so dashboards never depend on these extra names.
-const FORMATS: Array<NonNullable<WeatherCardConfig['format']>> = ['full', 'tile', 'intermediate', 'mini', 'comfort', 'temperature', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events', 'records', 'fire', 'water', 'river', 'alert'];
-const elementOf = (format: NonNullable<WeatherCardConfig['format']>) => format === 'full' ? 'hestia-weather-card' : `hestia-weather-${format === 'intermediate' ? 'tile-open' : format}-card`;
+const FORMATS: Array<NonNullable<WeatherCardConfig['format']>> = ['full', 'tile', 'intermediate', 'tile_window', 'tile_immersive', 'sun', 'mini', 'comfort', 'temperature', 'rain', 'wind', 'pressure', 'lightning', 'air', 'forecast', 'events', 'records', 'fire', 'water', 'river', 'alert'];
+const elementOf = (format: NonNullable<WeatherCardConfig['format']>) => format === 'full' ? 'hestia-weather-card' : `hestia-weather-${format === 'intermediate' ? 'tile-open' : format.replace('_', '-')}-card`;
 for (const format of FORMATS) {
   const type = elementOf(format);
   if (format !== 'full' && !customElements.get(type)) customElements.define(type, class extends HestiaWeatherCard {

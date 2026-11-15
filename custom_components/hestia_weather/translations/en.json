@@ -34,7 +34,7 @@
           "river_entity": "River (CrueVeille, beta)"
         },
         "data_description": {
-          "weather_entity": "Météo-France, MeteoSwiss or another provider.",
+          "weather_entity": "Météo-France, MeteoSwiss, Pirate Weather or another provider.",
           "location": "Shown at the top of the card.",
           "vigilance_entity": "Optional: Météo-France or MeteoSwiss (aggregate warnings sensor).",
           "season_entity": "Optional. Without a sensor, the season follows the date.",
@@ -198,7 +198,7 @@
           "river_entity": "River (CrueVeille, beta)"
         },
         "data_description": {
-          "weather_entity": "Météo-France, MeteoSwiss or another provider.",
+          "weather_entity": "Météo-France, MeteoSwiss, Pirate Weather or another provider.",
           "location": "Shown at the top of the card.",
           "vigilance_entity": "Optional: Météo-France or MeteoSwiss (aggregate warnings sensor).",
           "season_entity": "Optional. Without a sensor, the season follows the date.",

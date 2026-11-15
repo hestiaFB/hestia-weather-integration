@@ -22,6 +22,10 @@ describe('The banner’s timeline', () => {
     expect(f.groups.map(g => [g.clock, g.items, g.alert])).toEqual([['Maintenant', [0, 1], 1], ['18 h', [2], undefined], ['20 h', [3], 2]]);
     expect(f.groups.map(g => g.x)).toEqual([0, 1 / 6, 3 / 6]);
   });
+  it('keeps the meaning colour of what the station measures: heavy rain stays rain, the vigilance colours belong to Météo-France (14 November)', () => {
+    const heavy: AlertPoint = { ...measured, level: 2, text: 'Forte pluie : 4,2 mm/h', theme: 'rain' };
+    expect(buildFrise([], [heavy], hours, NOW).items.map(i => [i.theme, i.alert])).toEqual([['rain', 2]]);
+  });
   it('keeps the official vigilance out of the timeline: it has its own pill above', () => {
     expect(buildFrise([], [vigilance], hours, NOW).items).toEqual([]);
   });

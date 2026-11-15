@@ -18,7 +18,9 @@ export interface Technical {
  forecast:{hours:number|null;days:number|null;received:string|null};computation:string|null;
  entities:{active:number;with_value:number;total:number};integration:string;links:string[];interface_version:number;
 }
-export interface Extension {id:string;name:string;description:string;installed:boolean;configured:boolean;online?:boolean;beta?:boolean;detail?:string;air_configured?:boolean;pollen_configured?:boolean;stage:number;field:string;url:string;integration:string;install:string}
+export interface Extension {id:string;name:string;description:string;installed:boolean;configured:boolean;online?:boolean;beta?:boolean;detail?:string;air_configured?:boolean;pollen_configured?:boolean;stage:number;field:string;url:string;integration:string;install:string;
+ /** The place's forecast comes from it (Météo-France, Pirate Weather): chosen in « Sources météo », without a switch. */
+ weather_service?:boolean}
 // A Hestia-FB brick: Hestia Confort keeps the link, Hestia Weather reads and changes it through Confort's interface.
 export interface Official {id:string;name:string;official:true;installed:boolean;linked:boolean;elsewhere:string;switchable:boolean;description:string;url:string}
 export interface Place {entry_id:string;title:string;loaded:boolean;failed:boolean;health:Health;extensions?:Extension[];official?:Official[];
@@ -106,7 +108,7 @@ export function extensionGroups(items:Extension[]):ExtensionGroup[]{
   configured:(key==='air'?atmo.air_configured:atmo.pollen_configured)??atmo.configured,
   description:key==='air'?t('Qualité de l’air de votre commune.'):t('Pollens de votre commune, aujourd’hui et demain.')}]:[];
  return [
-  {key:'weather',label:t('Sources météo'),items:items.filter(e=>e.id==='meteo_france'||e.id==='open_meteo')},
+  {key:'weather',label:t('Sources météo'),items:items.filter(e=>e.weather_service||e.id==='open_meteo')},
   {key:'air',label:t('Qualité de l’air'),items:[...subject('air',2),...items.filter(e=>e.id==='waqi')]},
   {key:'pollen',label:t('Pollens'),items:[...subject('pollen',3),...items.filter(e=>['polleninformation','irm_kmi','swiss_pollen','kleenex_pollenradar'].includes(e.id))]},
   {key:'water',label:t('Eau et jardin'),items:items.filter(e=>e.id==='vigieau')},
@@ -116,7 +118,8 @@ export function extensionGroups(items:Extension[]):ExtensionGroup[]{
 }
 
 // What a third-party extension's switch shows and the draft changes that turn it on or off for this place.
-// Météo-France is the one source every place needs: it has no switch.
+// The weather service (Météo-France or Pirate Weather) is chosen in « Sources météo »: it has no switch,
+// turning it off would leave the place without forecasts.
 export interface ExtensionSwitch {shown:boolean;checked:boolean;available:boolean;on:Change[];off:Change[];uses:string[]}
 export function extensionSwitch(e:Extension,v:View):ExtensionSwitch{
  const air=v.air.sources.find(c=>c.value===e.id),pollen=v.pollen.sources.find(c=>c.value===e.id);
@@ -124,7 +127,7 @@ export function extensionSwitch(e:Extension,v:View):ExtensionSwitch{
  const field=e.field?v.prevision.fields.find(f=>f.key===e.field):undefined;
  const uses=e.id==='atmo'?[e.air_configured?t('Qualité de l’air'):'',e.pollen_configured?t('Pollens'):''].filter(Boolean)
   :e.configured?[extensionGroups([e]).map(g=>g.label)[0]??''].filter(Boolean):[];
- const base={shown:e.installed&&e.id!=='meteo_france',checked:e.configured,uses};
+ const base={shown:e.installed&&!e.weather_service,checked:e.configured,uses};
  // Open-Meteo, an online service asked directly: its switch only allows the pressure to come (tomorrow's air follows WAQI).
  if(e.id==='open_meteo')return {...base,uses:e.configured?[t('Pression à venir')]:[],available:true,
   on:[{op:'set',key:'open_meteo_pressure',value:true}],off:[{op:'set',key:'open_meteo_pressure',value:false}]};

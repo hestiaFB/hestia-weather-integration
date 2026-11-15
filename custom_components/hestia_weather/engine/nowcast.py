@@ -20,6 +20,8 @@ DRY = "temps sec"
 MAX_AGE = timedelta(minutes=20)
 SLOT = timedelta(minutes=5)
 HORIZON = timedelta(hours=1)
+# Météo-France's rain chance covers its next three hours: a provider's hourly chances are read over the same span.
+CHANCE_SPAN = timedelta(hours=3)
 _OFFSET = re.compile(r"^\s*(\d+)\s*min")
 
 
@@ -59,6 +61,14 @@ def _radar(attributes: Mapping[str, Any] | None, now: datetime) -> tuple[datetim
     return reference + HORIZON, [(start, rainy) for start, rainy in slots if start + SLOT > now]
 
 
+def forecast_chance(hours: Sequence[Hour], now: datetime) -> float | None:
+    """The highest chance of rain (%) the hourly forecast gives over the next three hours (Pirate Weather, among others);
+    None when it gives none."""
+    chances = [h.precipitation_probability for h in hours if h.time is not None and h.precipitation_probability is not None
+               and h.time + HORIZON > now and h.time < now + CHANCE_SPAN]
+    return max(chances) if chances else None
+
+
 def rain_ahead(radar: Mapping[str, Any] | None, hours: Sequence[Hour], now: datetime,
                chance: float | None = None) -> dict[str, Any]:
     """`minutes` before the next rain (0: it is due now), with `precision` « minute » (radar) or « hour » (hourly forecast).
@@ -66,7 +76,9 @@ def rain_ahead(radar: Mapping[str, Any] | None, hours: Sequence[Hour], now: date
     `dry_until` is the end of the radar's dry hour, when it saw no rain. `intensity`: the hardest the radar sees it rain
     from then on in its hour, 1 light, 2 moderate, 3 heavy — « Pluie faible » two minutes away, then nothing, was most of
     the rain announced on 8 and 9 November. `chance`: Météo-France's probability of rain (%), for its coming hours, as the
-    weather apps give it. Nothing known stays None."""
+    weather apps give it; without it, the hourly forecast's own chance (`forecast_chance`). Nothing known stays None."""
+    if chance is None:
+        chance = forecast_chance(hours, now)
     result: dict[str, Any] = {"minutes": None, "precision": None, "source": None, "amount": None, "dry_until": None,
                               "intensity": None, "chance": round(chance) if chance is not None else None}
     seen = _radar(radar, now)

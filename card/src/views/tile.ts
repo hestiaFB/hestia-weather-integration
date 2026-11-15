@@ -21,7 +21,11 @@ export interface TileState {
   blocks: TileBlock[];
   tab: 'hours' | 'days';
   onTab: (tab: 'hours' | 'days') => void;
+  /** postcard: the scene above a line with the coming event and the chevron. window: the weather now on the left, the scene in a window
+   *  on the right. immersive: the scene over the whole tile, the coming event in a pill on its ground. */
+  style?: TileStyle;
 }
+export type TileStyle = 'postcard' | 'window' | 'immersive';
 
 export const DEFAULT_BLOCKS: TileBlock[] = ['bulletin', 'events'];
 
@@ -107,17 +111,24 @@ export function renderTile(v: WeatherView, sky: TemplateResult, s: TileState): T
   const foldable = s.tapTarget === 'toggle' || s.holdTarget === 'toggle';
   // Under the unfolded tile, folding on a tap goes without saying.
   const hints = presses.filter(([name, target]) => name !== 'tap' || target !== 'toggle');
-  return html`<div class=${`nw-tilecard${s.open ? ' open' : ''}${foldable ? '' : ' fixed'}${v.now.darkSky ? ' dark-sky' : ''}${ticker.length ? '' : ' quiet'}`}
+  const style = s.style ?? 'postcard';
+  // The chevron tells the tile opens; it turns over when it does. Only when a press folds it.
+  const chevron = foldable ? html`<span class="nw-chevron t-chev" aria-hidden="true"><i class="nw-chev"></i></span>` : nothing;
+  const event = ticker.length ? html`<hestia-ticker bare .points=${ticker}></hestia-ticker>` : html`<span class="t-calm">${headline ? unbroken(headline) : ''}</span>`;
+  const meta = html`<div class="meta">${v.location ? html`<span class="place">${v.location}</span>` : nothing}${first ? alertPill(first) : nothing}
+    ${more.map(a => html`<div class="reveal"><div>${alertPill(a)}</div></div>`)}</div>`;
+  const scene = html`<div class="t-scene" aria-hidden="true">${sky}</div>`;
+  // The event and the chevron under the scene: a line on the postcard and the window, a pill on the ground of the immersive tile.
+  const bar = ticker.length || foldable ? html`<div class=${style === 'immersive' ? 't-pill' : 't-line'}>${event}${chevron}</div>` : nothing;
+  const now = nowBlock(v, false);
+  const top = style === 'window'
+    ? html`<div class="t-split"><div class="t-left">${meta}${now}</div>${scene}</div>${bar}`
+    : html`${scene}<div class="t-over">${meta}${now}</div>${bar}`;
+  return html`<div class=${`nw-tilecard t-${style}${s.open ? ' open' : ''}${v.now.darkSky ? ' dark-sky' : ''}${ticker.length ? '' : ' quiet'}`}
       role="button" tabindex="0" aria-expanded=${foldable ? s.open : nothing}
       aria-label=${`${v.location ? t('Météo à {place}', { place: v.location }) : t('Météo')}${presses.length ? ` : ${presses.map(([name, target]) => name === 'tap' ? t('appui pour {goal}', { goal: goal(target, s.open) }) : t('appui long pour {goal}', { goal: goal(target, s.open) })).join(', ')}` : ''}`}>
-    <div class="sky" aria-hidden="true">${sky}</div><div class="veil" aria-hidden="true"></div><i class="press-ring" aria-hidden="true"></i>
-    <div class="top">
-      <div class="meta">${v.location ? html`<span class="place">${v.location}</span>` : nothing}${first ? alertPill(first) : nothing}
-        ${more.map(a => html`<div class="reveal"><div>${alertPill(a)}</div></div>`)}</div>
-      <div class="brief"><div><div>${ticker.length ? html`<hestia-ticker .points=${ticker}></hestia-ticker>` : nothing}</div></div></div>
-      ${nowBlock(v, false)}
-    </div>
-    <div class="grabber" aria-hidden="true"><i></i></div>
+    <i class="press-ring" aria-hidden="true"></i>
+    ${top}
     <div class="more" ?inert=${!s.open}><div><div class="more-in">
       ${s.blocks.map(block => block === 'bulletin' ? (headline ? html`<div class="bulletin">${label(t('Bulletin du jour'))}<p class="nw-bulletin">${unbroken(headline)}</p></div>` : nothing)
         : block === 'events' ? frise(v) : block === 'moments' ? moments(v) : forecastStrip(v, s.tab, s.onTab))}
@@ -131,32 +142,45 @@ export const tileStyles = css`
   .nw-tilecard { position:relative; isolation:isolate; overflow:hidden; cursor:pointer; user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent;
     color:var(--nw-fg); border-radius:inherit; transition:box-shadow .2s; }
   .nw-tilecard:focus-visible { outline:2px solid var(--nw-accent); outline-offset:-2px; }
-  /* The sky keeps its drawing size and shrinks as one block: clouds, sun and rain stay in proportion. */
+  /* The banner's sky (hero.ts) keeps its drawing size and shrinks as one block: clouds, sun and rain stay in proportion. */
   .sky { position:absolute; top:0; right:0; z-index:-2; width:calc(100% / var(--k)); height:calc(100% / var(--k)); transform:scale(var(--k)); transform-origin:top right; pointer-events:none; }
-  .nw-tilecard .sky { --k:.68; --nw-orb-x:calc(100% - 270px); }
   .veil { position:absolute; inset:0; z-index:-1; pointer-events:none; }
-  .nw-tilecard .veil { background:linear-gradient(90deg, var(--nw-bg) 0%, color-mix(in srgb, var(--nw-bg) 96%, transparent) 18%,
-    color-mix(in srgb, var(--nw-bg) 70%, transparent) 30%, color-mix(in srgb, var(--nw-bg) 30%, transparent) 46%, transparent 64%); }
-  /* Unfolded, the timeline has its own frosted glass: the veil keeps the text side and fades the bottom softly, the ground still showing. */
-  .nw-tilecard.open .veil { background:linear-gradient(90deg, var(--nw-bg) 0%, color-mix(in srgb, var(--nw-bg) 92%, transparent) 30%, color-mix(in srgb, var(--nw-bg) 40%, transparent) 60%, transparent 85%),
-    linear-gradient(0deg, color-mix(in srgb, var(--nw-bg) 55%, transparent) 0%, transparent 30%); }
-  .top { display:grid; grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"meta now" "brief now"; column-gap:14px; row-gap:8px; padding:14px 16px; align-items:center; }
-  .quiet .top { grid-template-areas:"meta now"; }
-  .meta { grid-area:meta; align-self:start; display:flex; flex-direction:column; align-items:flex-start; gap:6px; min-width:0; }
-  .place { font-size:var(--nw-fs-small); color:var(--nw-fg2); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .brief { grid-area:brief; min-width:0; min-height:38px; transition:min-height var(--nw-expand) var(--nw-ease); }
-  .quiet .brief { display:none; }
-  /* Unfolded, the scrolling bubble folds away: the timeline below shows the same points. */
-  .brief > div { display:grid; grid-template-rows:1fr; grid-template-columns:minmax(0, 1fr); transition:grid-template-rows var(--nw-expand) var(--nw-ease), opacity .25s; }
-  /* Its column never grows past the tile: the ticker's sentence shortens instead (3 November, a phone 375 px wide). */
-  .brief > div > div { min-height:0; min-width:0; overflow:clip; overflow-clip-margin:18px; }
-  .open .brief { min-height:0; }
-  .open .brief > div { grid-template-rows:0fr; opacity:0; }
-  /* Anchored at the top: it does not move when the left column grows as the tile unfolds. */
-  .top .nw-now { grid-area:now; align-self:start; position:relative; }
-  /* The source fades in under the temperature, out of the flow: nothing moves. */
-  .top .nw-now .nw-badge { position:absolute; top:100%; right:0; max-width:none; margin-top:6px; opacity:0; transform:translateY(-4px); transition:opacity .3s .15s, transform .3s .15s; pointer-events:none; }
-  .open .top .nw-now .nw-badge { opacity:1; transform:none; }
+  /* The scene (the sky alone, or set in a place) sits in a box of its own; the sky element fills it. */
+  .t-scene { position:relative; overflow:hidden; pointer-events:none; }
+  .t-scene > * { position:absolute; inset:0; display:block; }
+  .meta { display:flex; flex-direction:column; align-items:flex-start; gap:6px; min-width:0; }
+  .place { font-size:var(--nw-fs-title); font-weight:700; letter-spacing:-.02em; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* Over the scene: the place and « En ce moment » in white with a fine dark halo, readable on a bright sky as on a night one. */
+  .t-over { position:absolute; left:16px; right:16px; top:14px; z-index:1; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; pointer-events:none; }
+  .t-over > * { pointer-events:auto; }
+  .t-over .place, .t-over .nw-now { color:#fff; text-shadow:0 1px 2px rgb(10 20 35 / .55), 0 0 10px rgb(10 20 35 / .35); }
+  .t-over .nw-now ha-icon { filter:drop-shadow(0 1px 1.5px rgb(10 20 35 / .55)); }
+  .t-over .nw-now { align-items:flex-end; text-align:right; }
+  /* The coming event and the chevron, on one line; with nothing coming, the start of the bulletin, quietly. */
+  .t-line { display:flex; align-items:center; gap:12px; padding:12px 14px 12px 16px; min-width:0; }
+  .t-line hestia-ticker, .t-pill hestia-ticker { flex:1; min-width:0; }
+  .t-calm { flex:1; min-width:0; font-size:var(--nw-fs-small); color:var(--nw-fg2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .t-chev { width:32px; height:32px; transition:transform var(--nw-expand) var(--nw-ease), background .2s; }
+  .open .t-chev { transform:rotate(180deg); }
+  .nw-tilecard:hover .t-chev { background:color-mix(in srgb, var(--nw-fg) 8%, transparent); }
+  /* A · the postcard: the scene above, it tightens a little as the tile opens. */
+  .t-postcard .t-scene { height:var(--nw-tile-scene, 200px); transition:height var(--nw-expand) var(--nw-ease); }
+  .t-postcard.open .t-scene { height:calc(var(--nw-tile-scene, 200px) - 44px); }
+  /* B · the window: the weather now on the card's background, large; the scene in a rounded window on the right. */
+  .t-split { display:grid; grid-template-columns:minmax(150px, .9fr) minmax(0, 1.1fr); min-height:176px; }
+  .t-left { display:flex; flex-direction:column; gap:6px; padding:16px 6px 8px 18px; min-width:0; }
+  .t-left .nw-now { align-items:flex-start; text-align:left; }
+  .t-left .nw-now .temp { font-size:var(--nw-fs-temp); }
+  .t-window .t-scene { margin:10px 10px 0 0; border-radius:16px; --nw-house-x:50%; --nw-house-size:.8; }
+  /* C · immersive: the scene over the whole tile; the event in a pill on its ground, which stays put as the tile opens. */
+  .t-immersive .t-scene { height:var(--nw-tile-scene, 236px); --nw-house-x:72%; --nw-house-size:.9; }
+  .t-pill { position:absolute; left:12px; top:calc(var(--nw-tile-scene, 236px) - 60px); z-index:1; width:min(66%, 360px); box-sizing:border-box;
+    display:flex; align-items:center; gap:10px; padding:7px 7px 7px 10px; border-radius:16px;
+    background:color-mix(in srgb, var(--nw-bg) 84%, transparent); box-shadow:0 0 0 1px var(--nw-line), 0 6px 18px -10px rgb(0 0 0 / .5); }
+  .t-pill .t-chev { width:30px; height:30px; }
+  @container (max-width:480px) { .t-pill { width:auto; right:12px; } }
+  /* Under the scene the timeline sits on the card's background: it takes the panels' fill (as « Aujourd'hui »), no glass nor outline. */
+  .nw-tilecard hestia-frise { --nw-glass-clear:var(--nw-surface); --nw-frost:none; --nw-frame-line:transparent; }
   /* Folded, extra alerts wait in the scrolling bubble; unfolded, they open gently under the first one. */
   .reveal { display:grid; grid-template-rows:0fr; margin-top:-6px; opacity:0;
     transition:grid-template-rows var(--nw-expand) var(--nw-ease), margin-top var(--nw-expand) var(--nw-ease), opacity .3s .1s; }
@@ -172,9 +196,7 @@ export const tileStyles = css`
   /* Unfolded, as on the full card: under the top row, the bulletin and the timeline sit over a veil that fades in slowly and stays light,
      so a cloud passing low behind the text is softened, not bright white (9 November). */
   .more { position:relative; }
-  .more::before { content:''; position:absolute; top:-40px; bottom:0; left:0; right:0; z-index:-1; pointer-events:none; opacity:0; transition:opacity .3s .1s;
-    background:linear-gradient(180deg, transparent 0, color-mix(in srgb, var(--nw-bg) 45%, transparent) 90px, color-mix(in srgb, var(--nw-bg) 60%, transparent) 100%); }
-  .open .more::before { opacity:1; }
+  .more-in { padding-top:4px; }
   .bulletin, .nw-events, .block { display:flex; flex-direction:column; gap:6px; }
   .bulletin, .nw-events { gap:4px; }
   /* Moments, hours and days: see-through tiles over the sky, without blur (it would be recomputed at every frame of the sky). */
@@ -200,9 +222,6 @@ export const tileStyles = css`
   .seg button[aria-pressed=true] { background:var(--nw-bg); color:var(--nw-fg); box-shadow:0 1px 3px #0002; }
   @container (max-width:600px) { .moments { grid-template-columns:repeat(2, minmax(0,1fr)); } }
   .foot { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; font-size:var(--nw-fs-small); color:var(--nw-fg2); }
-  .grabber { display:flex; justify-content:center; padding:0 0 8px; }
-  .grabber i { width:34px; height:4px; border-radius:4px; background:var(--nw-line); }
-  .open .grabber, .fixed .grabber { display:none; }
   /* Long press: a ring fills up under the finger. */
   .nw-tilecard.pressing { box-shadow:inset 0 0 0 3px color-mix(in srgb, var(--nw-accent) 45%, transparent); }
   .press-ring { position:absolute; width:44px; height:44px; margin:-22px 0 0 -22px; border-radius:50%; pointer-events:none; opacity:0;
@@ -210,9 +229,7 @@ export const tileStyles = css`
     -webkit-mask:radial-gradient(circle, transparent 15px, #000 16px); mask:radial-gradient(circle, transparent 15px, #000 16px); }
   .pressing .press-ring { opacity:.9; }
   @container (max-width:480px) {
-    .top { grid-template-areas:"meta now" "brief brief"; }
-    .nw-tilecard .sky { --k:.54; --nw-orb-x:calc(100% - 260px); }
     .days { grid-template-columns:repeat(5, minmax(58px,1fr)); overflow-x:auto; scrollbar-width:none; }
   }
-  @media (prefers-reduced-motion:reduce) { .more, .more::before, .more-in, .reveal, .brief, .brief > div, .top .nw-now .nw-badge { transition:none; } }
+  @media (prefers-reduced-motion:reduce) { .more, .more-in, .reveal, .t-chev, .t-postcard .t-scene { transition:none; } }
 `;

@@ -1,3 +1,26 @@
+## 4.0.0 — La météo chez vous, le soleil et la lune
+
+### Nouveautés
+
+- Décor : le ciel animé peut se poser sur un paysage, au choix une maison à la campagne, un village, la ville, un immeuble, la montagne ou le bord de mer. Le soleil et la lune y sont à leur vraie place selon l'heure.
+- Décor : la cheminée fume quand votre poêle ou votre chauffage est allumé, et les fenêtres suivent vos lumières (sinon elles s'allument du soir au coucher).
+- Décor : « Masquer le décor » garde le ciel à l'heure, sans le paysage.
+- Trois tuiles au choix : carte postale (le décor en haut), fenêtre (la météo à gauche, le ciel à droite) et immersive (le ciel sur toute la tuile).
+- Carte à la pièce et bloc « Soleil et lune » (#34) : la course du soleil et de la lune sur la journée, lever et coucher, durée du jour et écart avec hier, aube et crépuscule, phase de la lune et prochaine pleine lune.
+- Carte Mini : le lever et le coucher du soleil, et la lune, en valeurs au choix.
+- Pirate Weather (#35), en bêta : un service météo pour les lieux hors de France, avec les prévisions, la pluie à venir et l'indice UV.
+
+### Améliorations
+
+- « Alertes à ne pas montrer » (#33) : le réglage de la Mini et de l'Alerte arrive sur les cartes Événements et les tuiles. Cochez les alertes qui ne vous servent pas (pluie, vent, air…) : elles quittent la frise, la bulle et la ligne ; la carte complète les garde.
+- Tuiles : un chevron pour plier et déplier, et la case « Dépliée au chargement », qui remplace le format « Tuile dépliée » (vos cartes existantes continuent de marcher).
+- Frise des Événements : au fond des panneaux, sous le décor, sans effet de verre.
+- Frise : ce que mesure votre station garde sa couleur (pluie, vent…) ; les couleurs de vigilance restent celles de Météo-France.
+
+### Après la mise à jour
+
+- Si vous avez choisi vous-même les blocs d'« Aujourd'hui », cochez « Soleil et lune » pour l'afficher.
+
 ## 3.9.0 — Feux, eau, rivière et une Mini à votre goût
 
 **En bref**

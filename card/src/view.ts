@@ -39,7 +39,9 @@ export interface Timed { at?: number; clock?: string }
 /** An alert bubble: the official vigilance, or what the station measures at home. Both can show at once. */
 export interface AlertPoint extends Timed { level: 1 | 2 | 3; label?: string; text: string; icon: string; source: string; official: boolean; entity?: string;
   /** The brief's signal (« official », « water », « storm-near »…), from integration 3.9 on: a card can leave out some kinds (issue #22). */
-  key?: string }
+  key?: string;
+  /** What the station measures keeps the colour of its meaning (rain, wind…); the level colours belong to the official vigilance. */
+  theme?: Theme }
 /** A point of the scrolling bubble. */
 export interface TickerPoint extends Timed { group: string; label: string; icon: string; text: string; level: number; theme?: Theme; entity?: string;
   /** On the timeline: the point that needs attention most, with the alert's halo. */
@@ -190,6 +192,8 @@ export interface WaterView {
 }
 
 export interface WeatherView {
+  /** The sun and the moon for the place of Home Assistant, computed by the card (astro.ts). */
+  astro?: import('./astro').AstroView;
   location: string; dateLabel: string; provider: string; forecastSource: string;
   /** Opened when the forecast is tapped. */
   weatherEntity: string;

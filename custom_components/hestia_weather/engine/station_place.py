@@ -26,7 +26,7 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 from zoneinfo import ZoneInfo
 
 from . import station_shade
-from .forecast import Hour
+from .forecast import Hour, current_hour
 from .i18n import N_, t
 from .open_meteo import State
 from .settings import Settings
@@ -282,7 +282,7 @@ def _reading(get: Callable[[str], Any], entity_id: str | None, kind: Kind) -> fl
 def _forecast(get: Callable[[str], Any], settings: Settings, hours: Sequence[Hour], now: datetime) -> dict[str, float | None]:
     weather = get(settings.weather_entity)
     bulletin: Mapping[str, Any] = weather.attributes if weather is not None and weather.state not in ("unknown", "unavailable") else {}
-    hour = next((h for h in hours if h.time is not None and h.time <= now < h.time + timedelta(hours=1)), hours[0] if hours else None)
+    hour = current_hour(hours, now) or (hours[0] if hours else None)
     speed_unit = bulletin.get("wind_speed_unit")
 
     def pick(attribute: str, unit: Any, kind: Kind, fallback: float | None) -> float | None:
