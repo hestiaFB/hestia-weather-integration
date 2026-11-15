@@ -16,6 +16,7 @@
 - Tuiles : un chevron pour plier et déplier, et la case « Dépliée au chargement », qui remplace le format « Tuile dépliée » (vos cartes existantes continuent de marcher).
 - Frise des Événements : au fond des panneaux, sous le décor, sans effet de verre.
 - Frise : ce que mesure votre station garde sa couleur (pluie, vent…) ; les couleurs de vigilance restent celles de Météo-France.
+- Animations plus légères : le décor se met en pause quand il sort de l'écran et repart sans se redessiner, le soleil et la lune ne sont calculés qu'une fois par minute pour toutes les cartes de la page, et le code a été nettoyé. Le rendu ne change pas, mais la carte sollicite moins le téléphone.
 
 ### Après la mise à jour
 
