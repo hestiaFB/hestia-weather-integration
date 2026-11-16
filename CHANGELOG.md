@@ -1,3 +1,12 @@
+## 4.0.1 — Tuiles et frise plus lisibles
+
+### Corrections
+
+- Tuiles dépliées : l'événement à venir n'est plus écrit deux fois. Il reste dans « Événements », la barre du haut ne garde que la flèche pour replier.
+- Tuiles : le nom du lieu et la température se lisent sur un ciel clair (pluie en journée) : texte foncé sur ciel clair, blanc sur ciel sombre (orage, nuit, crépuscule).
+- Frise des Événements : le rond qui montrait l'heure choisie cachait l'icône du temps ; une petite flèche au-dessus la remplace.
+- Tuile immersive dépliée : un peu d'espace entre le décor et le bulletin du jour.
+
 ## 4.0.0 — La météo chez vous, le soleil et la lune
 
 ### Nouveautés

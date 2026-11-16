@@ -179,7 +179,7 @@ export class HestiaFrise extends LitElement {
         <span class="needle"></span>
         ${(() => { const on = groups.find(g => g.items.includes(this.index));
           // The label on show, away from now: a small dot where its stem meets the track, as the scales' value (3 November).
-          return on && on.x > 0 ? html`<i class="nw-dot mark" style=${`left:${(on.x * 100).toFixed(2)}%`}></i>` : nothing; })()}
+          return on && on.x > 0 ? html`<i class="mark" style=${`left:${(on.x * 100).toFixed(2)}%`}></i>` : nothing; })()}
       </div>
       ${segments.length ? html`<div class="hours" aria-hidden="true">${marks.map(m => html`<span class=${m.edge ?? ''} style=${`left:${(m.x * 100).toFixed(2)}%`}>${m.text}</span>`)}</div>` : nothing}
       <ul class="sr">${items.map(i => html`<li>${colon(when(i), i.text)}</li>`)}</ul>
@@ -271,10 +271,12 @@ export class HestiaFrise extends LitElement {
     .needle { position:absolute; left:0; top:58px; z-index:2; width:14px; height:14px; margin-left:-7px; border-radius:50%; background:var(--nw-fg); box-shadow:0 0 0 3px var(--nw-bg); }
     .needle::after { content:''; position:absolute; inset:-3px; border-radius:50%; border:2px solid var(--nw-fg);
       animation:ripple 2.4s var(--nw-ease) infinite; animation-play-state:var(--nw-motion, running); }
-    /* The value's dot is the charter's (.nw-dot): only where it sits on this track. */
-    .mark { top:61px; }
+    /* Where the shown point sits on the track: a small arrow at the end of its stem, above the sky it falls in (a dot hid its icon). */
+    .mark { position:absolute; top:51px; z-index:2; width:0; height:0; translate:-50% 0; border-left:4.5px solid transparent; border-right:4.5px solid transparent;
+      border-top:5px solid var(--nw-fg); pointer-events:none; }
     @keyframes ripple { from { transform:scale(.6); opacity:.9; } to { transform:scale(2.2); opacity:0; } }
     .track.bare .needle { top:6px; }
+    .track.bare .mark { top:-1px; }
     .hours { position:relative; height:16px; margin:6px 16px 0; font-size:var(--nw-fs-label); line-height:16px; color:var(--nw-fg2); font-variant-numeric:tabular-nums; }
     .hours span { position:absolute; translate:-50% 0; white-space:nowrap; }
     .hours span.first { translate:0 0; } .hours span.last { translate:-100% 0; } .hours span.hide { visibility:hidden; }

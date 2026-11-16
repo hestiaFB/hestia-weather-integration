@@ -85,12 +85,13 @@ try {
   assert.deepEqual(folded.ticker[0], [true, false], 'Folded: what the station measures leads the scrolling bubble, in alert style');
   await tile.click({ position: { x: 120, y: 30 } }); await sleep(600);
   assert.deepEqual(await state(), { open: true, expanded: 'true', dialog: false, inert: false }, 'Tap unfolds');
-  // Unfolded, the timeline takes over from the bubble: the measured alert leads the « Maintenant » label, with its halo, the vigilance rings the track.
+  // Unfolded, the timeline takes over from the bubble (the bar keeps only its chevron): the measured alert leads the « Maintenant » label, with its halo, the vigilance rings the track.
   const frise = await inCard(root => { const f = root.querySelector('hestia-frise').shadowRoot, pin = f.querySelector('.pin');
-    return { bubble: getComputedStyle(root.querySelector('.brief > div')).opacity, first: pin.getAttribute('aria-label').split(' ; ')[0], alert: pin.classList.contains('al'),
+    const bar = root.querySelector('.t-line hestia-ticker');
+    return { bubble: bar ? getComputedStyle(bar).display : 'none', first: pin.getAttribute('aria-label').split(' ; ')[0], alert: pin.classList.contains('al'),
       title: root.querySelector('.nw-events .nw-label')?.textContent, ring: !!f.querySelector('.ring'), lane: f.querySelectorAll('.seg').length > 0 }; });
   // The vigilance has its pill above: no ring on the track.
-  assert.deepEqual({ ...frise, first: frise.first.startsWith('Maintenant : Forte pluie') }, { bubble: '0', first: true, alert: true, title: 'Événements', ring: false, lane: true }, 'Unfolded: the timeline');
+  assert.deepEqual({ ...frise, first: frise.first.startsWith('Maintenant : Forte pluie') }, { bubble: 'none', first: true, alert: true, title: 'Événements', ring: false, lane: true }, 'Unfolded: the timeline, told once (4.0.1)');
   assert.equal(await page.evaluate(() => Object.entries(localStorage).find(([k]) => k.startsWith('hestia-weather:open:tile'))?.[1]), '1', 'Unfolded state remembered');
   // A tap on a label of the timeline shows its point and does not fold the tile.
   await page.locator('hestia-weather-card hestia-frise .pin').last().click(); await sleep(100);

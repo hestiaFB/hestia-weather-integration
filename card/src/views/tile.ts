@@ -118,13 +118,16 @@ export function renderTile(v: WeatherView, sky: TemplateResult, s: TileState): T
   const meta = html`<div class="meta">${v.location ? html`<span class="place">${v.location}</span>` : nothing}${first ? alertPill(first) : nothing}
     ${more.map(a => html`<div class="reveal"><div>${alertPill(a)}</div></div>`)}</div>`;
   const scene = html`<div class="t-scene" aria-hidden="true">${sky}</div>`;
+  // Unfolded, what the bar says is told again below (the coming event by « Événements », the start of the bulletin by the bulletin):
+  // the bar then keeps only its chevron, to fold the tile back.
+  const told = s.open && s.blocks.includes(ticker.length ? 'events' : 'bulletin');
   // The event and the chevron under the scene: a line on the postcard and the window, a pill on the ground of the immersive tile.
-  const bar = ticker.length || foldable ? html`<div class=${style === 'immersive' ? 't-pill' : 't-line'}>${event}${chevron}</div>` : nothing;
+  const bar = foldable || (ticker.length && !told) ? html`<div class=${style === 'immersive' ? 't-pill' : 't-line'}>${event}${chevron}</div>` : nothing;
   const now = nowBlock(v, false);
   const top = style === 'window'
     ? html`<div class="t-split"><div class="t-left">${meta}${now}</div>${scene}</div>${bar}`
     : html`${scene}<div class="t-over">${meta}${now}</div>${bar}`;
-  return html`<div class=${`nw-tilecard t-${style}${s.open ? ' open' : ''}${v.now.darkSky ? ' dark-sky' : ''}${ticker.length ? '' : ' quiet'}`}
+  return html`<div class=${`nw-tilecard t-${style}${s.open ? ' open' : ''}${told ? ' told' : ''}${v.now.darkSky ? ' dark-sky' : ''}${v.now.phase === 'night' || v.now.phase === 'twilight' ? ' night-sky' : ''}${ticker.length ? '' : ' quiet'}`}
       role="button" tabindex="0" aria-expanded=${foldable ? s.open : nothing}
       aria-label=${`${v.location ? t('Météo à {place}', { place: v.location }) : t('Météo')}${presses.length ? ` : ${presses.map(([name, target]) => name === 'tap' ? t('appui pour {goal}', { goal: goal(target, s.open) }) : t('appui long pour {goal}', { goal: goal(target, s.open) })).join(', ')}` : ''}`}>
     <i class="press-ring" aria-hidden="true"></i>
@@ -153,8 +156,13 @@ export const tileStyles = css`
   /* Over the scene: the place and « En ce moment » in white with a fine dark halo, readable on a bright sky as on a night one. */
   .t-over { position:absolute; left:16px; right:16px; top:14px; z-index:1; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; pointer-events:none; }
   .t-over > * { pointer-events:auto; }
-  .t-over .place, .t-over .nw-now { color:#fff; text-shadow:0 1px 2px rgb(10 20 35 / .55), 0 0 10px rgb(10 20 35 / .35); }
-  .t-over .nw-now ha-icon { filter:drop-shadow(0 1px 1.5px rgb(10 20 35 / .55)); }
+  /* Written on the sky, the place and the weather now follow how dark it is (as the banner, charter): white with a dark halo on a dark sky (storm, night, dusk),
+     dark ink with a light halo on a light one. The plain sky follows the theme; a place's sky is painted whatever the theme. */
+  .t-over .place, .t-over .nw-now { color:var(--nw-fg); text-shadow:0 0 8px color-mix(in srgb, var(--nw-bg) 70%, transparent); }
+  .nw-tilecard:has(hestia-weather-scene) .t-over :is(.place, .nw-now) { color:#16222f; text-shadow:0 0 8px rgb(255 255 255 / .6); }
+  .nw-tilecard:is(.dark-sky, .night-sky) .t-over :is(.place, .nw-now) {
+    color:#fff; text-shadow:0 1px 2px rgb(10 20 35 / .55), 0 0 10px rgb(10 20 35 / .35); }
+  .nw-tilecard:is(.dark-sky, .night-sky) .t-over .nw-now ha-icon { filter:drop-shadow(0 1px 1.5px rgb(10 20 35 / .55)); }
   .t-over .nw-now { align-items:flex-end; text-align:right; }
   /* The coming event and the chevron, on one line; with nothing coming, the start of the bulletin, quietly. */
   .t-line { display:flex; align-items:center; gap:12px; padding:12px 14px 12px 16px; min-width:0; }
@@ -179,6 +187,10 @@ export const tileStyles = css`
     background:color-mix(in srgb, var(--nw-bg) 84%, transparent); box-shadow:0 0 0 1px var(--nw-line), 0 6px 18px -10px rgb(0 0 0 / .5); }
   .t-pill .t-chev { width:30px; height:30px; }
   @container (max-width:480px) { .t-pill { width:auto; right:12px; } }
+  /* Unfolded with the same news below: the bar keeps only its chevron, on the right. */
+  .told .t-line > :not(.t-chev), .told .t-pill > :not(.t-chev) { display:none; }
+  .told .t-line { justify-content:flex-end; padding-top:6px; padding-bottom:6px; }
+  .told .t-pill { left:auto; right:12px; width:auto; padding:7px; }
   /* Under the scene the timeline sits on the card's background: it takes the panels' fill (as « Aujourd'hui »), no glass nor outline. */
   .nw-tilecard hestia-frise { --nw-glass-clear:var(--nw-surface); --nw-frost:none; --nw-frame-line:transparent; }
   /* Folded, extra alerts wait in the scrolling bubble; unfolded, they open gently under the first one. */
@@ -197,6 +209,8 @@ export const tileStyles = css`
      so a cloud passing low behind the text is softened, not bright white (9 November). */
   .more { position:relative; }
   .more-in { padding-top:4px; }
+  /* The immersive tile's pill sits on the scene: what unfolds starts right under it, with the room the line gives the others. */
+  .t-immersive .more-in { padding-top:16px; }
   .bulletin, .nw-events, .block { display:flex; flex-direction:column; gap:6px; }
   .bulletin, .nw-events { gap:4px; }
   /* Moments, hours and days: see-through tiles over the sky, without blur (it would be recomputed at every frame of the sky). */
