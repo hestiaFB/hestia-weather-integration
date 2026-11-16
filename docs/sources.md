@@ -44,13 +44,24 @@ Pour les éclairs, le nom à chercher dans HACS est **Blitzortung.org Lightning 
 
 ## Météo-France — ciel et prévisions
 
-Configurez [l’intégration Météo-France](https://www.home-assistant.io/integrations/meteo_france/) pour votre commune, puis choisissez son entité `weather.*`. Une autre entité météo convient si elle fournit les prévisions horaires et quotidiennes ; tous les fournisseurs ne sont pas vérifiés.
+Configurez [l’intégration Météo-France](https://www.home-assistant.io/integrations/meteo_france/) pour votre commune, puis choisissez son entité `weather.*`. Hors de France, voyez [Pirate Weather](#pirate-weather--prévisions-hors-de-france-bêta). Une autre entité météo convient si elle fournit les prévisions horaires et quotidiennes ; tous les fournisseurs ne sont pas vérifiés.
 
 Hestia Weather lit jusqu’à 18 heures et 7 jours, selon ce que le fournisseur donne : un horizon absent n’est pas inventé. La température du bulletin sert seulement quand il n’y a pas de thermomètre local.
 
 **Pour un ciel plus fidèle**, activez le capteur « Condition d’origine » de Météo-France (désactivé par défaut : Paramètres → Appareils et services → Météo-France → entités masquées). Le ciel animé distingue alors ce que Météo-France distingue : bruine, averses, pluie verglaçante, brume, bancs de brouillard, brouillard givrant… Sans lui, Hestia Weather déduit ce qu’il peut des chiffres (bruine, verglas, quelques flocons, neige forte).
 
 **La station passe devant le bulletin** pour le temps du moment quand elle constate autre chose : pluie mesurée (dès 0,3 mm/h), brouillard probable, soleil fort sous un ciel annoncé couvert. Elle ne prétend jamais constater la foudre : sans [Blitzortung](#blitzortung--éclairs), les orages restent des prévisions. Cela change la présentation du temps actuel, pas les prévisions.
+
+## Pirate Weather — prévisions hors de France (bêta)
+
+Hors de France, Météo-France ne couvre pas votre commune. [Pirate Weather](https://github.com/Pirate-Weather/pirate-weather-ha) donne alors les prévisions heure par heure et jour par jour, partout dans le monde :
+
+1. Demandez une clé gratuite sur [pirateweather.net](https://pirateweather.net).
+2. Dans HACS, cherchez **Pirate Weather** et téléchargez-le, puis redémarrez Home Assistant.
+3. Ajoutez l’intégration **Pirate Weather** dans **Paramètres → Appareils et services**, avec votre clé.
+4. Dans **Sources météo**, choisissez son entité `weather.*`. Hestia Weather la reconnaît seul et l’indique comme source des prévisions.
+
+Hestia Weather y lit la probabilité de pluie de chaque heure (pour la pluie à venir) et l’indice UV heure par heure. Pirate Weather ne publie pas de vigilance officielle : choisissez celle de votre pays si vous en avez une (MeteoSwiss en Suisse), sinon laissez le champ vide.
 
 ## Station météo
 

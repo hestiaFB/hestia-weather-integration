@@ -4,7 +4,7 @@
 
 Depuis la 2.3, **la carte est fournie par l’intégration** : rien à installer en plus, et elle a toujours la même version que l’intégration. L’intégration l’ajoute elle-même aux ressources des tableaux de bord et la tient à jour, pour que l’application mobile la trouve aussi. Sur un tableau de bord : **Ajouter une carte → Hestia Weather**.
 
-La carte parle **français** et **anglais** : elle suit la langue de chaque personne qui la regarde. Une autre langue s’affiche en anglais, en attendant qu’un utilisateur la propose ([comment aider](../technique.md#traduire)).
+La carte parle **français**, **anglais** et **allemand** : elle suit la langue de chaque personne qui la regarde. Une autre langue s’affiche en anglais, en attendant qu’un utilisateur la propose ([comment aider](../technique.md#traduire)).
 
 Sans station (depuis la 2.3.1), les courbes de vent et de pression utilisent les attributs historiques du service météo sélectionné, si Home Assistant les a enregistrés. Elles conservent le nom du service météo et ne deviennent pas des mesures locales. Si cet historique est absent, exclu de Recorder ou trop court, la carte le précise ; elle n’invente pas de valeurs passées. Les cumuls de pluie mesurés restent un enrichissement facultatif fourni par un pluviomètre. Retirer la station ne crée plus d’alertes « À régler » pour les entités restées actives qui dépendent de ses capteurs.
 
@@ -12,17 +12,18 @@ Vous aviez installé la carte depuis HACS ? Retirez-la (HACS → Hestia Weather 
 
 Dans l’application Home Assistant, une carte reste invisible juste après une mise à jour ? Réinitialisez son cache : **Paramètres → Application compagnon → Dépannage → Réinitialiser le cache du frontend**.
 
-![Hestia Weather — votre station météo et les prévisions, réunies en une carte qui parle](images/hestia-weather-banner.png)
+![Hestia Weather — la météo de chez vous, expliquée et anticipée : la tuile carte postale, sa maison au crépuscule et sa frise des événements](images/hestia-weather-banner.png)
 
-## Quatorze cartes à choisir
+## Vingt cartes à choisir
 
-Dans **Ajouter une carte**, cherchez « Hestia-FB » : trois entrées, une par type de carte — **Hestia-FB - Météo** (complète ou tuile), **Hestia-FB - À la pièce** (ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions) et **Hestia-FB - Petite carte** (mini ou alerte). Dans les réglages de la carte, choisissez d’abord le **type**, puis le **format**. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change.
+Dans **Ajouter une carte**, cherchez « Hestia-FB » : trois entrées, une par type de carte — **Hestia-FB - Météo** (complète ou l’une des trois tuiles), **Hestia-FB - À la pièce** (ressenti, température, pluie, vent, pression, éclairs, feux de forêt, restrictions d’eau, rivière, air et pollens, prévisions, événements, soleil et lune, records) et **Hestia-FB - Petite carte** (mini ou alerte). Dans les réglages de la carte, choisissez d’abord le **type**, puis le **format**. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change.
 
 | Carte | Pour quoi |
 | --- | --- |
 | **Complète** (`full`, par défaut) | Une page météo : le bandeau, puis **Aujourd’hui** et **Prévisions**, qui se replient d’un appui sur leur titre. |
-| **Tuile** (`tile`) | La page d’accueil, en pleine ou demi-largeur : le lieu, la vigilance, la bulle qui défile et la météo du moment. **Un appui** la déplie sur place, **un appui long** ouvre la carte complète par-dessus la page. |
-| **Tuile dépliée** (`intermediate`) | La même tuile, ouverte au départ. |
+| **Tuile carte postale** (`tile`) | La page d’accueil : le ciel (ou le décor) en haut, avec le lieu, le temps et la température, puis une ligne qui fait défiler les alertes et les événements. **Un appui** la déplie sur place, **un appui long** ouvre la carte complète par-dessus la page. |
+| **Tuile fenêtre** (`tile_window`) | Le lieu, le temps et la grande température à gauche, le ciel dans une fenêtre arrondie à droite. Mêmes gestes. |
+| **Tuile immersive** (`tile_immersive`) | Le ciel sur toute la tuile, la ligne des alertes posée dessus dans une pastille. Mêmes gestes. |
 | **Mini** (`mini`) | Une seule ligne : le ciel, le lieu, les valeurs de votre choix et la température ; la vigilance officielle quand il y en a une. Pour un en-tête ou un téléphone. Un appui ouvre la carte complète. |
 | **Ressenti** (`comfort`) | Le ressenti et son explication, sa jauge, ce qui le fait varier et les pastilles (humidité, rosée, soleil…). |
 | **Température** (`temperature`) | La température à venir (le maximum et le minimum des 18 heures), celle du moment, son ressenti et sa tendance, sa courbe et ses extrêmes ; puis l’humidité, sa courbe et ses extrêmes. Sur 6 h, 24 h, 2 jours ou 7 jours. |
@@ -36,6 +37,7 @@ Dans **Ajouter une carte**, cherchez « Hestia-FB » : trois entrées, une par t
 | **Air et pollens** (`air`) | L’air extérieur et les pollens, aujourd’hui et demain. |
 | **Prévisions** (`forecast`) | La courbe des 18 prochaines heures et le tableau des 7 jours, avec le bouton **Heures / Jours** quand les deux sont gardés. |
 | **Événements** (`events`) | La frise des prochaines heures, seule : pour les petits écrans. |
+| **Soleil et lune** (`sun`) | La course du soleil et de la lune sur la journée, le lever et le coucher, la durée du jour et son écart avec la veille, l’aube et le crépuscule ; la phase de la lune, sa part éclairée, son lever, son coucher et la prochaine pleine lune. Calculé dans le navigateur à partir du lieu de Home Assistant : aucun capteur à ajouter. |
 | **Records** (`records`) | Les records de chaleur, de froid, de rafale et de pluie en un jour, avec leur date (et l’heure pour la station), et les jours comptés : gel, 30 °C et plus, nuits à 20 °C et plus, vigilance canicule. Trois réglages : la période (cette année, depuis toujours, les deux), la source (votre station, le lieu depuis 1940, les deux) et la disposition (liste ou cases). Pas besoin d’activer les entités Records : la carte lit seule ce qu’elle montre. |
 | **Alerte** (`alert`) | Visible seulement en cas de vigilance, d’alerte mesurée chez vous ou de point sérieux à venir. Cachée quand tout est calme. Un appui ouvre la carte complète. |
 
@@ -43,13 +45,13 @@ Dans **Ajouter une carte**, cherchez « Hestia-FB » : trois entrées, une par t
 
 - **Ressenti, Pluie, Vent, Pression, Éclairs, Feux de forêt, Restrictions d’eau, Rivière, Air et pollens, Prévisions** : chaque partie de la carte se coche ou se décoche (réglage `card_blocks`). Ce sont les panneaux de la carte complète, chacun seul sur sa carte.
 
-- **Tuile dépliée** : le bulletin du jour, les événements (la frise), les prochains moments (cet après-midi, ce soir, cette nuit, demain matin) et les prévisions avec **Heures / Jours** (température, pluie, vent et sa direction). Par défaut : le bulletin et les événements.
+- **Tuiles, une fois dépliées** : le bulletin du jour, les événements (la frise), les prochains moments (cet après-midi, ce soir, cette nuit, demain matin) et les prévisions avec **Heures / Jours** (température, pluie, vent et sa direction). Par défaut : le bulletin et les événements. Cochez **Dépliée au chargement** (`tile_open`) pour qu’elle s’ouvre dépliée.
 - **Complète** : trois sections, toujours dans cet ordre, chacune avec son propre contenu :
   - **le bandeau intelligent**, avec son ciel animé : bulletin, événements, prochains moments, prévisions en tuiles ;
   - **Aujourd’hui** : pluie, vent, pression (et ressenti, pastilles, air et pollens du jour) ;
   - **Prévisions** : les 18 prochaines heures, les 7 prochains jours (et l’air et les pollens de demain).
 
-![Hestia Weather — tuile pleine et demi-largeur repliées, puis tuile dépliée, par temps d’orage avec vigilance jaune](images/hestia-weather-formats.png)
+![Hestia Weather — les trois tuiles : carte postale à la campagne en plein soleil, immersive au village de nuit, fenêtre au bord de mer dépliée au crépuscule](images/hestia-weather-formats.png)
 
 ## Le bandeau
 
@@ -65,22 +67,30 @@ Dans **Ajouter une carte**, cherchez « Hestia-FB » : trois entrées, une par t
   Un appui sur une étiquette affiche son point ; le défilement se met en pause au survol.
 - **La météo du moment** à droite : ciel, température, tendance, source.
 
-Derrière, **le ciel animé** suit le temps du moment :
+Derrière, **le ciel animé** suit le temps du moment : soleil à rayons, lune à cratères, nuages, orages avec éclairs, rafales ; la neige tombe et tient au sol, la grêle rebondit, la pluie éclabousse.
 
-- soleil à rayons, lune à cratères, nuages, orages avec éclairs, rafales ;
-- la neige tombe et tient au sol, la grêle rebondit, la pluie éclabousse ;
-- les saisons s’y glissent : pétales, chaleur, feuilles rousses, givre.
+## Le décor
 
-![Hestia Weather — bandeau, puis Aujourd’hui : ressenti, pluie, vent, pression, air et pollens](images/1.png)
+Le ciel peut se poser sur **un paysage**, au choix dans les réglages de la carte (**Décor**) : une maison à la campagne, un village, la ville, un appartement, la montagne ou le bord de mer. Sans décor, la carte garde le ciel seul, comme avant.
+
+- **Le soleil et la lune passent à leur vraie heure**, calculée pour votre lieu ; la lune montre sa vraie phase.
+- **La saison se lit sur les arbres et les collines** ; les arbres plient au vent et restent immobiles par temps calme.
+- **Les fenêtres s’allument** le soir jusqu’au coucher, ou suivent les lumières de votre choix. **La cheminée fume** quand le poêle ou le chauffage choisi est allumé.
+- **Tout ce que le vent pousse va dans le même sens** : pluie, filets de vent, nuages.
+- **Ciel seul** garde le soleil et la lune à l’heure sans le paysage.
+
+Le décor est léger : seuls des déplacements et des fondus sont animés, et tout se met en pause hors de l’écran.
+
+![Hestia Weather — la carte complète avec le décor de montagne sous la pluie : bandeau, événements, puis Aujourd’hui : ressenti, pluie, vent, pression, air et pollens](images/1.png)
 
 ## Aujourd’hui et Prévisions
 
-- **Aujourd’hui** : le ressenti et ce qui le fait monter ou baisser (un **i** détaille le calcul), puis Pluie, Vent et Pression, chacun avec sa valeur, un petit graphique et trois chiffres utiles. Ensuite, l’air extérieur et les pollens.
+- **Aujourd’hui** : le ressenti et ce qui le fait monter ou baisser (un **i** détaille le calcul), puis Pluie, Vent et Pression, chacun avec sa valeur, un petit graphique et trois chiffres utiles. Ensuite, l’air extérieur et les pollens, puis **Soleil et lune**.
 - **Prévisions** : la courbe des 18 prochaines heures, le tableau des 7 jours, l’air et les pollens de demain.
 
 Un appui sur une valeur ouvre la fiche de son capteur.
 
-![Hestia Weather — prévisions des 18 prochaines heures et des 7 prochains jours, air et pollens de demain](images/2.png)
+![Hestia Weather — Soleil et lune, puis les prévisions des 18 prochaines heures et des 7 prochains jours](images/2.png)
 
 ## Réglages
 
@@ -89,24 +99,28 @@ Tout se règle dans l’éditeur de la carte, rangé en blocs : le lieu et le fo
 | Bloc | Réglage | Par défaut | Rôle |
 | --- | --- | --- | --- |
 | En haut | `entry_id` | — | Le lieu à afficher, s’il y en a plusieurs dans l’intégration |
-| En haut | `format` | `full` | `full`, `tile`, `intermediate`, `mini`, `comfort`, `temperature`, `rain`, `wind`, `pressure`, `lightning`, `fire`, `water`, `river`, `air`, `forecast`, `events`, `records` ou `alert` |
-| Mini | `mini_values`, `mini_alerts` | `temperature`, `official` | Valeurs de la ligne, dans l’ordre : `temperature` (en grand, à droite), `feel`, `wind`, `gust`, `rain`, `humidity`, `pressure`, `uv` ; elles défilent quand elles n’ont pas toutes la place. Alertes : `official` (vigilances officielles), `all`, `none`. `mini_temperature` : `right` (en fin de ligne, par défaut) ou `left` (après le rond). `mini_words: false` retire le lieu et le temps en mots (une alerte garde ses mots) |
-| Mini et Alerte | `hidden_alerts` | aucune | Les sortes d’alertes que la carte ne montre jamais, même sérieuses : `official`, `storm`, `rain`, `wind`, `temperature`, `fog`, `uv`, `air`, `water` (Vigieau), `fire`, `river`. La carte complète les garde |
+| En haut | `format` | `full` | `full`, `tile`, `tile_window`, `tile_immersive`, `mini`, `comfort`, `temperature`, `rain`, `wind`, `pressure`, `lightning`, `fire`, `water`, `river`, `air`, `forecast`, `events`, `sun`, `records` ou `alert`. L’ancien `intermediate` reste accepté : c’est la tuile carte postale dépliée au chargement |
+| Mini | `mini_values`, `mini_alerts` | `temperature`, `official` | Valeurs de la ligne, dans l’ordre : `temperature` (en grand, à droite), `feel`, `wind`, `gust`, `rain`, `humidity`, `pressure`, `uv`, `sunrise` (lever du soleil), `sunset` (coucher), `moon` (phase de la lune) ; elles défilent quand elles n’ont pas toutes la place. Alertes : `official` (vigilances officielles), `all`, `none`. `mini_temperature` : `right` (en fin de ligne, par défaut) ou `left` (après le rond). `mini_words: false` retire le lieu et le temps en mots (une alerte garde ses mots) |
+| Tuiles, Événements, Mini et Alerte | `hidden_alerts` | aucune | Les sortes d’alertes que la carte ne montre jamais, même sérieuses : `official`, `storm`, `rain`, `wind`, `temperature`, `fog`, `uv`, `air`, `water` (Vigieau), `fire`, `river`. La carte complète les garde |
 | Cartes seules | `tap_action`, `hold_action` | `none` | Un appui et un appui long ailleurs que sur une valeur (une valeur ouvre toujours son capteur) : `popup` (la météo complète par-dessus la page), `page` (`weather_path`), `forecast` (la fenêtre de l’entité météo de Home Assistant, avec ses prévisions), `none` |
 | Cartes seules | `show_title` | `true` | `false` : sans le titre de chaque partie, la carte ne montre que ses mesures |
 | Records | `records_period`, `records_source`, `records_layout` | `both`, `station`, `list` | Période : `month` (ce mois-ci), `year`, `all`, `both` (cette année et depuis toujours). Source : `station`, `lieu` (Open-Meteo depuis 1940), `both`. Disposition : `list`, `cases` |
 | Rivière | `rivers`, `river_span` | toutes, `2d` | Les capteurs « Alerte inondation » de CrueVeille à montrer, dans l’ordre (vide : toutes les stations). La période des courbes : `6h`, `1d`, `2d`, `7d` |
-| Contenu (cartes seules) | `card_blocks` | tout | Ressenti : `feel`, `gauge`, `factors`, `extras`. Température : `ahead`, `now`, `chart`, `stats`, `humidity` (le panneau Humidité), sur la période `temperature_span` (`6h`, `1d`, `2d`, `7d`). Pluie : `ahead` (à venir), `now`, `chart`, `stats`. Vent et Pression : `now`, `chart`, `stats`. Éclairs : `now`, `radar`, `stats` (et `hide_when_calm: true` pour la cacher sans orage). Feux de forêt : `now`, `radar`, `list` (et `hide_when_calm: true` pour la cacher sans feu). Restrictions d’eau : `now`, `list`. Rivière : `now`, `chart`, `flow`, `stats`. Air et pollens, dans l’ordre voulu : `air_today`, `pollen_today`, `air_tomorrow`, `pollen_tomorrow`. Prévisions : `hours`, `days`. Les cartes Pluie, Vent et Pression suivent aussi `rain_span`, `wind_span` et `pressure_span` |
+| Contenu (cartes seules) | `card_blocks` | tout | Ressenti : `feel`, `gauge`, `factors`, `extras`. Température : `ahead`, `now`, `chart`, `stats`, `humidity` (le panneau Humidité), sur la période `temperature_span` (`6h`, `1d`, `2d`, `7d`). Pluie : `ahead` (à venir), `now`, `chart`, `stats`. Vent et Pression : `now`, `chart`, `stats`. Éclairs : `now`, `radar`, `stats` (et `hide_when_calm: true` pour la cacher sans orage). Feux de forêt : `now`, `radar`, `list` (et `hide_when_calm: true` pour la cacher sans feu). Restrictions d’eau : `now`, `list`. Rivière : `now`, `chart`, `flow`, `stats`. Air et pollens, dans l’ordre voulu : `air_today`, `pollen_today`, `air_tomorrow`, `pollen_tomorrow`. Prévisions : `hours`, `days`. Soleil et lune : `path` (la course), `sun`, `moon`. Les cartes Pluie, Vent et Pression suivent aussi `rain_span`, `wind_span` et `pressure_span` |
 | Bandeau intelligent (complète) | `banner_blocks` | `bulletin`, `events` | Sous le lieu, la vigilance et la météo du moment, dans l’ordre : `bulletin`, `events` (la frise), `moments`, `forecast` (les prévisions en tuiles). Le bandeau et son ciel animé restent toujours |
 | Bandeau intelligent (complète) | `clock` | `none` | L’heure de l’appareil dans le bandeau : `left` en grand sous le titre, `right` au-dessus de « En ce moment », `none` masquée |
-| Aujourd’hui (complète) | `today_blocks` | tout | `rain`, `wind`, `pressure`, `lightning` (éclairs, avec Blitzortung), `comfort` (ressenti), `extras` (pastilles), `air` (air et pollens du jour). Une liste vide retire la section |
+| Aujourd’hui (complète) | `today_blocks` | tout | `rain`, `wind`, `pressure`, `lightning` (éclairs, avec Blitzortung), `comfort` (ressenti), `extras` (pastilles), `air` (air et pollens du jour), `sun` (soleil et lune). Une liste vide retire la section |
 | Aujourd’hui (complète) | `rain_span` | `7d` | Les barres de pluie : `24h` (une par heure), `7d` (une par jour) ou `30d` (une par jour). 24 heures et 30 jours demandent un pluviomètre dont Home Assistant garde les statistiques ; sinon, 7 jours |
 | Aujourd’hui (complète) | `wind_span` | `6h` | La courbe du vent sur `6h`, `1d` (24 heures), `2d` (2 jours) ou `7d` (7 jours). Au-delà de 6 h, les moyennes horaires et les rafales maximales de chaque heure |
 | Aujourd’hui (complète) | `pressure_span` | `6h` | La courbe de pression sur `6h`, `1d` (24 heures), `2d` (2 jours) ou `7d` (7 jours). Au-delà de 6 h, les moyennes horaires gardées par Home Assistant |
 | Prévisions (complète) | `forecast_blocks` | tout | `hours` (18 heures), `days` (7 jours), `air` (air et pollens de demain). Une liste vide retire la section |
 | Contenu (tuile) | `tile_blocks` | `bulletin`, `events` | Ce que montre la tuile dépliée, dans l’ordre : `bulletin`, `events`, `moments`, `forecast` |
+| Contenu (tuile) | `tile_open` | `false` | La tuile s’ouvre dépliée au chargement de la page ; un appui la replie |
 | Contenu (tuile), Prévisions | `forecast_tab` | `hours` | Les prévisions s’ouvrent sur les heures (`hours`) ou les jours (`days`). Un appui sur Heures / Jours change l’affichage, gardé sur chaque appareil |
 | Visuel et performance | `weather_animations` | `true` | Ciel animé, défilement et halos. Coupées, le décor reste fixe |
+| Visuel et performance | `decor` | `sky` | Le paysage sous le ciel : `sky` (le ciel seul, sans paysage), `countryside`, `village`, `city`, `apartment`, `mountain`, `seaside` |
+| Visuel et performance | `decor_sky_only` | `false` | Avec un paysage choisi : ne garder que son ciel, le soleil et la lune toujours à l’heure |
+| Visuel et performance | `decor_lights_entity`, `decor_smoke_entity` | — | Les lumières que suivent les fenêtres (sinon, allumées du crépuscule au coucher) ; le poêle ou le chauffage qui fait fumer la cheminée |
 | Visuel et performance | `weather_animation_quality` | `standard` | `low` : moins de gouttes, de flocons et de nuages (choisi d’office sur écran tactile pour la tuile) |
 | Visuel et performance | `glass_effect` | `true` | Effet verre dépoli sur le ciel. Le flou est ce qui coûte le plus : à couper sur un appareil lent |
 | Bandeau | `show_synthesis` | `true` | Complète : afficher le bandeau |
@@ -134,11 +148,13 @@ hold_action: page
 weather_path: /meteo
 ```
 
-Une tuile dépliée comme en 1.20, avec les moments et les prévisions :
+Une tuile fenêtre au bord de mer, dépliée au chargement, avec les moments et les prévisions :
 
 ```yaml
 type: custom:hestia-weather-card
-format: intermediate
+format: tile_window
+decor: seaside
+tile_open: true
 tile_blocks: [bulletin, moments, forecast]
 ```
 
