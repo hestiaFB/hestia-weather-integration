@@ -81,7 +81,7 @@ Le ciel peut se poser sur **un paysage**, au choix dans les réglages de la cart
 
 Le décor est léger : seuls des déplacements et des fondus sont animés, et tout se met en pause hors de l’écran.
 
-![Hestia Weather — la carte complète avec le décor de montagne sous la pluie : bandeau, événements, puis Aujourd’hui : ressenti, pluie, vent, pression, air et pollens](images/1.png)
+![Hestia Weather — la carte complète avec le décor de montagne sous la pluie : bandeau, événements, puis Aujourd’hui : ressenti, pluie, vent, pression, éclairs d’un orage qui approche, air et pollens](images/1.png)
 
 ## Aujourd’hui et Prévisions
 
