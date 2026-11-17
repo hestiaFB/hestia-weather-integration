@@ -45,6 +45,26 @@ blueprint:
           multiple: true
           filter:
             - integration: mobile_app
+    icone:
+      name: Icône sur le téléphone (facultatif)
+      description: Android seulement. Laissée vide, Hestia choisit une icône selon le message.
+      default: ""
+      selector:
+        icon:
+    camera:
+      name: Image d’une caméra (facultatif)
+      description: Une image de cette caméra, prise à l’envoi, est jointe au message sur les téléphones (la vue du jardin, du ciel…).
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: camera
+    lien:
+      name: Page à ouvrir (facultatif)
+      description: La page qui s’ouvre quand on touche le message, par exemple /lovelace/meteo. Laissée vide, l’application s’ouvre normalement.
+      default: ""
+      selector:
+        text:
     enceintes:
       name: Enceintes (facultatif)
       description: Le message y est lu à voix haute, avec la voix choisie juste en dessous.
@@ -88,6 +108,15 @@ variables:
   a_rentrer: !input a_rentrer
   notifier: !input notifier
   telephones: !input telephones
+  icone: !input icone
+  camera: !input camera
+  lien: !input lien
+  # What the Home Assistant app shows with the message: its tag, its icon, a camera's image, the page it opens.
+  donnees: >-
+    {% set d = {'tag': 'hestia_weather_gel_rappel', 'notification_icon': icone or 'mdi:snowflake-alert'} %}
+    {% if camera %}{% set d = dict(d, image='/api/camera_proxy/' ~ camera) %}{% endif %}
+    {% if lien %}{% set d = dict(d, clickAction=lien, url=lien) %}{% endif %}
+    {{ d }}
   enceintes: !input enceintes
   voix: !input voix
   liste: "{{ a_rentrer | join(', ') }}"
@@ -109,8 +138,7 @@ actions:
           data:
             title: Gel cette nuit
             message: "{{ texte }}"
-            data:
-              tag: hestia_weather_gel_rappel
+            data: "{{ donnees }}"
   - repeat:
       for_each: "{{ notifier }}"
       sequence:
