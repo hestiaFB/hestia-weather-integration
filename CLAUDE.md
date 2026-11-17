@@ -9,7 +9,7 @@ Intégration Home Assistant (domaine `hestia_weather`) : le temps local, les pr�
 - `docs/` : `CAHIER-DES-CHARGES.md`, `technique.md`, `sources.md`, `capteurs.md`, `PLAN-OPTIMISATION.md`… Version : `manifest.json`.
 
 ## Règles à ne pas enfreindre
-1. **Le socle commun ne se modifie jamais ici.** Copié de `hestia-ecosysteme/socle/` : `socle.py`, `recorder_history.py`, `domain_migration.py`, `frontend/socle/*`, `tests/test_socle_copy.py`, `card/scripts/ha-card-build.mjs`, `card/scripts/test-loading.mjs`. Pour le changer : dans `hestia-ecosysteme`, puis `socle/copier.sh` et `socle/verifier.sh`.
+1. **Le socle commun ne se modifie jamais ici.** Copié de `hestia-ecosysteme/socle/` : `socle.py`, `recorder_history.py`, `domain_migration.py`, `frontend/socle/*`, `frontend/tests/socle-i18n.test.mjs`, les polices `custom_components/hestia_weather/frontend/manrope-*` et leur licence `OFL.txt`, `tests/test_socle_copy.py`, `card/scripts/ha-card-build.mjs`, `card/scripts/test-loading.mjs`. Pour le changer : dans `hestia-ecosysteme`, puis `socle/copier.sh` et `socle/verifier.sh`.
 2. **Fichiers compilés** : `custom_components/hestia_weather/frontend/` et `hestia-weather-card.js` se produisent avec `npm run validate` ; la CI refuse tout écart (copies `.gz` exclues).
 3. **Interface vers les autres briques** : `hass.data["hestia_weather_api"]` (version 1) est lue par Confort. La changer touche Confort : le dire, versionner l'API, publier les deux ensemble et mettre à jour la compatibilité dans les deux README.
 4. Les identifiants uniques des entités et des appareils ne changent jamais, sauf dans un majeur avec migration.
