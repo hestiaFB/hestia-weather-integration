@@ -190,7 +190,7 @@ class ShadeMixin:
             rows = [(f, d, wind[at]) for at, f, d in zip(times, column("wind_speed_10m"), column("wind_direction_10m")) if at in wind]
             learned["wind"] = station_place.learn_wind(rows, learned.get("wind"))
         if gauge:
-            zone = ZoneInfo(hass.config.time_zone)
+            zone = dt_util.get_default_time_zone()
             pairs = rain_days(gauge, dict(zip(times, column("precipitation"))), zone, dt_util.now(zone).date(), unit)
             learned["rain"] = station_place.learn_rain(pairs, learned.get("rain"))
         learned.update({"days": days, "learned_at": now.isoformat()})
@@ -225,7 +225,7 @@ class ShadeMixin:
     def trust_view(self) -> dict[str, Any]:
         """How far each of the station's measures can be trusted, and what is retained now (api.py `station_trust`)."""
         hass = self.hass
-        zone = ZoneInfo(hass.config.time_zone)
+        zone = dt_util.get_default_time_zone()
         now = dt_util.now(zone)
         shade = self.shade_view() if self.settings.solar_radiation_entity else None
         out: dict[str, Any] = station_place.describe(self.settings, self.place_learned or {}, shade, now, zone,

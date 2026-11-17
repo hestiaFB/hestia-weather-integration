@@ -4,6 +4,21 @@
 
 - Modèles d’automatisation (#19) : sur les téléphones, une icône selon le message (un éclair pour un orage, un flocon pour le gel…), à changer si vous voulez, et pour les alertes la couleur du niveau (Android). Chaque modèle peut aussi joindre l’image d’une caméra et ouvrir une page de votre choix quand on touche le message. Réimportez le modèle pour voir ces réglages ; vos automatisations actuelles ne changent pas.
 
+## 4.0.2 — Heure locale lue sans attendre
+
+### Corrections
+
+- Hestia Weather prend le fuseau horaire déjà chargé par Home Assistant au lieu de le relire sur le disque : plus d'« appel bloquant » à son nom dans le journal.
+
+## 4.0.1 — Tuiles et frise plus lisibles
+
+### Corrections
+
+- Tuiles dépliées : l'événement à venir n'est plus écrit deux fois. Il reste dans « Événements », la barre du haut ne garde que la flèche pour replier.
+- Tuiles : le nom du lieu et la température se lisent sur un ciel clair (pluie en journée) : texte foncé sur ciel clair, blanc sur ciel sombre (orage, nuit, crépuscule).
+- Frise des Événements : le rond qui montrait l'heure choisie cachait l'icône du temps ; une petite flèche au-dessus la remplace.
+- Tuile immersive dépliée : un peu d'espace entre le décor et le bulletin du jour.
+
 ## 4.0.0 — La météo chez vous, le soleil et la lune
 
 ### Nouveautés

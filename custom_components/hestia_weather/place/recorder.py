@@ -181,7 +181,7 @@ class RecorderMixin:
         if not counter:
             self.lightning_month = None
             return
-        zone = ZoneInfo(self.hass.config.time_zone)
+        zone = dt_util.get_default_time_zone()
         now = dt_util.utcnow()
         local = now.astimezone(zone)
         start = datetime(local.year, local.month, 1, tzinfo=zone)
@@ -257,7 +257,7 @@ class RecorderMixin:
         if not entity_id or not s.station_history:
             return [], None
         instance = get_instance(self.hass)
-        zone = ZoneInfo(self.hass.config.time_zone)
+        zone = dt_util.get_default_time_zone()
         local = now.astimezone(zone)
         year = datetime(local.year, 1, 1, tzinfo=zone)
         # Hourly rows start on a local midnight, where a daily row ends: no false gap at the junction.

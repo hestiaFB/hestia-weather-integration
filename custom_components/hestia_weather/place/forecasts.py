@@ -15,7 +15,6 @@ from homeassistant.util import dt as dt_util
 from ..const import FORECAST_RETRY, LOGGER
 from ..engine import open_meteo, open_meteo_forecast
 from ..engine.forecast import Units, engine_rows, parse_days, parse_hours
-from zoneinfo import ZoneInfo
 from .shared import FORECAST_KINDS, _ready
 
 if TYPE_CHECKING:
@@ -107,7 +106,7 @@ class ForecastsMixin:
         self._air_tried = now
         hass = self.hass
         try:
-            params = open_meteo.params(hass.config.latitude, hass.config.longitude, ZoneInfo(hass.config.time_zone))
+            params = open_meteo.params(hass.config.latitude, hass.config.longitude, dt_util.get_default_time_zone())
             async with asyncio.timeout(30), async_get_clientsession(hass).get(open_meteo.URL, params=params) as response:
                 response.raise_for_status()
                 payload = await response.json()

@@ -15,7 +15,7 @@
 
 Elle donne le résultat à **sa carte**, fournie avec elle, et à vos automatisations.
 
-![Hestia Weather — la météo de chez vous, expliquée et anticipée : la synthèse sous l’orage, entre les cartes Pluie et Air et pollens](docs/carte/images/hestia-weather-banner.png)
+![Hestia Weather — la météo de chez vous, expliquée et anticipée : la tuile carte postale, sa maison au crépuscule et sa frise des événements, entre les cartes Pluie et Air et pollens](docs/carte/images/hestia-weather-banner.png)
 
 ## Pourquoi
 
@@ -31,7 +31,7 @@ Tout est calculé une fois, dans Home Assistant : la carte affiche, vos automati
 ## Ce qu’il faut
 
 - Home Assistant **2026.7** ou plus récent.
-- Une entité météo `weather.*`. **Météo-France** est conseillée.
+- Une entité météo `weather.*`. **Météo-France** est conseillée ; hors de France, **Pirate Weather** (bêta) donne aussi les prévisions heure par heure et la pluie à venir.
 - En plus, si vous en avez : une station météo, les vigilances de Météo-France ou de MeteoSwiss, Atmo France (air et pollens), Polleninformation, IRM KMI, Swiss Pollen ou Kleenex / Scottex, Vigieau (restrictions d’eau), Blitzortung (éclairs), PyroVeille (feux de forêt), CrueVeille (rivière, bêta).
 
 ## Installation
@@ -59,9 +59,11 @@ Le panneau s’adapte au téléphone. Dans **Accueil Hestia-FB → Réglages**, 
 
 ## La carte
 
-Quatorze cartes, rangées en trois types dans **Ajouter une carte** : **Hestia-FB - Météo** (complète, tuile, tuile dépliée), **Hestia-FB - À la pièce** (ressenti, pluie, vent, pression, éclairs, air et pollens, prévisions, événements, records) et **Hestia-FB - Petite carte** (mini, alerte). Chacune montre les parties que vous cochez. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change. [La carte en détail : formats, réglages, visuel](docs/carte/README.md).
+Vingt cartes, rangées en trois types dans **Ajouter une carte** : **Hestia-FB - Météo** (complète, et trois tuiles : carte postale, fenêtre, immersive), **Hestia-FB - À la pièce** (ressenti, température, pluie, vent, pression, éclairs, feux de forêt, restrictions d’eau, rivière, air et pollens, prévisions, événements, soleil et lune, records) et **Hestia-FB - Petite carte** (mini, alerte). Chacune montre les parties que vous cochez.
 
-![Hestia Weather — tuile pleine et demi-largeur repliées, puis tuile dépliée, par temps d’orage avec vigilance jaune](docs/carte/images/hestia-weather-formats.png)
+**Le décor** : le ciel animé peut se poser sur un paysage, au choix une maison à la campagne, un village, la ville, un appartement, la montagne ou le bord de mer. Le soleil et la lune y passent à leur vraie heure, les fenêtres s’allument le soir (ou suivent vos lumières) et la cheminée fume quand votre poêle chauffe. Toutes s’écrivent `type: custom:hestia-weather-card`, seul `format` change. [La carte en détail : formats, réglages, visuel](docs/carte/README.md).
+
+![Hestia Weather — les trois tuiles : carte postale à la campagne en plein soleil, immersive au village de nuit, fenêtre au bord de mer dépliée au crépuscule](docs/carte/images/hestia-weather-formats.png)
 
 Vous aviez installé la carte depuis HACS ? **Retirez-la de HACS**, puis rechargez la page : vos cartes restent en place. Tant qu’elle reste installée, l’accueil du panneau **Hestia-FB** l’indique en orange.
 
@@ -104,12 +106,12 @@ Les valeurs des capteurs (bulletin, raisons, alertes) restent en français, pour
 
 | Page | Ce qu’elle explique |
 | --- | --- |
-| [La carte](docs/carte/README.md) | Les douze cartes, le bandeau, les réglages, le visuel, les messages |
+| [La carte](docs/carte/README.md) | Les vingt cartes, le décor, le bandeau, les réglages, le visuel, les messages |
 | [Les capteurs et les automatisations](docs/capteurs.md) | Les sept familles d’entités, l’évènement d’alerte, l’action, l’entité météo, les modèles à importer |
-| [Le ressenti](docs/ressenti.md) | Humidex, effets du vent, du soleil, de la pluie et de la nuit, mots et nuances, alerte de la station |
+| [Le ressenti](docs/ressenti.md) | Indice de chaleur, effets du vent, du soleil, de la pluie et de la nuit, mots et nuances, alerte de la station |
 | [La synthèse et les alertes](docs/synthese.md) | Les points retenus, leurs seuils, les niveaux, la vigilance officielle |
 | [Le bulletin du jour](docs/bulletin.md) | Comment il est rédigé |
-| [Sources et réglages](docs/sources.md) | Météo-France, station, soleil, Atmo France, Vigieau, Blitzortung, historique, toutes les clés |
+| [Sources et réglages](docs/sources.md) | Météo-France, Pirate Weather, station, soleil, Atmo France, Vigieau, Blitzortung, historique, toutes les clés |
 | [Pluie, vent, pression](docs/mesures.md) | Cumuls, courbes, tendances, ce qui est calculé depuis l’historique |
 | [Fonctionnement technique](docs/technique.md) | Moteur, coordinateur, capteurs, API, tests ; le code de la carte est dans `card/` |
 | [Traductions](docs/traductions.md) | Corriger un texte ou ajouter une langue, sans connaître git |
