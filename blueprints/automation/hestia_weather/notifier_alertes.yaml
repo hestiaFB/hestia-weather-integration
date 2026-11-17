@@ -50,6 +50,26 @@ blueprint:
           multiple: true
           filter:
             - integration: mobile_app
+    icone:
+      name: Icône sur le téléphone (facultatif)
+      description: Android seulement. Laissée vide, Hestia choisit une icône selon le message.
+      default: ""
+      selector:
+        icon:
+    camera:
+      name: Image d’une caméra (facultatif)
+      description: Une image de cette caméra, prise à l’envoi, est jointe au message sur les téléphones (la vue du jardin, du ciel…).
+      default: ""
+      selector:
+        entity:
+          filter:
+            - domain: camera
+    lien:
+      name: Page à ouvrir (facultatif)
+      description: La page qui s’ouvre quand on touche le message, par exemple /lovelace/meteo. Laissée vide, l’application s’ouvre normalement.
+      default: ""
+      selector:
+        text:
     enceintes:
       name: Enceintes (facultatif)
       description: Le message y est lu à voix haute, avec la voix choisie juste en dessous.
@@ -106,6 +126,9 @@ variables:
   fins: !input fins
   notifier: !input notifier
   telephones: !input telephones
+  icone: !input icone
+  camera: !input camera
+  lien: !input lien
   enceintes: !input enceintes
   voix: !input voix
   annonces_debut: !input annonces_debut
@@ -127,7 +150,24 @@ variables:
     verglas: Risque de verglas
     canicule: Canicule
     uv_fort: UV forts
+  icones:
+    vigilance: mdi:alert
+    orage: mdi:weather-lightning
+    vent_fort: mdi:weather-windy
+    pluie_forte: mdi:weather-pouring
+    gel: mdi:snowflake-alert
+    neige: mdi:weather-snowy-heavy
+    verglas: mdi:car-traction-control
+    canicule: mdi:sun-thermometer
+    uv_fort: mdi:weather-sunny-alert
   titre: "{{ 'Météo' if etat == 'fin' else noms.get(type, 'Météo') }}"
+  # What the Home Assistant app shows with the message: its tag, its icon, a camera's image, the page it opens.
+  donnees: >-
+    {% set d = {'tag': 'hestia_weather_' ~ type, 'notification_icon': icone or icones.get(type, 'mdi:weather-cloudy-alert')} %}
+    {% set d = dict(d, color=('#43A047' if etat == 'fin' else ['#FBC02D', '#FBC02D', '#FB8C00', '#E53935'][[niveau, 3] | min])) %}
+    {% if camera %}{% set d = dict(d, image='/api/camera_proxy/' ~ camera) %}{% endif %}
+    {% if lien %}{% set d = dict(d, clickAction=lien, url=lien) %}{% endif %}
+    {{ d }}
 
 conditions:
   - condition: template
@@ -142,8 +182,7 @@ actions:
           data:
             title: "{{ titre }}"
             message: "{{ texte }}"
-            data:
-              tag: "hestia_weather_{{ type }}"
+            data: "{{ donnees }}"
   - repeat:
       for_each: "{{ notifier }}"
       sequence:
