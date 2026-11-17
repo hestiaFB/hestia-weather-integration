@@ -14,7 +14,6 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.core import callback
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
-from zoneinfo import ZoneInfo
 
 from ..const import DOMAIN, LOGGER
 from ..engine import records
@@ -175,7 +174,7 @@ class RecordsMixin:
             self.station_months = {}
             self._records_cache.pop("station", None)
             return
-        zone = ZoneInfo(self.hass.config.time_zone)
+        zone = dt_util.get_default_time_zone()
         now, today = dt_util.utcnow(), self._today()
         # Other sensors than those read before: everything is read again.
         full = not self.station_months or sensors != self._station_sensors
@@ -205,7 +204,7 @@ class RecordsMixin:
         sensors = {"chaleur": s.temperature_entity, "froid": s.temperature_entity, "rafale": s.wind_gust_entity}
         if [s.temperature_entity, s.wind_gust_entity] != self._hours_sensors:
             self.record_hours, self._hours_sensors = {}, [s.temperature_entity, s.wind_gust_entity]
-        found, zone = self.records_of("station"), ZoneInfo(self.hass.config.time_zone)
+        found, zone = self.records_of("station"), dt_util.get_default_time_zone()
         units = {"chaleur": {"temperature": "°C"}, "froid": {"temperature": "°C"}, "rafale": {"speed": "km/h"}}
         for key, kind in records.HOURLY.items():
             entity_id = sensors[key]
@@ -275,7 +274,7 @@ class RecordsMixin:
         if not records.due(None if moved or not self.place_months else self._place_fetched, self._place_tried, now):
             return
         self._place_tried = now
-        zone, today = ZoneInfo(config.time_zone), self._today()
+        zone, today = dt_util.get_default_time_zone(), self._today()
         full = moved or not self.place_months
         since = records.FIRST_DAY if full else records.first_of_previous_month(today)
         session = async_get_clientsession(self.hass)

@@ -1,3 +1,9 @@
+## 4.0.2 — Heure locale lue sans attendre
+
+### Corrections
+
+- Hestia Weather prend le fuseau horaire déjà chargé par Home Assistant au lieu de le relire sur le disque : plus d'« appel bloquant » à son nom dans le journal.
+
 ## 4.0.1 — Tuiles et frise plus lisibles
 
 ### Corrections

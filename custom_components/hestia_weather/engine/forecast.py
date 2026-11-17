@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Iterable, Mapping, Sequence
 from zoneinfo import ZoneInfo
 
@@ -95,7 +95,7 @@ def parse_time(value: Any) -> datetime | None:
         moment = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except ValueError:
         return None
-    return moment if moment.tzinfo else moment.replace(tzinfo=ZoneInfo("UTC"))
+    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
 def _condition(value: Any) -> str:

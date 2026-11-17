@@ -357,7 +357,7 @@ class HestiaWeatherCoordinator(RecorderMixin, ForecastsMixin, ShadeMixin, Record
         self._inputs = Inputs(
             states=states, read=hass.states.get, settings=settings, hours=self.hours, days=self.days, history=self.history,
             rain_history=self.rain_history, statistics=self.statistics, statistics_unit=self.statistics_unit, now=now,
-            zone=ZoneInfo(config.time_zone), latitude=config.latitude, longitude=config.longitude, elevation=config.elevation or 0,
+            zone=dt_util.get_default_time_zone(), latitude=config.latitude, longitude=config.longitude, elevation=config.elevation or 0,
             platforms=self.platforms, original_condition=description, radar_entity=radar, chance_entity=chance, strikes=strikes,
             air_forecast=self.air_forecast, pressure_forecast=self.pressure_forecast, place_learned=self.place_learned,
             # The shade only matters to a station declared against a wall or on the roof, before the nights have learned it.

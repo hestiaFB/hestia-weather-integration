@@ -5,7 +5,7 @@ They never read Hestia Weather's own settings: this object is the contract, and 
 compatibly within a major version.
 """
 from __future__ import annotations
-from datetime import date, datetime
+from datetime import date, datetime, tzinfo
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
@@ -24,6 +24,12 @@ STATION = {"temperature": "temperature_entity", "humidity": "humidity_entity", "
 
 def _today(zone: Any) -> date:
     return datetime.now(zone).date()
+
+
+def _home_zone() -> tzinfo:
+    """The home's time zone, the one Home Assistant already loaded: building it here would read the disk on the event loop."""
+    from homeassistant.util import dt as dt_util
+    return dt_util.get_default_time_zone()
 
 
 class HestiaWeatherApi:
@@ -152,13 +158,12 @@ class HestiaWeatherApi:
         if entry is None:
             return None
         from datetime import datetime, timezone
-        from zoneinfo import ZoneInfo
         try:
             from .engine.season import current_season
         except ImportError:  # loaded on its own, as by the tests
             from engine.season import current_season
         found = current_season(self.hass.states.get, entry.runtime_data.settings.season_entity, datetime.now(timezone.utc),
-                               ZoneInfo(self.hass.config.time_zone), self.hass.config.latitude, self.hass.config.elevation or 0)
+                               _home_zone(), self.hass.config.latitude, self.hass.config.elevation or 0)
         return {"entry_id": entry.entry_id, "season": found.season, "label": found.label, "from_sensor": found.from_sensor,
                 "days_in": found.days_in, "day_length": found.day_length}
 
@@ -225,12 +230,11 @@ class HestiaWeatherApi:
             return None
         if isinstance(day, datetime):
             day = day.date()
-        from zoneinfo import ZoneInfo
         try:
             from .engine.catalogue import COOLING_BASE, HEATING_BASE, _day_mean, degree_days, measured_day_mean
         except ImportError:  # loaded on its own, as by the tests
             from engine.catalogue import COOLING_BASE, HEATING_BASE, _day_mean, degree_days, measured_day_mean
-        zone = ZoneInfo(self.hass.config.time_zone)
+        zone = _home_zone()
         runtime = entry.runtime_data
         if day >= _today(zone):
             mean, source = _day_mean(runtime.hours, runtime.days, day, zone), "prevision"

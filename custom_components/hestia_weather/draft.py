@@ -9,7 +9,6 @@ import json
 from functools import cache
 from pathlib import Path
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -480,7 +479,7 @@ class Draft(_SourceSteps):
                 elif choice == polleninfo.KLEENEX:
                     settings = _settings({**self.sources, "pollens": [option]})
                     level = polleninfo.usable_level(self.hass.states.get, settings, settings.pollens[0],
-                                                   now=dt_util.utcnow(), zone=ZoneInfo(self.hass.config.time_zone))
+                                                   now=dt_util.utcnow(), zone=dt_util.get_default_time_zone())
                     entity["available"] = level is not None
                     entity["state"] = t(polleninfo.WORDS[level]) if level is not None else t("données indisponibles ou trop anciennes")
                 result["species"].append({**entity, "label": option["nom"] or entity.get("name"), "chosen": entity_id in chosen})
