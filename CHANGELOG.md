@@ -1,5 +1,9 @@
 ## À venir
 
+### Nouveautés
+
+- Panneau Météo : un guide d’installation, une question à la fois, avec la raison de chacune. Il passe par tous les réglages d’un lieu : le service météo, la station et ses capteurs, l’emplacement de la station, les alertes, l’air, les pollens, la liaison avec Hestia Confort et les entités. Rien n’est enregistré avant la dernière étape. On l’ouvre depuis la vue d’ensemble (« Suivre le guide »), depuis la page Lieux (« Ajouter avec le guide ») ou depuis un lieu (« Ouvrir le guide »). Les réglages par onglets restent là, inchangés.
+
 ### Améliorations
 
 - Modèles d’automatisation (#19) : sur les téléphones, une icône selon le message (un éclair pour un orage, un flocon pour le gel…), à changer si vous voulez, et pour les alertes la couleur du niveau (Android). Chaque modèle peut aussi joindre l’image d’une caméra et ouvrir une page de votre choix quand on touche le message. Réimportez le modèle pour voir ces réglages ; vos automatisations actuelles ne changent pas.

@@ -137,3 +137,12 @@ ul{padding-left:22px}
 .pl-trust.watch{color:var(--nk-muted)}.pl-trust.watch::before{border:1.5px solid var(--nk-muted)}
 .pl-legend{margin:-8px 4px 16px}
 @media(max-width:600px){.pl-ctl{align-items:flex-start}.pl-sum{text-align:left}.pl-trust{white-space:normal}}
+/* The installation guide (guide.ts): the questionnaire's screens, a little wider for the lists of settings. */
+.gd-guide{max-width:640px}
+.gd-topics{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.gd-topics button{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;margin:0;padding:10px 16px;border:1px solid var(--nk-border);border-radius:14px;background:var(--nk-raised,var(--nk-surface));color:inherit;font:inherit;text-align:left;cursor:pointer}
+.gd-topics button>span:nth-child(2){flex:1;font-weight:500}
+.gd-topics small{color:var(--nk-muted);font-size:var(--nw-fs-small,12px)}
+.gd-mark{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;box-sizing:border-box;border-radius:50%;border:1.5px dashed var(--nk-muted);color:var(--nk-ok);font-size:12px;font-weight:700}
+.gd-done .gd-mark{border:1.5px solid var(--nk-ok)}
+.gd-guide .pl-foot{flex-wrap:wrap;gap:8px 14px}

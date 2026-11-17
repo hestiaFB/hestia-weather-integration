@@ -4,7 +4,8 @@ import {LitElement,html,unsafeCSS,nothing,type TemplateResult,type PropertyValue
 import {customElement,property,state} from 'lit/decorators.js';
 import styles from './styles.css';
 import {frame,hubStyles,modernStyles,helpTip,pageHead,todoLists,listSection,listRow,moreRow,tabBar,saveBar,toggle,kpis,stepFooter,leaveNotice,detectedFrame,removeBlock,pageStyles,aboutPage,hassChanged,SOCLE,setLanguage,addDictionary,wordsReady,t,fr,type NkLine,type NkLevel} from './socle/ui';
-import {placeSection,quizScreen,trustSection,questions as placeQuestions,type PlaceTool} from './emplacement';
+import {placeSection,quizScreen,trustSection,questionBody,questions as placeQuestions,type PlaceTool} from './emplacement';
+import {guideFrame,welcome,askOf,guideScreens,nextScreen,sensorsToCheck,toCheck,type GuideScreen} from './guide';
 import {NONE,stages,intros,extensionGroups,extensionSwitch,enabledKeys,provenance,sameSet,entityLine,grouped,capital,type Change,type Choice,type DraftReply,type Entity,type Field,type Hass,type Place,type Places,type Sources,type View,type Extension,type Official,type RenamePreview,type RenameReply,type RenameUse} from './model';
 
 // Weather's words beside the hub's (socle 1.13): French in the code, English for any language without a dictionary.
@@ -53,6 +54,9 @@ export class WeatherSetup extends LitElement {
  @state() private placeTool?:PlaceTool;
  // Where the questionnaire was opened: the overview (saved at its end, back to the overview) or the Station tab.
  private quizFrom:'home'|'station'='station';
+ // The installation guide (guide.ts): the key of its screen, null when not open; where it was opened, to go back there.
+ @state() private guideAt:string|null=null;
+ private guideFrom:'home'|'place'='home';
  // Renaming the entities « hestia_weather » (Réglages généraux): read when the page opens, shown only to a home that has old ids.
  @state() private rename?:RenamePreview;
  @state() private renameShown=false;
@@ -113,7 +117,7 @@ export class WeatherSetup extends LitElement {
   const path=this.route?.path??'';if(path===this.routeHandled)return;this.routeHandled=path;this.routeGeneration++;
   // /reglages: the places to set; /<place>/<step>: one place, step by step (/nouveau/… for a new one).
   // Former addresses: /reglages/<step>/<place> and /<step> (the menu of 2.8) still lead to the same pages.
-  const parts=path.split('/').filter(Boolean);this.remember();
+  const parts=path.split('/').filter(Boolean);this.remember();this.guideAt=null;
   const legacy=parts[0]==='reglages'&&parts.length>=3,id=legacy?parts[2]:parts[0]&&!['reglages','lieux','a-propos'].includes(parts[0])&&!categories.includes(parts[0])?parts[0]:undefined;
   const stage=id?sectionStage((legacy?parts[1]:parts[1])??'sources'):-1;
   this.page=parts[0]==='extensions'||parts[1]==='extensions'?'extensions':!id&&parts[0]==='lieux'?'places':'home';
@@ -121,6 +125,7 @@ export class WeatherSetup extends LitElement {
   if(parts[0]==='a-propos'&&!parts[1]){this.page='about';this.editing=false;this.draft=undefined;this.view=undefined;return;}
   if(this.page==='extensions'){this.editing=false;this.draft=undefined;this.view=undefined;void this.loadExtensions();return;}
   const target=id;
+  if(target&&parts[1]==='guide'&&(target==='nouveau'||this.places?.places.some(p=>p.entry_id===target))){this.guideFrom='home';await this.openGuide(target==='nouveau'?null:target,false);return;}
   if(target&&target!=='nouveau'&&parts[1]==='emplacement'&&this.places?.places.some(p=>p.entry_id===target)){await this.openQuiz(target,false);return;}
   if(stage>=0&&target){
    const cached=this.drafts.get(target);if(cached){Object.assign(this,cached);this.entryId=target==='nouveau'?null:target;this.stage=stage;this.editing=true;return;}
@@ -167,7 +172,7 @@ export class WeatherSetup extends LitElement {
    await this.ws({type:'hestia_weather/panel/save',draft:this.draft,...(this.entryId?{entry_id:this.entryId,enabled:this.enabled}:{})});
    if(generation!==this.routeGeneration){this.places=undefined;return;}
    const title=this.view?.title??'',created=!this.entryId;
-   this.close(this.quizFrom==='home'&&this.quizStep!==null?'':'lieux');
+   this.close(this.guideAt!==null||this.quizFrom==='home'&&this.quizStep!==null?'':'lieux');
    this.saved=created?t('{name} est créé : ses entités apparaissent dans quelques secondes.',{name:title})
     :t('{name} est enregistré : le lieu redémarre avec ses nouveaux réglages, la carte suit dans quelques secondes.',{name:title});
    this.places=undefined;
@@ -181,9 +186,9 @@ export class WeatherSetup extends LitElement {
   try{await this.ws({type:'hestia_weather/panel/remove',entry_id:this.entryId});this.confirmRemove=false;this.close();this.saved=t('« {name} » est supprimé. Les capteurs de votre station n’ont pas été touchés.',{name:title});this.places=undefined;}
   catch(e){this.error=this.message(e);}finally{this.busy=false;}
  }
- private close(to='lieux'){this.confirmRemove=false;this.quizStep=null;this.drafts.delete(this.entryId??'nouveau');this.path(to);this.editing=false;this.draft=undefined;this.view=undefined;this.confirmLeave=false;this.error='';void this.updateComplete.then(()=>{this.top();});}
+ private close(to='lieux'){this.confirmRemove=false;this.quizStep=null;this.guideAt=null;this.drafts.delete(this.entryId??'nouveau');this.path(to);this.editing=false;this.draft=undefined;this.view=undefined;this.confirmLeave=false;this.error='';void this.updateComplete.then(()=>{this.top();});}
  private leave(){if(this.dirty()&&!this.confirmLeave){this.confirmLeave=true;return;}this.close();}
- private go(stage:number){this.stage=stage;this.quizStep=null;this.path((this.entryId??'nouveau')+'/'+categories[stage]);void this.updateComplete.then(()=>{this.top();});}
+ private go(stage:number){this.stage=stage;this.quizStep=null;this.guideAt=null;this.path((this.entryId??'nouveau')+'/'+categories[stage]);void this.updateComplete.then(()=>{this.top();});}
 
  // ---- Pieces: each setting is a row, as in Confort (socle 1.21) ----
  /** An entity's state in the user's words: Home Assistant's own translation when it has one, never « partlycloudy ». */
@@ -232,40 +237,52 @@ export class WeatherSetup extends LitElement {
  }
 
  // ---- The steps ----
- private prevision(v:View){const p=v.prevision,lightning=p.fields.find(f=>f.key==='lightning_entity'),fire=p.fields.find(f=>f.key==='fire_entity'),river=p.fields.find(f=>f.key==='river_entity');
+ /** « Prévisions du lieu »: the weather service, the only source required, and the place's name. */
+ private forecastSection(v:View){const p=v.prevision;
+  return listSection(t('Prévisions du lieu'),[...this.integrationRow(v.extensions?.find(e=>e.id==='meteo_france')),this.field(p.fields[0]),
+   this.textRow('location',t('Nom du lieu'),p.location,p.location_placeholder,t('Affiché en tête de la carte. Vide : le nom vient du service météo.'))]);}
+ /** The alerts of the Sources tab: vigilance and season, storms, fires and floods (the water has its own tab). */
+ private alertSections(v:View){const p=v.prevision,lightning=p.fields.find(f=>f.key==='lightning_entity'),fire=p.fields.find(f=>f.key==='fire_entity'),river=p.fields.find(f=>f.key==='river_entity');
   const ext=(id:string)=>v.extensions?.find(e=>e.id===id);
   const risks=[...this.integrationRow(ext('pyroveille'),!!fire?.options.length),...(fire?[this.field(fire)]:[]),
    ...this.integrationRow(ext('crueveille'),!!river?.options.length),...(river?[this.field(river)]:[])];
-  return html`${listSection(t('Prévisions du lieu'),[...this.integrationRow(v.extensions?.find(e=>e.id==='meteo_france')),this.field(p.fields[0]),
-    this.textRow('location',t('Nom du lieu'),p.location,p.location_placeholder,t('Affiché en tête de la carte. Vide : le nom vient du service météo.'))])}
-   ${listSection(t('Alertes et saison'),p.fields.slice(1).filter(f=>!['water_restriction_entity','lightning_entity','fire_entity','river_entity'].includes(f.key)).map(f=>this.field(f)))}
+  return html`${listSection(t('Alertes et saison'),p.fields.slice(1).filter(f=>!['water_restriction_entity','lightning_entity','fire_entity','river_entity'].includes(f.key)).map(f=>this.field(f)))}
    ${listSection(t('Orages et éclairs'),[...this.integrationRow(ext('blitzortung'),!!lightning?.options.length),...(lightning?[this.field(lightning)]:[])])}
-   ${risks.length?listSection(t('Feux et crues'),risks):nothing}
+   ${risks.length?listSection(t('Feux et crues'),risks):nothing}`;}
+ private prevision(v:View){const p=v.prevision;
+  return html`${this.forecastSection(v)}${this.alertSections(v)}
    ${listSection('',moreRow(t('Réglages avancés'),'',html`<p class="hint nk-more-note">${t('Laissés vides, Hestia-FB prend le soleil de Home Assistant.')}</p>${p.advanced.map(f=>this.field(f))}${this.textRow('forecast_source',t('Nom de la source des prévisions'),p.forecast_source,'')}`))}
    ${this.refreshSources()}${this.bottom()}`;
  }
+ /** « Votre station »: its model (or none) and, with one, its device. */
+ private stationHead(v:View){const s=v.station;
+  return listSection(t('Votre station'),[...this.choiceRows('model',s.models,s.model,m=>void this.change({op:'station',value:m})),
+   ...(s.model!==NONE?[listRow({name:t('Appareil'),label:html`${t('Appareil')}${helpTip(t('Appareil de la station'),t('Limite les capteurs proposés à cet appareil.'),'')}`,sub:t('Reconnue : {name}',{name:s.profile}),
+    value:html`<select aria-label=${t('Appareil')} ?disabled=${this.busy} @change=${(e:Event)=>void this.change({op:'device',value:(e.target as HTMLSelectElement).value})}>${s.devices.map(d=>html`<option value=${d.value} ?selected=${d.value===s.device}>${d.label}</option>`)}</select>`})]:[])]);}
+ /** « Historique de la station »: whether the station's history is read. */
+ private historySection(v:View){const s=v.station;
+  return listSection(t('Historique de la station'),[listRow({name:t('Calculer depuis l’historique'),label:html`${t('Calculer depuis l’historique')}${helpTip(t('Calculer depuis l’historique'),s.history_help,'')}`,
+   value:toggle(t('Calculer depuis l’historique'),s.history,on=>this.set('station_history',on),this.busy)})]);}
  private station(v:View){const s=v.station;
   const place=s.place?{view:s.place,busy:this.busy,answer:(key:string,value:unknown)=>void this.change({op:'place',key,value})}:null;
-  const head=listSection(t('Votre station'),[...this.choiceRows('model',s.models,s.model,m=>void this.change({op:'station',value:m})),
-   ...(s.model!==NONE?[listRow({name:t('Appareil'),label:html`${t('Appareil')}${helpTip(t('Appareil de la station'),t('Limite les capteurs proposés à cet appareil.'),'')}`,sub:t('Reconnue : {name}',{name:s.profile}),
-    value:html`<select aria-label=${t('Appareil')} ?disabled=${this.busy} @change=${(e:Event)=>void this.change({op:'device',value:(e.target as HTMLSelectElement).value})}>${s.devices.map(d=>html`<option value=${d.value} ?selected=${d.value===s.device}>${d.label}</option>`)}</select>`})]:[])]);
+  const head=this.stationHead(v);
   if(s.model===NONE)return html`${head}<p class="muted">${t('Sans station, Hestia Weather s’appuie sur le service météo seul : pas de pluie mesurée, pas d’alerte de la station.')}</p>${this.bottom()}`;
   const filled=(g:{fields:Field[]})=>t('{n} sur {total}',{n:g.fields.filter(f=>f.value).length,total:g.fields.length});
   // The first groups open; the others fold into « Autres mesures », unless one has something to check.
   const open=s.groups.filter((g,i)=>i<3||g.fields.some(f=>f.warning)),folded=s.groups.filter((g,i)=>i>=3&&!g.fields.some(f=>f.warning));
   return html`${head}${open.map(g=>listSection(g.title,g.fields.map(f=>this.field(f)),{more:filled(g)}))}
    ${folded.length?listSection(t('Autres mesures'),folded.map(g=>moreRow(g.title,filled(g),g.fields.map(f=>this.field(f))))):nothing}
-   ${listSection(t('Historique de la station'),[listRow({name:t('Calculer depuis l’historique'),label:html`${t('Calculer depuis l’historique')}${helpTip(t('Calculer depuis l’historique'),s.history_help,'')}`,
-    value:toggle(t('Calculer depuis l’historique'),s.history,on=>this.set('station_history',on),this.busy)})])}
+   ${this.historySection(v)}
    ${place?placeSection({...place,quiz:(step?:number)=>{this.quizFrom='station';this.placeTool=undefined;this.quizStep=step??this.firstQuestion();}}):nothing}
    <button class="link" ?disabled=${this.busy} @click=${()=>void this.change({op:'redetect',value:'station'})}>${t('Rechercher à nouveau les capteurs')}</button>${this.bottom()}`;
  }
- private air(v:View){const a=v.air;
-  return html`${listSection(t('Source de qualité de l’air'),[...this.choiceRows('air',a.sources,a.value,x=>void this.change({op:'air',value:x}),extensionGroups(v.extensions??[]).find(g=>g.key==='air')?.items),
+ private airSection(v:View){const a=v.air;
+  return listSection(t('Source de qualité de l’air'),[...this.choiceRows('air',a.sources,a.value,x=>void this.change({op:'air',value:x}),extensionGroups(v.extensions??[]).find(g=>g.key==='air')?.items),
    ...(a.value==='atmo'&&a.areas.length?[this.zoneRow(t('Zone Atmo France'),a.areas,a.area,x=>void this.change({op:'air',value:'atmo',area:x}))]:[]),
-   ...(a.value==='waqi'&&a.stations.length?[this.zoneRow(t('Station WAQI'),a.stations,a.station,x=>void this.change({op:'air',value:'waqi',area:x}))]:[])])}${this.refreshSources()}${this.bottom()}`;
+   ...(a.value==='waqi'&&a.stations.length?[this.zoneRow(t('Station WAQI'),a.stations,a.station,x=>void this.change({op:'air',value:'waqi',area:x}))]:[])]);
  }
- private pollen(v:View){
+ private air(v:View){return html`${this.airSection(v)}${this.refreshSources()}${this.bottom()}`;}
+ private pollenSections(v:View){
   const p=v.pollen,chosen=p.species.filter(s=>s.chosen).map(s=>s.id);
   const flip=(id:string,on:boolean)=>void this.change({op:'pollens',value:on?[...chosen,id]:chosen.filter(x=>x!==id)});
   const source=[...this.choiceRows('pollen',p.sources,p.value,x=>void this.change({op:'pollen',value:x}),extensionGroups(v.extensions??[]).find(g=>g.key==='pollen')?.items),
@@ -276,25 +293,26 @@ export class WeatherSetup extends LitElement {
    ${p.species.length?listSection(p.value==='kleenex_pollenradar'?t('Espèces et groupes suivis'):t('Espèces suivies'),p.species.map(sp=>listRow({name:sp.label,label:sp.label,
      sub:sp.chosen&&!sp.available?html`<span class="warn">${t('Ne répond pas pour l’instant (hors saison ?).')}</span>`:this.stateText(sp)||t('indisponible'),value:toggle(sp.label,sp.chosen,on=>flip(sp.id,on),this.busy)})),
     {help:html`<p>${t('Tous les capteurs trouvés pour ce lieu sont proposés ; décochez ceux qui ne vous concernent pas.')}</p>`}):nothing}
-   ${p.risk?listSection(p.risk.label,[this.field(p.risk)]):nothing}
-   ${this.refreshSources()}${this.bottom()}`;
+   ${p.risk?listSection(p.risk.label,[this.field(p.risk)]):nothing}`;
  }
+ private pollen(v:View){return html`${this.pollenSections(v)}${this.refreshSources()}${this.bottom()}`;}
+ /** A new place: the families of entities to create. */
+ private familiesSection(v:View){const e=v.entities,chosen=e.families.filter(f=>f.chosen).map(f=>f.key);
+  return listSection(t('Familles d’entités'),e.families.map(f=>listRow({name:f.name,label:f.name,sub:f.hint||undefined,
+    value:toggle(f.name,!!f.chosen,on=>void this.change({op:'families',value:on?[...chosen,f.key]:chosen.filter(x=>x!==f.key)}),this.busy)})),
+   {help:html`<p>${t('Choisissez les familles à créer ; vous pourrez ensuite régler leurs entités une par une.')}</p>`});}
  private entities(v:View){
   const e=v.entities;
-  if(e.new){
-   const chosen=e.families.filter(f=>f.chosen).map(f=>f.key);
-   return html`${listSection(t('Familles d’entités'),e.families.map(f=>listRow({name:f.name,label:f.name,sub:f.hint||undefined,
-     value:toggle(f.name,!!f.chosen,on=>void this.change({op:'families',value:on?[...chosen,f.key]:chosen.filter(x=>x!==f.key)}),this.busy)})),
-    {help:html`<p>${t('Choisissez les familles à créer ; vous pourrez ensuite régler leurs entités une par une.')}</p>`})}${this.bottom()}`;
-  }
+  if(e.new)return html`${this.familiesSection(v)}${this.bottom()}`;
   const flip=(key:string,on:boolean)=>{this.enabled=on?[...this.enabled,key]:this.enabled.filter(k=>k!==key);};
   return html`${e.families.map((f,n)=>{const items=f.entities??[],on=items.filter(i=>this.enabled.includes(i.key)).length;
     return listSection(f.name,items.map(i=>listRow({name:i.name,label:i.name,sub:i.hint||i.need?html`${i.hint}${i.hint&&i.need?' · ':''}${i.need?html`<span class=${i.optional?'':'warn'}>${i.need}</span>`:nothing}`:undefined,
      value:toggle(i.name,this.enabled.includes(i.key),x=>flip(i.key,x))})),{more:t('{n} sur {total}',{n:on,total:items.length}),help:n?undefined:html`<p>${t('Une entité décochée disparaît de Home Assistant.')}</p>`});})}
    ${this.bottom()}`;
  }
- private water(v:View){const f=v.prevision.fields.find(x=>x.key==='water_restriction_entity');
-  return html`${listSection(t('Restrictions d’eau'),[...this.integrationRow(v.extensions?.find(e=>e.id==='vigieau'),!!f?.options.length),...(f?[this.field(f)]:[])])}${this.refreshSources()}${this.bottom()}`;}
+ private waterSection(v:View){const f=v.prevision.fields.find(x=>x.key==='water_restriction_entity');
+  return listSection(t('Restrictions d’eau'),[...this.integrationRow(v.extensions?.find(e=>e.id==='vigieau'),!!f?.options.length),...(f?[this.field(f)]:[])]);}
+ private water(v:View){return html`${this.waterSection(v)}${this.refreshSources()}${this.bottom()}`;}
  // ---- The Extensions page: Hestia-FB's own bricks, then the integrations of Home Assistant, place by place ----
  private async loadExtensions(){
   const places=this.places?.places??[],views=new Map<string,{draft:Sources;view:View;enabled:string[]}>();
@@ -321,6 +339,7 @@ export class WeatherSetup extends LitElement {
   this.busy=true;this.error='';
   try{const reply=await this.ws<{official:Official[]}>({type:'hestia_weather/panel/link',entry_id:entryId,brick,enabled});
    const p=this.places?.places.find(x=>x.entry_id===entryId);if(p)p.official=reply.official;
+   if(this.view&&this.entryId===entryId)this.view={...this.view,official:reply.official};
    const v=this.extViews.get(entryId);if(v)this.extViews=new Map(this.extViews).set(entryId,{...v,view:{...v.view,official:reply.official}});}
   catch(e){this.error=this.message(e);}finally{this.busy=false;}
  }
@@ -357,7 +376,9 @@ export class WeatherSetup extends LitElement {
    <button class="link" ?disabled=${this.busy} @click=${()=>void this.loadExtensions()}>${t('Actualiser la détection')}</button>`}
   </main>${this.busy?html`<p class="busy" role="status">${t('Un instant…')}</p>`:nothing}`;
  }
- private recap(v:View){
+ private recap(v:View){return html`${this.recapSections(v)}${this.bottom()}`;}
+ /** What the place will be, in one list, then what to know: the last tab of a new place, and the last screen of the guide. */
+ private recapSections(v:View){
   const added=this.enabled.filter(k=>!this.initialEnabled.includes(k)).length,removed=this.initialEnabled.filter(k=>!this.enabled.includes(k)).length;
   const change=[added?t('{n} de plus',{n:added}):'',removed?t('{n} de moins',{n:removed}):''].filter(Boolean).join(', ');
   const entities=v.entities.new?v.entities.families.filter(f=>f.chosen).map(f=>f.name).join(', ')||t('aucune famille')
@@ -370,8 +391,7 @@ export class WeatherSetup extends LitElement {
     row(t('Orages et éclairs'),named('lightning_entity')),row(t('Feux de forêt'),named('fire_entity')),row(t('Rivière'),named('river_entity')),
     row(t('Entités'),entities)])}
    ${v.needs.length?listSection(t('À savoir'),v.needs.map(n=>listRow({label:html`<span class="warn">${t('{need}. L’entité restera vide.',{need:n})}</span>`}))):nothing}
-   <p class="notice">${this.entryId?t('En enregistrant, le lieu redémarre avec ses nouveaux réglages : la carte se met à jour quelques secondes plus tard.'):t('En enregistrant, Hestia Weather crée ce lieu et ses entités.')}</p>
-   ${this.bottom()}`;
+   <p class="notice">${this.entryId?t('En enregistrant, le lieu redémarre avec ses nouveaux réglages : la carte se met à jour quelques secondes plus tard.'):t('En enregistrant, Hestia Weather crée ce lieu et ses entités.')}</p>`;
  }
 
  // ---- Pages: the same three as every Hestia-FB brick (socle 1.12) ----
@@ -392,7 +412,8 @@ export class WeatherSetup extends LitElement {
   // While a place starts, nothing is wrong yet: the overview says so, in grey.
   const head=pageHead({title:t('Météo'),state:p.places.length?{level:failed?'bad':starting?'none':todo.length?'todo':'ok',text:failed?t('Un lieu ne démarre pas'):starting?t('Redémarrage en cours'):todo.length?count:t('Tout fonctionne'),detail:p.places.length>1?t('{n} lieux suivis',{n:p.places.length}):t('{n} lieu suivi',{n:p.places.length})}:undefined});
   if(!p.places.length)return html`<main>${head}${frame(t('Votre lieu météo'),html`<p class="muted">${t('Configurez votre lieu pour suivre ici les sources, les capteurs et les données disponibles.')}</p>
-   ${p.can_add?html`<button class="primary" ?disabled=${this.busy} @click=${()=>void this.open(null)}>${t('Configurer mon lieu')}</button>`:html`<p class="warn">${t('Aucun service météo dans Home Assistant : installez Météo-France dans Appareils et services, puis revenez ici.')}</p>`}`)}</main>`;
+   ${p.can_add?html`<div class="actions"><button class="primary" ?disabled=${this.busy} @click=${()=>void this.openGuide(null)}>${t('Suivre le guide')}</button>
+    <button ?disabled=${this.busy} @click=${()=>void this.open(null)}>${t('Réglages détaillés')}</button></div>`:html`<p class="warn">${t('Aucun service météo dans Home Assistant : installez Météo-France dans Appareils et services, puis revenez ici.')}</p>`}`)}</main>`;
   const sum=(f:(x:Place)=>number|undefined)=>p.places.reduce((n,x)=>n+(f(x)??0),0);
   const configured=sum(x=>x.health.technical?.station?.configured),responding=sum(x=>x.health.technical?.station?.responding);
   const active=sum(x=>x.health.technical?.entities?.active),valued=sum(x=>x.health.technical?.entities?.with_value);
@@ -403,7 +424,7 @@ export class WeatherSetup extends LitElement {
     {value:days>1?t('{n} jours',{n:days}):t('{n} jour',{n:days}),label:t('de prévisions')}])}
    ${todoLists(todo,this.lines('tips'))}
    ${this.rename?.entities.length||this.renameDone.length?this.renameFrame():nothing}
-   ${this.placeList(t('Lieux'))}</main>`;
+   ${this.placeList(t('Lieux'))}${this.guideRows()}</main>`;
  }
  /** The places, one line each: what it is made of, how it is; a tap opens the place. */
  private placeList(title:string){
@@ -412,7 +433,7 @@ export class WeatherSetup extends LitElement {
  }
  /** « Lieux »: every place, to open or to add. */
  private placesPage(){const p=this.places!;
-  return html`<main>${pageHead({title:t('Lieux'),actions:p.can_add?[{label:t('Ajouter un lieu'),onClick:()=>void this.open(null),disabled:this.busy}]:[]})}
+  return html`<main>${pageHead({title:t('Lieux'),actions:p.can_add?[{label:t('Ajouter avec le guide'),onClick:()=>void this.openGuide(null),disabled:this.busy},{label:t('Ajouter un lieu'),onClick:()=>void this.open(null),disabled:this.busy}]:[]})}
    ${this.saved?html`<p class="notice" role="status">${this.saved}</p>`:nothing}
    ${p.places.length?this.placeList(''):html`<p class="muted">${p.can_add?t('Aucun lieu pour l’instant : ajoutez le vôtre.'):t('Aucun service météo dans Home Assistant : installez Météo-France dans Appareils et services, puis revenez ici.')}</p>`}</main>`;
  }
@@ -494,18 +515,95 @@ export class WeatherSetup extends LitElement {
     <button class="primary" ?disabled=${this.busy} @click=${()=>void this.runRename('hestia_weather/rename/apply')}>${t('Renommer')}</button></div>`);
  }
  private editor(){
+  if(this.guideAt!==null&&this.view&&this.draft)return this.guidePage();
   if(this.quizStep!==null&&this.view?.station.place)return this.quizPage();
   const v=this.view!,creating=!this.entryId;
   const body=[this.prevision,this.station,this.air,this.pollen,this.entities,this.recap,this.water,this.recap,this.stateTab][this.stage].call(this,v);
   const tabs=creating?createSections:sections,at=order.indexOf(this.stage);
   // A place opens like a Confort room (socle 1.21): back to the places, its name and state, its tabs, the save bar.
   return html`<main>${pageHead({back:{label:t('Lieux'),onClick:()=>this.leave()},title:creating?t('Nouveau lieu'):this.placeTitle||v.title,
+    actions:creating?[]:[{label:t('Ouvrir le guide'),onClick:()=>this.startGuide(),disabled:this.busy}],
     state:creating?undefined:(()=>{const p=this.places?.places.find(x=>x.entry_id===this.entryId);return p?{level:this.placeLevel(p),text:this.placeState(p)}:undefined;})()})}
    ${creating?html`<p class="muted">${t('Nouveau lieu · étape {n} sur {total}',{n:at+1,total:order.length})}</p>`:nothing}
    ${this.confirmLeave?leaveNotice({onStay:()=>{this.confirmLeave=false;},onLeave:()=>this.close()}):nothing}
    ${tabBar(t('Réglages du lieu'),tabs.map(x=>({label:t(x.label),current:x.stage===this.stage,onClick:()=>this.go(x.stage)})),this.busy)}
    ${this.error?html`<p class="notice error" role="alert">${this.error}</p>`:nothing}
    ${intros[this.stage]?this.intro():nothing}${body}</main>${this.busy?html`<p class="busy" role="status">${t('Un instant…')}</p>`:nothing}`;
+ }
+
+ // ---- The installation guide (guide.ts): the same draft as the tabs, one question a screen, saved at the end ----
+ /** The overview's way in: one line per place. */
+ private guideRows(){const places=this.places?.places??[];if(!places.length)return nothing;
+  return listSection(t('Guide d’installation'),places.map(x=>{const label=places.length>1?t('Le guide de « {name} »',{name:x.title}):t('Suivre le guide');return listRow({name:label,label,
+   sub:t('Tous les réglages du lieu, une question à la fois, avec la raison de chacune.'),go:()=>{this.guideFrom='home';void this.openGuide(x.entry_id);}});}));}
+ /** Opens the guide of a place (null: a new one): the draft being changed if it is this place's, else the saved place. */
+ private async openGuide(entryId:string|null,route=true){
+  const key=entryId??'nouveau',cached=this.drafts.get(key);
+  if(this.editing&&this.draft&&(this.entryId??'nouveau')===key){/* the draft at hand */}
+  else if(cached){Object.assign(this,cached);this.entryId=entryId;this.editing=true;}
+  else{await this.open(entryId,0,false);if(!this.editing||this.entryId!==entryId)return;}
+  this.quizStep=null;this.placeTool=undefined;this.confirmLeave=false;this.guideAt='welcome';
+  if(route)this.path(key+'/guide');
+  await this.updateComplete;this.top();
+ }
+ /** From a place's tabs: the guide on the same draft; leaving it comes back to the tabs, the changes kept. */
+ private startGuide(){this.guideFrom='place';this.quizStep=null;this.placeTool=undefined;this.guideAt='welcome';this.path((this.entryId??'nouveau')+'/guide');void this.updateComplete.then(()=>{this.top();});}
+ private guideGo(key:string){this.guideAt=key;this.placeTool=undefined;this.confirmLeave=false;void this.updateComplete.then(()=>{this.top();});}
+ /** « Passer », or « Je ne sais pas » for the station's place: the answer first, then the next screen as it now stands. */
+ private async guideSkip(screen:GuideScreen){
+  if(screen.question)await this.change({op:'place',key:screen.question,value:''});
+  if(this.view)this.guideGo(nextScreen(this.view,screen.key,1));
+ }
+ private leaveGuide(){
+  if(this.guideFrom==='place'){this.go(this.stage);return;}
+  if(this.dirty()&&!this.confirmLeave){this.confirmLeave=true;return;}
+  this.close('');
+ }
+ private guideHead(title:string,why:string){return html`<h2 class="pl-title">${title}</h2><p class="muted">${why}</p>`;}
+ private guideBody(v:View,screen:GuideScreen):TemplateResult|typeof nothing{
+  const [title,why]=askOf(screen.topic),head=this.guideHead(title,why);
+  switch(screen.topic){
+   case 'welcome':return welcome({view:v,draft:this.draft!,creating:!this.entryId,title:this.placeTitle||v.title,busy:this.busy,go:k=>this.guideGo(k)});
+   case 'place':return html`${head}${this.forecastSection(v)}${this.refreshSources()}`;
+   case 'station':return html`${head}${this.stationHead(v)}${v.station.model!==NONE?this.historySection(v)
+    :html`<p class="muted">${t('Sans station, Hestia Weather s’appuie sur le service météo seul : pas de pluie mesurée, pas d’alerte de la station.')}</p>`}`;
+   case 'sensors':{const check=sensorsToCheck(v),chosen=v.station.groups.flatMap(g=>g.fields).filter(f=>!toCheck(f)&&!!f.value);
+    return html`${head}${check.length?listSection(t('À vérifier'),check.map(f=>this.field(f))):html`<p class="notice">${t('Rien à vérifier : les capteurs reconnus sont choisis.')}</p>`}
+     ${chosen.length?listSection('',moreRow(t('Capteurs déjà choisis'),String(chosen.length),chosen.map(f=>this.field(f)))):nothing}
+     <button class="link" ?disabled=${this.busy} @click=${()=>void this.change({op:'redetect',value:'station'})}>${t('Rechercher à nouveau les capteurs')}</button>`;}
+   case 'emplacement':{const place=v.station.place,q=place?placeQuestions(place).find(x=>x.key===screen.question):undefined;
+    if(!place||!q)return nothing;
+    return html`${this.guideHead(q.title,q.why)}${questionBody({view:place,busy:this.busy,answer:(key:string,value:unknown)=>void this.change({op:'place',key,value}),tool:this.placeTool,setTool:x=>{this.placeTool=x;}},q)}`;}
+   case 'alerts':return html`${head}${this.alertSections(v)}${this.waterSection(v)}${this.refreshSources()}`;
+   case 'air':return html`${head}${this.airSection(v)}${this.refreshSources()}`;
+   case 'pollens':return html`${head}${this.pollenSections(v)}${this.refreshSources()}`;
+   case 'bricks':return html`${head}${this.bricksSection(v)}`;
+   case 'entities':return v.entities.new?html`${head}${this.familiesSection(v)}`
+    :html`${this.guideHead(t('Les entités du lieu'),why)}${listSection('',[listRow({label:t('Entités actives'),value:String(this.enabled.length)})])}
+     <p class="muted">${t('Elles se règlent une par une dans l’onglet Entités du lieu.')}</p>`;
+   case 'recap':return html`${this.guideHead(t('Tout est prêt'),t('Rien n’est enregistré avant le bouton ci-dessous. Tout se change ensuite dans les réglages du lieu, ou en relançant ce guide.'))}${this.recapSections(v)}`;
+  }
+ }
+ /** The other Hestia-FB bricks (Confort's link is saved at once, on its side) and Open-Meteo, asked for the pressure to come. */
+ private bricksSection(v:View){
+  const rows=(v.official??[]).map(o=>listRow({name:o.name,label:o.name,
+   sub:!o.installed?o.description:!this.entryId?t('Se relie une fois le lieu créé, dans Extensions.'):!o.switchable?t('Mettez à jour Hestia Confort pour régler la liaison d’ici.'):html`${o.description}<br>${t('S’applique tout de suite, sans attendre la fin du guide.')}`,
+   value:!o.installed?html`<a href=${o.url} target="_blank" rel="noreferrer">${t('Comment l’installer')}</a>`
+    :this.entryId&&o.switchable?toggle(t('Donner à {name} le dehors de ce lieu',{name:o.name}),o.linked,on=>void this.link(this.entryId!,o.id,on),this.busy):nothing}));
+  const meteo=(v.in_draft??v.extensions??[]).find(e=>e.id==='open_meteo'),sw=meteo?extensionSwitch(meteo,v):undefined;
+  return html`${listSection(t('Briques Hestia-FB'),rows)}
+   ${meteo&&sw?listSection(t('Services en ligne'),[listRow({name:meteo.name,label:meteo.name,sub:meteo.detail||meteo.description,
+    value:toggle(t('Utiliser {name} pour ce lieu',{name:meteo.name}),sw.checked,on=>void (async()=>{for(const c of on?sw.on:sw.off)await this.change(c);})(),this.busy)})]):nothing}`;
+ }
+ private guidePage(){
+  const v=this.view!,creating=!this.entryId,list=guideScreens(v),screen=list.find(s=>s.key===this.guideAt)??list[0];
+  return html`<main>${pageHead({back:{label:this.guideFrom==='place'?t('Réglages du lieu'):t('Quitter le guide'),onClick:()=>this.leaveGuide()},
+    title:creating?t('Nouveau lieu'):this.placeTitle||v.title,subtitle:t('Guide d’installation')})}
+   ${this.confirmLeave?leaveNotice({onStay:()=>{this.confirmLeave=false;},onLeave:()=>this.close('')}):nothing}
+   ${this.error?html`<p class="notice error" role="alert">${this.error}</p>`:nothing}
+   ${guideFrame({view:v,draft:this.draft!,at:screen.key,busy:this.busy,creating,title:this.placeTitle||v.title,body:this.guideBody(v,screen),
+    go:k=>this.guideGo(k),save:()=>void this.save(),skip:()=>void this.guideSkip(screen)})}</main>
+   ${this.busy?html`<p class="busy" role="status">${t('Un instant…')}</p>`:nothing}`;
  }
  // ---- « Où est votre station ? » (docs/STATION-EMPLACEMENT.md § 6) ----
  private firstQuestion(){const place=this.view?.station.place;if(!place)return 0;const i=placeQuestions(place).findIndex(q=>!(q.key in place.values));return i<0?0:i;}
