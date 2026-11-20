@@ -100,6 +100,25 @@ class HestiaWeatherApi:
                  "wind_bearing": h.wind_bearing, "condition": h.condition, "cloud_coverage": h.cloud_coverage}
                 for h in entry.runtime_data.hours if h.time is not None]
 
+    def sky_now(self, entry_id: str | None = None) -> dict[str, Any] | None:
+        """The sky as Hestia Weather sees it now: `condition` (Home Assistant's words, « sunny », « cloudy »…, the one
+        the weather entity shows), `observed` when the station saw it rather than the forecast said it, `cloud_coverage`
+        in % when the weather service gives it, `at` the last calculation. Hestia Comfort weighs with it the sun the
+        hourly forecast promises: on 20 November afternoon it promised « sunny » under a grey sky. None before the first
+        calculation or without a place."""
+        entry = self._entry(entry_id)
+        data = getattr(entry.runtime_data, "data", None) if entry is not None else None
+        local = getattr(data, "local", None)
+        if local is None or not local.condition:
+            return None
+        cover = None
+        bulletin = self.hass.states.get(entry.runtime_data.settings.weather_entity) if entry.runtime_data.settings.weather_entity else None
+        if bulletin is not None:
+            value = bulletin.attributes.get("cloud_coverage")
+            cover = float(value) if isinstance(value, (int, float)) and 0 <= value <= 100 else None
+        return {"entry_id": entry.entry_id, "condition": local.condition, "observed": bool(local.observed), "cloud_coverage": cover,
+                "at": data.computed.isoformat() if getattr(data, "computed", None) else None}
+
     def air(self, entry_id: str | None = None) -> dict[str, Any] | None:
         """Today's outdoor air from the source chosen in Hestia Weather, on Atmo's scale: 1 Bon to 6 Extrêmement mauvais.
 
