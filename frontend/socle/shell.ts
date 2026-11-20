@@ -1,10 +1,10 @@
-// Hestia-FB shared panel (socle v1.23): header, tabs and the home page listing every Hestia-FB brick.
+// Hestia-FB shared panel (socle v1.24): header, tabs and the home page listing every Hestia-FB brick.
 // Copied unchanged into each brick from hestia-ecosysteme/socle/ (see ECOSYSTEME.md § 8).
 import {LitElement,html,css,nothing,type PropertyValues} from 'lit';
 import {frame,hubStyles,modernStyles,hubIcon,line,motion,type NkLine} from './ui';
 import {t,fr,setLanguage,wordsReady} from './i18n';
 
-export const ELEMENT='hestia-socle-1-23';
+export const ELEMENT='hestia-socle-1-24';
 // The words of the bricks' own menus (socle 1.20), known before any brick's page is loaded.
 export const MENU_WORDS=[fr('Pièces'),fr('Lieux'),fr('Apprentissage'),fr('Bilan'),fr('À propos')];
 // The panel's address (socle 1.12): /hestia; the former address leads there, keeping the rest of the address.
@@ -33,6 +33,14 @@ export function splitPath(path:string|undefined):[string,string]{
 export function shortName(name:string){return name.replace(/^Hestia /,'');}
 // The tab's name: its own (since socle 1.1, « Météo » for Hestia Weather), else the brick's without « Hestia-FB ».
 export function tabName(b:{name:string;tab?:string|null;navigation?:number|null}){return t(b.tab||shortName(b.name));}
+// The door's icon (socle 1.24): one per known brick, the house for any other.
+const doorIcon:Record<string,string>={meteo:'weather',confort:'temperature',energie:'energy'};
+// « 8 pièces suivies » → ["8","pièces suivies"]; « 75 € depuis le 1er novembre » → ["75 €","depuis le 1er novembre"].
+// A summary that does not open with a number stays a sentence.
+export function keyFigure(summary:string):[string,string]{
+ const m=/^(\d[\d\s\u00a0\u202f.,]*(?:\s?[€%])?)\s+(\S.*)$/u.exec(summary??'');
+ return m?[m[1].trim(),m[2]]:['',summary??''];
+}
 function navigate(path:string,replace=false){
  history[replace?'replaceState':'pushState'](null,'',path);
  window.dispatchEvent(new CustomEvent('location-changed',{detail:{replace}}));
@@ -201,12 +209,17 @@ export class HestiaShell extends LitElement {
  private home(){const o=this.overview!;
   // While the move runs, the page reads it again every 5 seconds.
   if(o.migration?.some(m=>m.state==='running')&&!this.migrationTimer)this.migrationTimer=window.setTimeout(()=>{this.migrationTimer=0;void this.load();},5000);
-  return html`<main><div class="nk-home-head"><div><h1>${t('Votre logement, connecté')}</h1><p>${t('Vos briques Hestia-FB et les points à compléter, au même endroit.')}</p></div></div>${this.migration()}<div class="nk-bricks">
-   ${o.bricks.map(b=>html`${frame(t(b.name),html`<section class="brick ${b.status.level}"><p class="version">${t('Version {version}',{version:b.version})}</p>
-    <p class="level"><span class="dot"></span>${t(levelText[b.status.level])}${b.status.summary?html`<span class="summary">${b.status.summary}</span>`:nothing}</p>
+  // Socle 1.24: each brick is a door (« Trois portes », chosen by Frank on 20 November): its colour, its icon, its key figure.
+  const bricks=[...o.bricks].sort((a,b)=>(a.slug==='meteo'?-1:b.slug==='meteo'?1:0));const allOk=bricks.every(b=>b.status.level==='ok');
+  const linked=bricks.length>1&&bricks.some(b=>b.status.links.length);
+  return html`<main><div class="nk-home-head nk-doors-head"><div><h1>${t('Votre logement, connecté')}</h1><p>${allOk?t('Tout est suivi, rien à régler.'):t('Vos briques Hestia-FB et les points à compléter, au même endroit.')}</p></div>
+   ${linked?html`<p class="nk-net" aria-label=${t('Vos briques sont reliées entre elles')}>${bricks.map((b,i)=>html`${i?html`<span class="nk-net-line"></span>`:nothing}<span class="nk-net-node" data-slug=${b.slug}>${tabName(b)}</span>`)}</p>`:nothing}</div>${this.migration()}<div class="nk-doors">
+   ${bricks.map(b=>{const [figure,rest]=keyFigure(b.status.summary);return html`<section class=${'nk-door '+b.status.level} data-slug=${b.slug}>
+    <span class="nk-door-icon">${hubIcon(doorIcon[b.slug]??'home')}</span><h2>${tabName(b)}</h2>
+    ${figure?html`<p class="nk-door-figure"><strong>${figure}</strong> <span>${rest}</span></p>`:b.status.summary?html`<p class="nk-door-summary">${b.status.summary}</p>`:nothing}
     ${b.status.details.length?html`<ul>${b.status.details.map(d=>html`<li>${d}</li>`)}</ul>`:nothing}
-    ${b.status.links.length?html`<p class="links">${b.status.links.map(l=>html`<span>${l}</span>`)}</p>`:nothing}
-    <button class="primary" @click=${()=>this.go(b.slug)}>${t('Ouvrir {tab}',{tab:tabName(b)})}</button></section>`,{className:b.status.level==='action'?'todo':''})}`)}
+    <p class="nk-door-state"><span class="nk-door-pill">${t(levelText[b.status.level])}</span><span class="nk-door-version">${t('Version {version}',{version:b.version})}</span></p>
+    <button class="nk-door-open" @click=${()=>this.go(b.slug)}>${t('Ouvrir {tab}',{tab:tabName(b)})}${hubIcon('next')}</button></section>`;})}
    </div>${o.others.length?html`${frame(t('À découvrir'),html`${o.others.map(x=>html`<section class="other"><div><h3>${t(x.name)}</h3><p class="muted">${x.installed?t('Installée. Ses réglages restent dans Paramètres, en attendant qu’elle rejoigne ce panneau.'):t(x.pitch)}</p></div>
     ${x.installed?html`<a class="button" href=${x.settings_path}>${t('Ouvrir ses réglages')}</a>`:html`<a class="button" href=${x.url} target="_blank" rel="noreferrer">${t('Voir')}</a>`}</section>`)}`)}`:nothing}
    </main>`;}
@@ -291,6 +304,31 @@ export class HestiaShell extends LitElement {
  .nav-fold svg{width:16px;height:16px;transition:transform var(--h-base) var(--h-ease-out)}.nav-fold[aria-expanded=false] svg{transform:rotate(-90deg)}nav:has(.nav-fold[aria-expanded=false]){margin-bottom:8px}
  @media(hover:hover) and (pointer:fine){.nav-fold:hover{background:none;color:var(--primary-text-color)}}
  :host{-webkit-tap-highlight-color:transparent}@media(pointer:coarse){select{font-size:16px}}
+ `,css`
+ /* Socle 1.24: the home's doors. One soft halo per brick, in its own colour; the whole door opens the brick. */
+ :host{--nk-door-meteo:oklch(.8 .07 225);--nk-door-confort:oklch(.83 .085 42);--nk-door-energie:oklch(.83 .075 150)}
+ :host([data-theme=light]){--nk-door-meteo:oklch(.55 .09 235);--nk-door-confort:oklch(.6 .13 42);--nk-door-energie:oklch(.55 .11 150)}
+ .nk-doors-head{flex-wrap:wrap}.nk-net{display:flex;align-items:center;margin:0;font-size:var(--nw-fs-small,12px);font-weight:600;color:var(--nk-muted)}
+ .nk-net-node{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--nk-border);border-radius:999px;background:var(--nk-surface)}
+ .nk-net-node:before{content:'';width:7px;height:7px;border-radius:50%;background:var(--nk-door,var(--nk-accent))}.nk-net-line{width:18px;height:1px;background:var(--nk-border)}
+ [data-slug=meteo]{--nk-door:var(--nk-door-meteo)}[data-slug=confort]{--nk-door:var(--nk-door-confort)}[data-slug=energie]{--nk-door:var(--nk-door-energie)}
+ .nk-doors{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-bottom:28px}
+ .nk-door{--nk-c:var(--nk-door,var(--nk-accent));position:relative;display:flex;flex-direction:column;gap:10px;min-width:0;padding:22px;border-radius:22px;border:1px solid color-mix(in srgb,var(--nk-c) 22%,var(--nk-border));
+  background:radial-gradient(70% 55% at 100% 0%,color-mix(in srgb,var(--nk-c) 14%,transparent),transparent 70%),var(--nk-surface);transition:transform var(--h-base,.2s) var(--h-ease-out,ease),box-shadow var(--h-base,.2s) var(--h-ease-out,ease)}
+ .nk-door.action{border-color:color-mix(in srgb,var(--nk-todo) 55%,var(--nk-border))}
+ .nk-door-icon{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;color:var(--nk-c);border:1px solid color-mix(in srgb,var(--nk-c) 35%,transparent);background:color-mix(in srgb,var(--nk-c) 8%,var(--nk-surface))}
+ .nk-door-icon svg{width:28px;height:28px}
+ .nk-door h2{font-size:var(--nw-fs-case,21px);letter-spacing:-.01em;margin:6px 0 0}
+ .nk-door-figure{margin:0;line-height:1.3}.nk-door-figure strong{font-size:var(--nw-fs-value,34px);font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.nk-door-figure span,.nk-door-summary{color:var(--nk-muted)}
+ .nk-door-summary{margin:0}.nk-door ul{margin:0;padding-left:20px;color:var(--nk-muted)}
+ .nk-door-state{margin:auto 0 0;padding-top:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+ .nk-door-pill{display:inline-flex;align-items:center;gap:7px;font-size:var(--nw-fs-small,12px);font-weight:700;padding:3px 10px;border-radius:999px;--nk-l:var(--nk-muted);background:color-mix(in srgb,var(--nk-l) 18%,transparent)}
+ .nk-door-pill:before{content:'';width:7px;height:7px;border-radius:50%;background:var(--nk-l)}.ok .nk-door-pill{--nk-l:var(--nk-ok)}.action .nk-door-pill{--nk-l:var(--nk-todo)}
+ .nk-door-version{font-size:var(--nw-fs-small,12px);color:var(--nk-muted);font-variant-numeric:tabular-nums}
+ .nk-door-open{align-self:flex-start;border:0;background:none;padding:6px 0;min-height:44px;font-weight:700;gap:6px}.nk-door-open svg{width:18px;height:18px}
+ .nk-door-open:after{content:'';position:absolute;inset:0;border-radius:inherit}
+ @media(hover:hover) and (pointer:fine){.nk-door:hover{transform:translateY(-2px);box-shadow:0 12px 28px -16px color-mix(in srgb,var(--nk-c) 60%,transparent)}.nk-door-open:hover{background:none}}
+ @media(prefers-reduced-motion:reduce){.nk-door{transition:none}.nk-door:hover{transform:none}}
  `,motion];
 }
 if(!customElements.get(ELEMENT))customElements.define(ELEMENT,HestiaShell);
