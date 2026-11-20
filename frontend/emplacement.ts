@@ -25,7 +25,7 @@ const MEASURE:Record<PlaceKey,string>={station_side:'temperature',station_wall:'
 // What a tap on the rose places: the house, or a hindered side (a hedge, a wall, a tree).
 export type PlaceTool='house'|'shut';
 
-interface Asked {key:PlaceKey;title:string;short:string;why:string;choices:[string,string,string?][]}
+export interface Asked {key:PlaceKey;title:string;short:string;why:string;choices:[string,string,string?][]}
 /** One rose for the house and the wind (Frank, 6 November 2026): « Où est la station ? » and « D'où le vent arrive-t-il
  *  librement ? » are one question, the station in the middle, the house and the hindered sides around it. Its answers stay
  *  where they were: station_side (the house is on its other side) and wind_shelter (the other hindered sides). */
@@ -114,6 +114,23 @@ export function placeSection(o:PlaceContext&{quiz:(step?:number)=>void}):Templat
  return listSection(t('Emplacement'),rows,{help,more:html`<button type="button" class="link" ?disabled=${o.busy} @click=${()=>o.quiz(0)}>${t('Refaire le questionnaire')}</button>`});
 }
 
+/** One question of the questionnaire, without its title nor its buttons: the rose, or the choices. Shared by the
+ *  questionnaire and the installation guide (guide.ts), which shows the same questions one a screen. */
+export function questionBody(o:PlaceContext&{tool?:PlaceTool;setTool:(x:PlaceTool)=>void},q:Asked):TemplateResult{
+ const value=o.view.values[q.key];
+ if(q.key==='station_side'){
+  const wind=windAsked(o.view),tool:PlaceTool=!wind?'house':o.tool??(houseSide(o.view)||value==='roof'||value==='open'?'shut':'house');
+  const ctx={...o,placed:()=>o.setTool('shut')};
+  return html`${wind?html`<p class="pl-center pl-tool">${segmented(t('Je place'),[['house',t('la maison')],['shut',t('une gêne')]],tool,x=>o.setTool(x),o.busy)}</p>`:nothing}
+   <p class="pl-hint pl-center">${tool==='house'?t('Touchez le côté où se trouve la maison.'):t('Touchez un côté pour le passer de dégagé à gêné.')}</p>
+   ${rose(ctx,tool)}<p class="pl-hint pl-center">${summary(o.view).map((x,i)=>html`${i?html`<br>`:nothing}${x}`)}</p>
+   <p class="pl-or">${t('ou, sans maison à côté')}</p>
+   <div class="pl-choices">${q.choices.map(([k,l])=>html`<button type="button" class="pl-choice" aria-pressed=${String(value===k)} ?disabled=${o.busy}
+    @click=${()=>o.answer(q.key,value===k?null:k)}>${l}</button>`)}</div>`;}
+ return html`<div class="pl-choices">${q.choices.map(([k,l,s])=>html`<button type="button" class="pl-choice" aria-pressed=${String(value===k)} ?disabled=${o.busy}
+  @click=${()=>o.answer(q.key,k)}><span>${l}${s?html`<small>${s}</small>`:nothing}</span></button>`)}</div>`;
+}
+
 /** The questionnaire: one question a screen, then « C'est noté ». */
 export function quizScreen(o:PlaceContext&{step:number;go:(step:number)=>void;finish:()=>void;close?:()=>void;saves:boolean;tool?:PlaceTool;setTool:(x:PlaceTool)=>void}):TemplateResult{
  const list=questions(o.view),v=o.view.values;
@@ -122,19 +139,7 @@ export function quizScreen(o:PlaceContext&{step:number;go:(step:number)=>void;fi
   ${listSection('',list.map(q=>listRow({label:q.short,value:answerText(o.view,q)})))}
   <p class="pl-foot"><span class="pl-sp"></span>${o.close?html`<button type="button" @click=${o.close}>${t('Voir dans Station')}</button>`:nothing}
    <button type="button" class="primary" ?disabled=${o.busy} @click=${o.finish}>${o.saves?t('Enregistrer'):t('Terminer')}</button></p></div>`;
- const q=list[o.step],value=v[q.key];
- let body:TemplateResult;
- if(q.key==='station_side'){
-  const wind=windAsked(o.view),tool:PlaceTool=!wind?'house':o.tool??(houseSide(o.view)||value==='roof'||value==='open'?'shut':'house');
-  const ctx={...o,placed:()=>o.setTool('shut')};
-  body=html`${wind?html`<p class="pl-center pl-tool">${segmented(t('Je place'),[['house',t('la maison')],['shut',t('une gêne')]],tool,x=>o.setTool(x),o.busy)}</p>`:nothing}
-   <p class="pl-hint pl-center">${tool==='house'?t('Touchez le côté où se trouve la maison.'):t('Touchez un côté pour le passer de dégagé à gêné.')}</p>
-   ${rose(ctx,tool)}<p class="pl-hint pl-center">${summary(o.view).map((x,i)=>html`${i?html`<br>`:nothing}${x}`)}</p>
-   <p class="pl-or">${t('ou, sans maison à côté')}</p>
-   <div class="pl-choices">${q.choices.map(([k,l])=>html`<button type="button" class="pl-choice" aria-pressed=${String(value===k)} ?disabled=${o.busy}
-    @click=${()=>o.answer(q.key,value===k?null:k)}>${l}</button>`)}</div>`;}
- else body=html`<div class="pl-choices">${q.choices.map(([k,l,s])=>html`<button type="button" class="pl-choice" aria-pressed=${String(value===k)} ?disabled=${o.busy}
-  @click=${()=>o.answer(q.key,k)}><span>${l}${s?html`<small>${s}</small>`:nothing}</span></button>`)}</div>`;
+ const q=list[o.step],value=v[q.key],body=questionBody(o,q);
  const ready=value!==undefined&&value!=='';
  return html`<div class="pl-quiz"><p class="pl-step">${t('Votre station · {n} sur {total}',{n:o.step+1,total:list.length})}</p>
   <div class="pl-progress" role="progressbar" aria-valuemin="0" aria-valuemax=${list.length} aria-valuenow=${o.step}><i style=${`width:${o.step/list.length*100}%`}></i></div>
