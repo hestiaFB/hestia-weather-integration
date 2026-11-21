@@ -1,10 +1,5 @@
 ## 4.2.0 — Le ciel de maintenant, et le nouvel accueil
 
-**En bref**
-
-- **Hestia Confort sait s’il fait gris maintenant : plus de « Grand soleil » sous un ciel couvert.**
-- **Une nouvelle page d’accueil Hestia-FB : une porte par brique.**
-
 ### Nouveautés
 
 - Panneau Hestia-FB : une nouvelle page d’accueil, avec une porte pour chaque brique installée (Météo, Confort, Énergie). Chaque porte montre sa couleur, son chiffre clé, son état et sa version. Les réglages ne changent pas.
