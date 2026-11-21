@@ -131,7 +131,7 @@ Installée sous son nom technique d’origine, l’intégration passe seule au n
 - les automatisations, scripts, scènes et tableaux de bord faits dans l’interface sont mis à jour ;
 - ce qui est écrit à la main en YAML n’est jamais modifié : une réparation dans **Paramètres** liste les fichiers et les lignes à changer.
 
-Hestia Weather 3.x va avec Hestia Confort 2.x et 3.x : mettez-les à jour ensemble.
+Hestia Weather 4.2.0 et Hestia Confort 3.1.0 vont ensemble : Confort y lit le ciel de maintenant et ne dit plus « Grand soleil » sous un ciel gris. Une Confort plus ancienne marche aussi, sans cette nouveauté. Mettez-les à jour ensemble.
 
 **La mise à jour est refusée** (« changed its domain from niak_… to hestia_… ») ? Suivez [le guide du passage au nom Hestia](docs/PASSAGE-HESTIA.md) : un dossier à supprimer, deux redémarrages, rien n’est perdu.
 
