@@ -63,7 +63,7 @@ Hestia Weather publie pour les autres briques (Hestia Confort, Hestia Énergie, 
 - Un changement incompatible fait passer à la version 2 et se publie avec les briques qui la lisent (voir `CLAUDE.md`).
 - Toutes les méthodes prennent un `entry_id` facultatif, l’identifiant d’un lieu (une entrée de configuration). Sans `entry_id`, le seul lieu configuré est utilisé ; avec plusieurs lieux, sans `entry_id`, il n’y a pas de réponse (`None`, ou liste vide pour `hourly`) : la brique doit faire choisir un lieu avec `places()`. Un lieu non chargé compte comme absent.
 - Toutes les méthodes sont synchrones et lisent ce qui est déjà en mémoire, sauf `degree_days`, qui est une coroutine (`await`).
-- Les heures sont des textes ISO 8601 avec fuseau. Les méthodes qui lisent le dernier calcul du lieu (`air`, `pollen`, `rain`, `lightning`, `water`) donnent `at`, l’heure de ce calcul. `at` change à chaque recalcul, même quand rien d’autre n’a changé : une brique qui compare deux réponses pour savoir s’il faut se recalculer doit **laisser `at` de côté**.
+- Les heures sont des textes ISO 8601 avec fuseau. Les méthodes qui lisent le dernier calcul du lieu (`air`, `pollen`, `rain`, `lightning`, `water`, `sky_now`) donnent `at`, l’heure de ce calcul. `at` change à chaque recalcul, même quand rien d’autre n’a changé : une brique qui compare deux réponses pour savoir s’il faut se recalculer doit **laisser `at` de côté**.
 - Chaque réponse de type dictionnaire (sauf `station_shade` et `station_trust`) porte aussi `entry_id`.
 
 ### Les méthodes
@@ -75,6 +75,7 @@ Hestia Weather publie pour les autres briques (Hestia Confort, Hestia Énergie, 
 | `station_shade(entry_id)` | L’ombre portée sur le capteur de soleil de la station, selon la position du soleil. |
 | `station_trust(entry_id)` | Jusqu’où chaque mesure de la station est fiable, et ce qui est retenu en ce moment. |
 | `hourly(entry_id)` | Les prévisions heure par heure. |
+| `sky_now(entry_id)` | Le ciel de maintenant, tel que l’affiche l’entité météo : `condition`, `observed` (vu par la station plutôt que prévu), `cloud_coverage` en % quand le service météo la donne. Confort s’en sert pour ne pas annoncer de grand soleil sous un ciel gris. |
 | `air(entry_id)` | La qualité de l’air du jour. |
 | `pollen(entry_id)` | Les pollens du jour et du lendemain. |
 | `season(entry_id)` | La saison du jour et la durée du jour. |

@@ -92,6 +92,21 @@ def test_air_follows_the_chosen_source_on_atmo_scale():
     assert HestiaWeatherApi(hass_with(entry("e3", "Gardanne", Settings(weather_entity="weather.home")))).air() is None
 
 
+def test_the_sky_now_for_hestia_comfort():
+    """20 November afternoon: the hourly forecast promised « sunny » from 14 h under a grey sky that Hestia Weather
+    already called « cloudy »; Hestia Comfort weighs the sun it says with the sky now."""
+    at = datetime(2026, 11, 20, 12, 15, tzinfo=timezone.utc)
+    e = entry("e1", "Gardanne", Settings(weather_entity="weather.home"))
+    api = HestiaWeatherApi(hass_with(e))
+    e.runtime_data.data = None  # before the first calculation
+    assert api.sky_now() is None
+    e.runtime_data.data = SimpleNamespace(local=SimpleNamespace(condition="cloudy", observed=False), computed=at)
+    api.hass.states = SimpleNamespace(get=lambda entity_id: SimpleNamespace(state="cloudy", attributes={"cloud_coverage": 85}))
+    assert api.sky_now() == {"entry_id": "e1", "condition": "cloudy", "observed": False, "cloud_coverage": 85.0, "at": "2026-11-20T12:15:00+00:00"}
+    api.hass.states = SimpleNamespace(get=lambda entity_id: None)  # the weather service gone: the condition stays
+    assert api.sky_now()["cloud_coverage"] is None
+
+
 def test_pollen_is_published_on_one_scale_whatever_the_source():
     """Hestia Confort asks it, to air short and early for a household that says it is allergic (29 October 2026)."""
     from engine.catalogue import Item

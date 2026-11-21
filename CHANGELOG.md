@@ -1,5 +1,9 @@
 ## À venir
 
+### Pour les autres briques
+
+- Hestia Confort peut lire le ciel de maintenant (nuageux, ensoleillé…). Elle ne dit plus « Grand soleil » quand il fait gris, même si la prévision heure par heure annonce du soleil. Ajout compatible : une ancienne Confort n'est pas gênée.
+
 ## 4.1.0 — Un guide pour tout régler
 
 **En bref**
