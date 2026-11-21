@@ -35,7 +35,8 @@ Les mêmes règles pour toutes les briques (Hestia Weather 3.x.x, Hestia Confort
 ## Le CHANGELOG
 
 - En haut, une section **« À venir »** : chaque changement y est noté quand il est fait. À la publication, elle prend son numéro.
-- Chaque version : un titre, puis **En bref** (2 à 4 lignes en gras), puis **Nouveautés**, **Améliorations**, **Corrections** (seulement les sections qui ont quelque chose).
+- Chaque version : un titre, puis **Nouveautés**, **Améliorations**, **Corrections** (seulement les sections qui ont quelque chose).
+- Pas de **En bref** dans chaque version : le titre suffit. On ne l'ajoute que pour une grosse version (un majeur, ou un mineur avec beaucoup de changements), en 2 à 4 lignes en gras.
 - **Avant de mettre à jour**, en premier, seulement pour un majeur ou quand l'utilisateur a quelque chose à faire.
 - **Bientôt retiré**, quand un retrait est annoncé.
 - La note d'une stable résume toutes ses bêtas depuis la stable précédente.
