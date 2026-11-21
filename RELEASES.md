@@ -26,7 +26,8 @@ Les mêmes règles pour toutes les briques (Hestia Weather 3.x.x, Hestia Confort
 
 - Une bêta porte le numéro de la version qu'elle prépare : 3.1.0b1, 3.1.0b2…, puis 3.1.0 avec le même contenu que la dernière bêta.
 - Jamais b10 (GitHub la range mal) : après b9, on publie la stable.
-- La stable ne sort qu'après l'essai de Frank chez lui : 2 à 3 jours sur la dernière bêta, sans correction entre les deux.
+- Une bêta n'est demandée que pour un gros changement : un moteur ou un calcul revu, de nouveaux réglages, des données gardées qui changent, ou quelque chose qui casse. Un petit ajout compatible peut sortir directement en stable, avec l'accord de Frank. Une nouvelle copie du socle ne compte pas : elle est déjà essayée dans les autres briques.
+- Après une bêta, la stable ne sort qu'après l'essai de Frank chez lui : 2 à 3 jours sur la dernière bêta, sans correction entre les deux.
 - Un correctif d'une stable (3.1.1) sort directement en release s'il est petit et sûr ; sinon d'abord en 3.1.1b1.
 - Une bêta de nouveautés en cours (3.2.0b1) et un correctif urgent de la stable (3.1.1) : le correctif part d'une branche `3.1.x`. C'est la seule branche ; tout le reste se fait sur `main`.
 - On ne supprime jamais une version publiée : si elle est mauvaise, on publie le correctif suivant.
@@ -53,6 +54,6 @@ Les mêmes règles pour toutes les briques (Hestia Weather 3.x.x, Hestia Confort
 
 1. Tous les tests au vert : Python, Home Assistant, panneau, carte, navigateur, et `hestia-ecosysteme/socle/verifier.sh`.
 2. La même version partout : `manifest.json`, `package.json` du panneau et de la carte quand ils suivent la brique, constante de version ; « À venir » prend ce numéro.
-3. Bêta d'abord, essai chez Frank, puis stable.
+3. Pour un gros changement : bêta d'abord, essai chez Frank, puis stable. Sinon, stable directement avec l'accord de Frank.
 4. Commit, tag et release au nom de hestiaFB, sans mention d'outil ni de co-auteur.
 5. Pour un majeur ou une interface entre briques modifiée : les deux briques publiées ensemble, compatibilité mise à jour dans les README.
