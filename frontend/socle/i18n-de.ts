@@ -8,7 +8,7 @@ export const SOCLE_DE:Record<string,string>={
  'Lieux':'Orte','Navigation Hestia-FB':'Hestia-FB-Navigation','Ouvrir la navigation Hestia-FB':'Hestia-FB-Navigation öffnen',
  'Ouvrir le menu Home Assistant':'Menü von Home Assistant öffnen',
  // The home page
- 'Votre logement, connecté':'Ihr Zuhause, vernetzt','Vos briques Hestia-FB et les points à compléter, au même endroit.':'Ihre Hestia-FB-Bausteine und was noch zu ergänzen ist, an einem Ort.',
+ 'Tout est suivi, rien à régler.':'Alles wird verfolgt, nichts einzustellen.','Vos briques sont reliées entre elles':'Ihre Bausteine sind miteinander verbunden','Votre logement, connecté':'Ihr Zuhause, vernetzt','Vos briques Hestia-FB et les points à compléter, au même endroit.':'Ihre Hestia-FB-Bausteine und was noch zu ergänzen ist, an einem Ort.',
  'Version {version}':'Version {version}','Ouvrir {tab}':'{tab} öffnen','Tout est suivi':'Alles wird verfolgt','À faire':'Zu tun','État inconnu':'Unbekannter Zustand',
  'À découvrir':'Zu entdecken','Installée. Ses réglages restent dans Paramètres, en attendant qu’elle rejoigne ce panneau.':'Installiert. Die Einstellungen bleiben unter Einstellungen, bis der Baustein in dieses Panel kommt.',
  'Ouvrir ses réglages':'Einstellungen öffnen','Voir':'Ansehen',

@@ -23,9 +23,9 @@ from homeassistant.helpers.storage import Store
 
 from .engine import legacy
 
-SOCLE_VERSION = (1, 23)
+SOCLE_VERSION = (1, 24)
 # Which copy of a same version is the newest: written by copier.sh when the socle changes (EMPREINTE), equal in ui.ts.
-SOCLE_BUILD = "20261106.1007"
+SOCLE_BUILD = "20261120.1407"
 # 1.1: an optional `tab`, the tab's own name when it is not the brick's (« Météo » for Hestia Weather).
 # 1.2: async_register_card, the brick's card on every dashboard, also as a dashboard resource.
 # 1.3: the home page says « À découvrir » and « Voir » for the bricks not installed (same contract as 1.2).
@@ -66,8 +66,10 @@ SOCLE_BUILD = "20261106.1007"
 #       state in the home, only for its language and theme, and hands the open tab its new `hass` directly; the tab's
 #       address object only changes with the address. ui.ts hassChanged(): a tab redraws only for the entities it shows.
 #       The hub's fonts in woff2 (TTF kept as a fallback). No change to the bricks' contract.
+# 1.24: the home page shows each brick as a door: its colour, its icon, the key figure of its summary, its state and
+#       version; the links between bricks drawn as a small map. No change to the bricks' contract.
 # The shell's custom element carries its version: two copies never fight over one name.
-ELEMENT = "hestia-socle-1-23"
+ELEMENT = "hestia-socle-1-24"
 KEY = "hestia_socle"
 STORE_VERSION = 1
 PANEL = "hestia"
