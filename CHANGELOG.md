@@ -1,8 +1,17 @@
-## À venir
+## 4.2.0 — Le ciel de maintenant, et le nouvel accueil
+
+**En bref**
+
+- **Hestia Confort sait s’il fait gris maintenant : plus de « Grand soleil » sous un ciel couvert.**
+- **Une nouvelle page d’accueil Hestia-FB : une porte par brique.**
+
+### Nouveautés
+
+- Panneau Hestia-FB : une nouvelle page d’accueil, avec une porte pour chaque brique installée (Météo, Confort, Énergie). Chaque porte montre sa couleur, son chiffre clé, son état et sa version. Les réglages ne changent pas.
 
 ### Pour les autres briques
 
-- Hestia Confort peut lire le ciel de maintenant (nuageux, ensoleillé…). Elle ne dit plus « Grand soleil » quand il fait gris, même si la prévision heure par heure annonce du soleil. Ajout compatible : une ancienne Confort n'est pas gênée.
+- Hestia Confort peut lire le ciel de maintenant (nuageux, ensoleillé…), celui que montre votre entité météo. Elle ne dit plus « Grand soleil » quand il fait gris, même si la prévision heure par heure annonce du soleil. Il faut Hestia Confort 3.1.0 pour en profiter. Ajout compatible : une Confort plus ancienne n’est pas gênée.
 
 ## 4.1.0 — Un guide pour tout régler
 
