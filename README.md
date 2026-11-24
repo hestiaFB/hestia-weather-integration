@@ -132,7 +132,7 @@ Installée sous son nom technique d’origine, l’intégration passe seule au n
 - Hestia Weather ne modifie jamais vos automatisations, scripts, scènes, blueprints, tableaux de bord ni les réglages des autres intégrations. Ceux qui utilisent encore l’ancien nom (l’action, l’évènement, la carte) sont listés dans **Paramètres → Réparations**, avec les lignes à changer. La liste se met à jour à chaque démarrage et disparaît une fois tout changé ;
 - installée avec le Marketplace, une réparation vous demande peut-être de **retélécharger Hestia Weather une fois** pour garder les mises à jour.
 
-Hestia Weather 4.2.0 et Hestia Confort 3.1.0 vont ensemble : Confort y lit le ciel de maintenant et ne dit plus « Grand soleil » sous un ciel gris. Une Confort plus ancienne marche aussi, sans cette nouveauté. Mettez-les à jour ensemble.
+Hestia Weather 4.2.0 (ou plus récent) et Hestia Confort 3.1.0 vont ensemble : Confort y lit le ciel de maintenant et ne dit plus « Grand soleil » sous un ciel gris. Une Confort plus ancienne marche aussi, sans cette nouveauté. Mettez-les à jour ensemble.
 
 **La mise à jour est refusée** (« changed its domain from niak_… to hestia_… ») ? Suivez [le guide du passage au nom Hestia](docs/PASSAGE-HESTIA.md) : un dossier à supprimer, deux redémarrages, rien n’est perdu.
 

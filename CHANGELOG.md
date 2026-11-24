@@ -1,4 +1,4 @@
-## À venir — Hestia Weather ne touche plus à vos automatisations
+## 4.3.0 — Hestia Weather ne touche plus à vos automatisations
 
 ### Avant de mettre à jour
 
