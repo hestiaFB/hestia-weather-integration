@@ -50,8 +50,9 @@ export interface DraftReply {draft:Sources;view:View;error:string}
 export type Change={op:string;key?:string;value?:unknown;area?:string};
 // Renaming the former entity ids (legacy.ENTITY_ROOT…) « hestia_weather… » (migration.py): what it would change, then what it changed.
 export interface RenameUse {kind:'automation'|'script'|'scene'|'dashboard'|'helper'|'file';name:string;lines?:number[]}
-export interface RenamePreview {entities:{from:string;to:string}[];taken:string[];auto:RenameUse[];manual:RenameUse[];undo:boolean;renamed_at:string|null;old:string}
-export interface RenameReply {done:{entities:number;files:number;dashboards:number;helpers:number};preview:RenamePreview}
+// `manual`: what uses the entities, to change after renaming; `stale`: once renamed, what still uses an old id. Nothing is rewritten.
+export interface RenamePreview {entities:{from:string;to:string}[];taken:string[];manual:RenameUse[];stale?:RenameUse[];undo:boolean;renamed_at:string|null;old:string}
+export interface RenameReply {done:{entities:number};preview:RenamePreview}
 
 export const NONE='none';
 export const stages=[fr('Sources météo'),fr('Station météo · capteurs locaux'),fr('Qualité de l’air'),fr('Pollens'),fr('Entités'),fr('Récapitulatif'),fr('Eau et jardin'),fr('Extensions')];

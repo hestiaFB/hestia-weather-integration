@@ -771,8 +771,8 @@
   },
   "issues": {
     "migration_manual": {
-      "title": "Hestia Weather: a few lines to change by hand",
-      "description": "Hestia Weather's technical name is now “hestia_weather”. Your places, settings, history and statistics were kept, and what was made in the interface was updated.\n\nThese hand-written files still use the former name (line numbers in brackets). Replace it there with “hestia_weather” (or “hestia-weather” for the card):\n\n{items}"
+      "title": "Hestia Weather: a few things to change yourself",
+      "description": "Hestia Weather's technical name is now “hestia_weather”. Your places, settings, history and statistics were kept.\n\nHestia Weather never changes your automations, files, dashboards or other integrations' settings. The ones listed still use the former name: replace it with “hestia_weather” (“hestia-weather” for the card, “/hestia” for the panel). In a Hestia Weather card, choose the place again.\n\nFiles have their line numbers in brackets, dashboards their address:\n\n{items}\n\nThis message goes by itself at the next start, once everything is changed."
     },
     "migration_restart": {
       "title": "Hestia Weather: restart Home Assistant",
@@ -782,19 +782,9 @@
       "title": "Hestia Weather: the move to the new name did not finish",
       "description": "Nothing was lost. It will start again at the next restart of Home Assistant. If this message comes back, open an issue with Home Assistant's log."
     },
-    "marketplace_untracked": {
-      "title": "Hestia Weather: get updates again",
-      "fix_flow": {
-        "step": {
-          "confirm": {
-            "title": "Get Hestia Weather updates again",
-            "description": "The Marketplace will download Hestia Weather {version} again, the version you already have. Your settings, your sensors and their history do not change.\n\nHome Assistant may ask you to restart afterwards."
-          }
-        },
-        "abort": {
-          "download_failed": "The Marketplace could not download Hestia Weather. Open Settings › Marketplace › Hestia Weather and press Download."
-        }
-      }
+    "marketplace_download_again": {
+      "title": "Hestia Weather: download it again once to keep getting updates",
+      "description": "Hestia Weather's technical name changed. If you installed it with the Marketplace (HACS), it may no longer offer its updates.\n\nTo get them back: open Settings › Marketplace › Hestia Weather and press Download. Your settings, your sensors and their history do not change.\n\nOnce done, you can ignore this message. It goes by itself with the next Hestia Weather update."
     }
   }
 }

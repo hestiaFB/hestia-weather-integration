@@ -10,7 +10,7 @@ export {t,fr,setLanguage,addDictionary,currentLanguage,currentLocale,wordsReady}
 
 // This copy's socle: the same version as socle.py, and the build copier.sh writes when the socle changes.
 export const SOCLE:readonly [number,number]=[1,24];
-export const SOCLE_BUILD='20261120.1407';
+export const SOCLE_BUILD='20261124.0934';
 // Newer or equal: the version first, then the build. Another major version is never mixed in.
 export const sameOrNewer=(a:{SOCLE:readonly number[];SOCLE_BUILD:string},b:{SOCLE:readonly number[];SOCLE_BUILD:string})=>
  a.SOCLE[0]===b.SOCLE[0]&&(a.SOCLE[1]!==b.SOCLE[1]?a.SOCLE[1]>b.SOCLE[1]:a.SOCLE_BUILD>=b.SOCLE_BUILD);

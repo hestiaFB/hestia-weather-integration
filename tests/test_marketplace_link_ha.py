@@ -1,8 +1,7 @@
-"""After the change of name, Home Assistant's Marketplace may no longer follow Hestia Weather: the repair says so, only
-when the offered version is under the new name, and asks the Marketplace to download it again.
-Skipped without Home Assistant: ../ha-test/venv/bin/python -m unittest tests/test_marketplace_link_ha.py
-
-The Marketplace is a stand-in with the same shape as Home Assistant 2026.11's (entry.runtime_data.repositories)."""
+"""After the change of name, a repair says how to get Hestia Weather's updates from the Marketplace again: only when the
+carrying over has just removed the former folder, as a plain message, gone by itself once another version is installed.
+The Marketplace is never read nor driven: Hestia Weather only knows what it did itself.
+Skipped without Home Assistant: ../ha-test/venv/bin/python -m unittest tests/test_marketplace_link_ha.py"""
 from pathlib import Path
 import sys
 import tempfile
@@ -20,28 +19,9 @@ except ImportError:  # pragma: no cover - the engine's own test run
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from custom_components.hestia_weather import marketplace_link  # noqa: E402
-from custom_components.hestia_weather.engine import legacy  # noqa: E402
+from custom_components.hestia_weather.domain_migration import DONE_EVENT  # noqa: E402
 
 ISSUE = ("hestia_weather", marketplace_link.ISSUE)
-
-
-class FakeRepository:
-    def __init__(self, installed: bool, last_version: str, fails: bool = False, domain: str = "hestia_weather") -> None:
-        self.data = SimpleNamespace(installed=installed, last_version=last_version, domain=domain)
-        self.fails, self.downloads, self.removed = fails, 0, 0
-
-    async def update_repository(self, ignore_issues: bool = False, force: bool = False) -> None:
-        self.read_again = getattr(self, "read_again", 0) + 1
-
-    async def uninstall(self) -> None:
-        self.removed += 1
-        self.data.installed = False
-
-    async def async_install_repository(self) -> None:
-        self.downloads += 1
-        if self.fails:
-            raise RuntimeError("rate limited")
-        self.data.installed, self.data.domain = True, "hestia_weather"  # read from the offered version's manifest
 
 
 class MarketplaceLinkTests(unittest.IsolatedAsyncioTestCase):
@@ -58,76 +38,48 @@ class MarketplaceLinkTests(unittest.IsolatedAsyncioTestCase):
         await self.hass.async_stop(force=True)
         self.directory.cleanup()
 
-    def marketplace(self, repository: FakeRepository | None) -> None:
-        entry = ConfigEntry(domain="marketplace", title="Marketplace", data={}, options={}, unique_id=None, version=1, minor_version=1,
-                            source="user", discovery_keys={}, subentries_data=None)
-        repositories = {marketplace_link.REPOSITORY: repository} if repository else {}
-        entry.runtime_data = SimpleNamespace(repositories=SimpleNamespace(get_by_full_name=repositories.get))
-        self.hass.config_entries._entries[entry.entry_id] = entry
-
     def issue(self):
         return ir.async_get(self.hass).issues.get(ISSUE)
 
-    async def test_untracked_under_the_new_name_shows_the_repair_and_mends_it(self):
-        repository = FakeRepository(installed=False, last_version="v3.1.0")
-        self.marketplace(repository)
-        marketplace_link.async_check(self.hass)
+    async def carried_over(self, folder: bool, domain: str = "hestia_weather") -> None:
+        self.hass.bus.async_fire(DONE_EVENT, {"domain": domain, "entries": {}, "folder": folder})
+        await self.hass.async_block_till_done()
+
+    async def test_the_message_comes_when_the_former_folder_was_removed(self):
+        marketplace_link.async_setup_marketplace_link(self.hass, "4.3.0")
+        await self.carried_over(folder=False)
+        self.assertIsNone(self.issue())  # nothing removed: the Marketplace still follows what it installed
+        await self.carried_over(folder=True, domain="hestia_comfort")
+        self.assertIsNone(self.issue())  # the other brick says it for itself
+        await self.carried_over(folder=True)
         issue = self.issue()
-        self.assertTrue(issue.is_fixable)
-        self.assertEqual(issue.translation_placeholders, {"version": "3.1.0"})
-        self.assertTrue(await marketplace_link.async_track_again(self.hass))
-        self.assertEqual((repository.read_again, repository.downloads), (1, 1))  # read again, then downloaded
-        self.assertIsNone(self.issue())
+        self.assertFalse(issue.is_fixable)  # a message: nothing is downloaded from here
+        self.assertTrue(issue.is_persistent)  # kept across restarts, until dismissed or the next update
+        self.assertEqual(issue.data, {"version": "4.3.0"})
 
-    async def test_a_former_version_offered_is_never_downloaded(self):
-        # While the bridge (2.9.9) is the newest stable, downloading would bring the former folder back.
-        repository = FakeRepository(installed=False, last_version="v2.9.9")
-        self.marketplace(repository)
-        marketplace_link.async_check(self.hass)
-        self.assertIsNone(self.issue())
-        self.assertTrue(await marketplace_link.async_track_again(self.hass))
-        self.assertEqual(repository.downloads, 0)
-
-    async def test_followed_or_no_marketplace_shows_nothing(self):
-        marketplace_link.async_check(self.hass)  # no Marketplace (HACS, or installed by hand)
-        self.assertIsNone(self.issue())
-        self.marketplace(FakeRepository(installed=True, last_version="v3.1.0"))
-        marketplace_link.async_check(self.hass)
-        self.assertIsNone(self.issue())
-
-    async def test_the_former_folder_downloaded_again_is_removed_first(self):
-        # Downloaded by hand while the bridge was the newest version: the Marketplace follows the former folder again.
-        repository = FakeRepository(installed=True, last_version="v3.1.0", domain=legacy.DOMAIN)
-        self.marketplace(repository)
-        marketplace_link.async_check(self.hass)
+    async def test_it_goes_by_itself_with_the_next_version(self):
+        marketplace_link.async_setup_marketplace_link(self.hass, "4.3.0")
+        await self.carried_over(folder=True)
+        marketplace_link.async_setup_marketplace_link(self.hass, "4.3.0")  # started again, same version: kept
         self.assertIsNotNone(self.issue())
-        self.assertTrue(await marketplace_link.async_track_again(self.hass))
-        self.assertEqual((repository.removed, repository.downloads), (1, 1))
+        marketplace_link.async_setup_marketplace_link(self.hass, "4.3.1")  # an update came: the Marketplace follows it
         self.assertIsNone(self.issue())
 
-    async def test_the_former_folder_still_running_a_place_is_left_alone(self):
-        repository = FakeRepository(installed=True, last_version="v3.1.0", domain=legacy.DOMAIN)
-        self.marketplace(repository)
-        place = ConfigEntry(domain=legacy.DOMAIN, title="Gardanne", data={}, options={}, unique_id=None, version=1, minor_version=1,
-                            source="user", discovery_keys={}, subentries_data=None)
-        self.hass.config_entries._entries[place.entry_id] = place
-        marketplace_link.async_check(self.hass)
-        self.assertIsNone(self.issue())
-
-    async def test_a_failed_download_keeps_the_repair(self):
-        repository = FakeRepository(installed=False, last_version="v3.1.0", fails=True)
-        self.marketplace(repository)
-        marketplace_link.async_check(self.hass)
-        self.assertFalse(await marketplace_link.async_track_again(self.hass))
-        self.assertIsNotNone(self.issue())
-
-    async def test_changed_insides_show_nothing(self):
+    async def test_the_marketplace_is_never_read(self):
+        # Its config entry and objects are there, with a repository that would say « not installed »: nothing reads them.
         entry = ConfigEntry(domain="marketplace", title="Marketplace", data={}, options={}, unique_id=None, version=1, minor_version=1,
                             source="user", discovery_keys={}, subentries_data=None)
-        entry.runtime_data = object()  # no « repositories » any more
+
+        def touched(*_):
+            raise AssertionError("the Marketplace's objects were read")
+        entry.runtime_data = SimpleNamespace(repositories=SimpleNamespace(get_by_full_name=touched))
         self.hass.config_entries._entries[entry.entry_id] = entry
-        marketplace_link.async_check(self.hass)
+        self.hass.data["hacs"] = SimpleNamespace(repositories=SimpleNamespace(get_by_full_name=touched))
+        marketplace_link.async_setup_marketplace_link(self.hass, "4.3.0")
+        await self.carried_over(folder=False)
         self.assertIsNone(self.issue())
+        self.assertFalse(hasattr(marketplace_link, "async_track_again"))
+        self.assertFalse((ROOT / "custom_components" / "hestia_weather" / "repairs.py").exists())
 
 
 if __name__ == "__main__":

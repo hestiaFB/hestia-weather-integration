@@ -25,7 +25,7 @@ from .engine import legacy
 
 SOCLE_VERSION = (1, 24)
 # Which copy of a same version is the newest: written by copier.sh when the socle changes (EMPREINTE), equal in ui.ts.
-SOCLE_BUILD = "20261120.1407"
+SOCLE_BUILD = "20261124.0934"
 # 1.1: an optional `tab`, the tab's own name when it is not the brick's (« Météo » for Hestia Weather).
 # 1.2: async_register_card, the brick's card on every dashboard, also as a dashboard resource.
 # 1.3: the home page says « À découvrir » and « Voir » for the bricks not installed (same contract as 1.2).
@@ -68,6 +68,8 @@ SOCLE_BUILD = "20261120.1407"
 #       The hub's fonts in woff2 (TTF kept as a fallback). No change to the bricks' contract.
 # 1.24: the home page shows each brick as a door: its colour, its icon, the key figure of its summary, its state and
 #       version; the links between bricks drawn as a small map. No change to the bricks' contract.
+#       Build 20261124: « Passage au nom Hestia » lists what the user changes; nothing is written by the bricks any
+#       more (`updated` only from an earlier copy). The hub's files are listed in the executor, not in the event loop.
 # The shell's custom element carries its version: two copies never fight over one name.
 ELEMENT = "hestia-socle-1-24"
 KEY = "hestia_socle"
@@ -126,7 +128,7 @@ async def _served(hass, shell_url, brick):
     if not getattr(hass, "http", None) or not hasattr(hass.http, "async_register_static_paths"):
         return shell_url, brick  # Isolated tests and headless setups have no frontend.
     folder = Path(__file__).parent / "frontend"
-    content = await hass.async_add_executor_job(_content, folder)
+    content, files = await hass.async_add_executor_job(_content, folder)
     base = f"/hestia-socle/{folder.parent.name}/{SOCLE_VERSION[0]}.{SOCLE_VERSION[1]}.{SOCLE_BUILD}-{content}"
     served = hass.data.setdefault(f"{KEY}_served", set())
     if base not in served:
@@ -135,7 +137,7 @@ async def _served(hass, shell_url, brick):
 
     def here(url):
         name = urlsplit(url or "").path.rsplit("/", 1)[-1]
-        return f"{base}/{name}" if url and url.startswith("/") and (folder / name).is_file() else url
+        return f"{base}/{name}" if url and url.startswith("/") and name in files else url
     return here(shell_url), {**brick, "module_url": here(brick.get("module_url"))}
 
 
@@ -153,11 +155,12 @@ def _defines_element(shell_url):
 
 
 def _content(folder):
-    """A short sum of the folder's scripts: the same files, the same address."""
+    """A short sum of the folder's scripts (the same files, the same address), and the names of its files: read in the
+    executor, never in the event loop."""
     digest = hashlib.sha256()
     for script in sorted(folder.glob("*.js")):
         digest.update(script.name.encode() + b"\0" + script.read_bytes())
-    return digest.hexdigest()[:10]
+    return digest.hexdigest()[:10], {path.name for path in folder.iterdir() if path.is_file()}
 
 
 def _rank(panel):

@@ -18,7 +18,7 @@ export interface Brick {domain:string;name:string;slug:string;version:string;ico
 export interface Other {domain:string;name:string;pitch:string;url:string;installed:boolean;settings_path:string}
 // What one brick says about its move to the Hestia name (socle 1.16, domain_migration.async_status and the brick's own lines).
 export interface Migration {domain:string;state:'done'|'running'|'failed';entries:number;entities:number;devices:number;stores:number;
- updated:{files:number;dashboards:number;helpers:number;blueprints:number};dashboards?:string[];manual:{name:string;lines:number[]}[];restart:boolean;
+ updated?:{files:number;dashboards:number;helpers:number;blueprints:number};dashboards?:string[];manual:{name:string;lines:number[]}[];restart:boolean;
  summary?:{places?:number;rooms?:number;learning?:number};names?:{left:number;old:string;renamed_at:string|null}}
 export interface Overview {version:1;socle:number[];bricks:Brick[];others:Other[];sidebar?:boolean;theme?:'ha'|'hestia';migration?:Migration[]}
 interface Hass {callWS<T>(msg:Record<string,unknown>):Promise<T>;themes?:{darkMode?:boolean};language?:string}
@@ -177,12 +177,13 @@ export class HestiaShell extends LitElement {
   lines.push({level:'ok',text:t('Vos réglages sont repris'),why:kept.join(' · ')||null});
   const entities=sum(m=>m.entities);
   lines.push({level:'ok',text:t('Entités, historiques et statistiques gardés'),why:entities?count(entities,t('{n} entité',{n:entities}),t('{n} entités',{n:entities})):null});
-  // The same dashboard updated by two bricks counts once.
-  const dashboards=new Set(all.flatMap(m=>m.dashboards??[])).size||sum(m=>m.updated.dashboards),files=sum(m=>m.updated.files+m.updated.helpers+m.updated.blueprints);
+  // Only a brick of an earlier version still updated them; the same dashboard updated by two bricks counts once.
+  const dashboards=new Set(all.flatMap(m=>m.dashboards??[])).size||sum(m=>m.updated?.dashboards),files=sum(m=>(m.updated?.files??0)+(m.updated?.helpers??0)+(m.updated?.blueprints??0));
   const updated=[dashboards?count(dashboards,t('{n} tableau de bord',{n:dashboards}),t('{n} tableaux de bord',{n:dashboards})):'',files?count(files,t('{n} automatisation, script ou modèle',{n:files}),t('{n} automatisations, scripts ou modèles',{n:files})):''].filter(Boolean);
-  lines.push({level:'ok',text:t('Tableaux de bord et automatisations mis à jour'),why:updated.join(' · ')||t('Rien à mettre à jour')});
+  if(updated.length)lines.push({level:'ok',text:t('Tableaux de bord et automatisations mis à jour'),why:updated.join(' · ')});
+  // Nothing the user has is written: what still uses a former name is listed, files with their lines, dashboards by address.
   const manual=all.flatMap(m=>m.manual);
-  lines.push(manual.length?{level:'todo',text:t('Quelques lignes à changer à la main'),why:t('Remplacez l’ancien nom par le nouveau dans : {files}',{files:manual.map(m=>m.lines.length?`${m.name} (${m.lines.join(', ')})`:m.name).join(' ; ')})}
+  lines.push(manual.length?{level:'todo',text:t('À changer vous-même'),why:t('Hestia-FB ne touche ni à vos automatisations ni à vos tableaux de bord. Remplacez-y l’ancien nom par le nouveau : {files}',{files:manual.map(m=>m.lines.length?`${m.name} (${m.lines.join(', ')})`:m.name).join(' ; ')})}
    :{level:'ok',text:t('Rien à changer à la main')});
   if(all.some(m=>m.restart))lines.push({level:'todo',text:t('Redémarrer Home Assistant pour terminer'),why:t('L’ancienne version est encore en mémoire jusqu’au redémarrage.'),
    go:{label:this.restartAsk?t('Confirmer le redémarrage'):t('Redémarrer maintenant'),disabled:this.saving,onClick:()=>{if(this.restartAsk)void this.restart();else this.restartAsk=true;}}});

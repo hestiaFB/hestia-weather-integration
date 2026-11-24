@@ -34,8 +34,6 @@ from .websocket import VERSION_KEY
 from .socle import async_register_brick, async_register_card, is_card_resource
 
 ASSETS = f"/{DOMAIN}-assets"
-CARD_REPOSITORY = legacy.CARD_REPOSITORY
-"""The former card's repository: since 2.3 the card comes with the integration."""
 CARD_FILE = "hestia-weather-card.js"
 CARD_URL = f"{ASSETS}/{CARD_FILE}"
 FAILED = (ConfigEntryState.SETUP_ERROR, ConfigEntryState.SETUP_RETRY, ConfigEntryState.MIGRATION_ERROR, ConfigEntryState.FAILED_UNLOAD)
@@ -211,8 +209,8 @@ def place(hass: HomeAssistant, entry: Any, card_twice: bool = False, context: Co
 async def card_twice(hass: HomeAssistant) -> bool:
     """Whether the former card is still installed next to the one the integration serves: both would load.
 
-    A dashboard resource naming the card (HACS declares one, so does a card copied by hand), or HACS saying it is installed.
-    The integration's own resource (CARD_URL) does not count.
+    A dashboard resource naming the card (the Marketplace declares one, so does a card copied by hand). The integration's own
+    resource (CARD_URL) does not count. The Marketplace itself is not read: its objects are not an interface.
     """
     try:
         lovelace = hass.data.get("lovelace")
@@ -221,12 +219,9 @@ async def card_twice(hass: HomeAssistant) -> bool:
             if not getattr(resources, "loaded", True):
                 await resources.async_get_info()  # Resources kept by the UI load on first use.
             urls = [str(item.get("url", "")) for item in resources.async_items() or []]
-            if any((CARD_FILE in unquote(u) or legacy.CARD_FILE in unquote(u)) and not is_card_resource(u, CARD_URL) for u in urls):
-                return True
-        hacs = hass.data.get("hacs")
-        repository = hacs.repositories.get_by_full_name(CARD_REPOSITORY) if hacs is not None else None
-        return bool(repository is not None and repository.data.installed)
-    except Exception:  # noqa: BLE001 - Lovelace's and HACS's insides may change: nothing is then said
+            return any((CARD_FILE in unquote(u) or legacy.CARD_FILE in unquote(u)) and not is_card_resource(u, CARD_URL) for u in urls)
+        return False
+    except Exception:  # noqa: BLE001 - Lovelace's insides may change: nothing is then said
         LOGGER.debug("Former card not looked for", exc_info=True)
         return False
 
@@ -385,7 +380,7 @@ async def ws_rename_preview(hass: HomeAssistant, connection: websocket_api.Activ
 @websocket_api.async_response
 @spoken
 async def ws_rename(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    """Renames the entities and what uses them, asked for by the user."""
+    """Renames the entities, asked for by the user; what uses them is listed in the preview, for the user to change."""
     try:
         done = await migration.apply(hass)
     except ValueError as err:

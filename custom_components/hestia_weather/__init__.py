@@ -26,18 +26,19 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    # A home installed under the former technical name is carried over: its files now, the rest once Home Assistant has started.
-    await async_setup_migration(hass)
     # The card compares it with the version it needs, to say when the integration was not updated with it.
     version = str((await async_get_integration(hass, DOMAIN)).version or "")
+    # After the change of name, the Marketplace may no longer offer the updates: a repair says how to get them again.
+    # Listening before the carrying over starts, to hear when it removes the former folder.
+    async_setup_marketplace_link(hass, version)
+    # A home installed under the former technical name is carried over: its files now, the rest once Home Assistant has started.
+    await async_setup_migration(hass)
     async_setup_websocket(hass, version)
     async_setup_services(hass)
     # The contract for the other Hestia-FB bricks (Hestia Confort, future Hestia Chauffage…).
     hass.data[API_KEY] = api = HestiaWeatherApi(hass)
     # The same, for a Hestia Confort not updated yet (still under its former name).
     await async_setup_former_api(hass, api)
-    # After the change of name, the Marketplace may no longer follow Hestia Weather: a repair says so and mends it.
-    async_setup_marketplace_link(hass)
     # The « Météo » tab of the shared « Hestia-FB » panel, and Hestia Weather's line on its home page.
     await async_load_labels(hass)
     await async_setup_panel(hass, version)

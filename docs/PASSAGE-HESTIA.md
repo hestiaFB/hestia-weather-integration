@@ -33,9 +33,14 @@ Il suffit de changer le dossier. Tout le reste est repris seul.
 ## Ce qui est gardé
 
 - Vos lieux, réglages, alertes en cours, historiques et statistiques.
-- Le nom de vos entités : vos automatisations et tableaux de bord continuent de marcher.
-- Les automatisations, scripts, scènes et tableaux de bord faits dans l'interface sont mis à jour.
-- Ce qui est écrit à la main en YAML n'est jamais modifié : une réparation dans **Paramètres** liste les fichiers et les lignes à changer.
+- Le nom de vos entités : ce qui les utilise continue de marcher.
+
+## Ce que vous changez vous-même
+
+Hestia Weather ne modifie jamais vos automatisations, scripts, scènes, blueprints, tableaux de bord ni les réglages des autres intégrations.
+Ceux qui utilisent encore l'ancien nom (l'action, l'évènement, la carte) sont listés dans **Paramètres → Réparations**, avec les lignes à changer.
+Remplacez-y l'ancien nom par `hestia_weather` (`hestia-weather` pour la carte) ; dans une carte Hestia Weather, choisissez à nouveau le lieu.
+La liste se met à jour à chaque démarrage et disparaît une fois tout changé.
 
 ## Vous avez aussi Hestia Confort ?
 
@@ -67,3 +72,5 @@ Since 3.0, Hestia Weather's technical name is `hestia_weather` (formerly `niak_w
 7. Open Hestia-FB → Home: the « Moving to the Hestia name » box shows each step.
 
 Your places, settings, alerts, history, statistics and entity names are kept. If « Add integration » offers to set up a new place instead, stop there and open an issue.
+
+Hestia Weather never changes your automations, scripts, scenes, blueprints, dashboards or other integrations' settings. The ones that still use the former name (the action, the event, the card) are listed in Settings → Repairs, with the lines to change; the list is updated at each start and goes once everything is changed.

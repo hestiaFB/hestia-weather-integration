@@ -771,8 +771,8 @@
   },
   "issues": {
     "migration_manual": {
-      "title": "Hestia Weather: ein paar Zeilen von Hand ändern",
-      "description": "Der technische Name von Hestia Weather ist jetzt „hestia_weather“. Ihre Orte, Einstellungen, Verläufe und Statistiken wurden behalten, und was in der Oberfläche erstellt wurde, wurde angepasst.\n\nDiese von Hand geschriebenen Dateien verwenden noch den früheren Namen (Zeilennummern in Klammern). Ersetzen Sie ihn dort durch „hestia_weather“ (oder „hestia-weather“ für die Karte):\n\n{items}"
+      "title": "Hestia Weather: ein paar Dinge selbst ändern",
+      "description": "Der technische Name von Hestia Weather ist jetzt „hestia_weather“. Ihre Orte, Einstellungen, Verläufe und Statistiken wurden behalten.\n\nHestia Weather ändert nie Ihre Automationen, Dateien, Dashboards oder die Einstellungen anderer Integrationen. Die aufgeführten verwenden noch den früheren Namen: Ersetzen Sie ihn durch „hestia_weather“ („hestia-weather“ für die Karte, „/hestia“ für das Panel). Wählen Sie in einer Hestia-Weather-Karte den Ort erneut.\n\nDateien mit ihren Zeilennummern in Klammern, Dashboards mit ihrer Adresse:\n\n{items}\n\nDiese Meldung verschwindet beim nächsten Start von selbst, sobald alles geändert ist."
     },
     "migration_restart": {
       "title": "Hestia Weather: Home Assistant neu starten",
@@ -782,19 +782,9 @@
       "title": "Hestia Weather: Der Wechsel zum neuen Namen ist nicht abgeschlossen",
       "description": "Nichts ist verloren. Er startet beim nächsten Neustart von Home Assistant erneut. Erscheint diese Meldung wieder, eröffnen Sie ein Issue mit dem Protokoll von Home Assistant."
     },
-    "marketplace_untracked": {
-      "title": "Hestia Weather: wieder Updates erhalten",
-      "fix_flow": {
-        "step": {
-          "confirm": {
-            "title": "Wieder Updates für Hestia Weather erhalten",
-            "description": "Der Marketplace lädt Hestia Weather {version} erneut herunter, die Version, die Sie bereits haben. Ihre Einstellungen, Ihre Sensoren und deren Verlauf ändern sich nicht.\n\nHome Assistant bittet Sie danach eventuell um einen Neustart."
-          }
-        },
-        "abort": {
-          "download_failed": "Der Marketplace konnte Hestia Weather nicht herunterladen. Öffnen Sie Einstellungen › Marketplace › Hestia Weather und tippen Sie auf Herunterladen."
-        }
-      }
+    "marketplace_download_again": {
+      "title": "Hestia Weather: einmal erneut herunterladen, um Updates zu behalten",
+      "description": "Der technische Name von Hestia Weather hat sich geändert. Wenn Sie es mit dem Marketplace (HACS) installiert haben, bietet dieser seine Updates eventuell nicht mehr an.\n\nSo erhalten Sie sie wieder: Öffnen Sie Einstellungen › Marketplace › Hestia Weather und tippen Sie auf Herunterladen. Ihre Einstellungen, Ihre Sensoren und deren Verlauf ändern sich nicht.\n\nDanach können Sie diese Meldung ignorieren. Sie verschwindet mit dem nächsten Update von Hestia Weather von selbst."
     }
   }
 }

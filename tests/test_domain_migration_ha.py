@@ -5,12 +5,16 @@ A first Home Assistant sets the home up with the former integration (a stand-in 
 a place, its entities and device as the user named and placed them, its alerts in progress, a dashboard, an automation,
 a blueprint imported from this repository and a package written by hand. A second one starts on the same folder with
 this version next to the former code, still installed, as HACS may leave it.
+Nothing the user wrote is changed: the automations, blueprints, dashboards and other integrations' options are listed in a
+repair, for the user to change.
 """
 from pathlib import Path
 import json
 import sys
 import tempfile
+import threading
 import unittest
+import os
 from unittest.mock import AsyncMock, patch
 
 try:
@@ -115,6 +119,10 @@ class DomainMigrationTests(unittest.IsolatedAsyncioTestCase):
         comfort = ConfigEntry(domain=legacy.COMFORT_DOMAIN, title="Mon logement", data={"home": True}, options={}, unique_id="home",
                               version=1, minor_version=1, source="user", discovery_keys={}, subentries_data=None)
         hass.config_entries._entries[comfort.entry_id] = comfort
+        # Another integration whose options name the former action: never changed, listed.
+        helper = ConfigEntry(domain="template", title="Prévision du matin", data={}, options={"action": f"{OLD}.prevision"}, unique_id=None,
+                             version=1, minor_version=1, source="user", discovery_keys={}, subentries_data=None)
+        hass.config_entries._entries[helper.entry_id] = helper
         hass.config_entries._async_schedule_save()
         area = ar.async_get(hass).async_create("Jardin")
         devices, entities = dr.async_get(hass), er.async_get(hass)
@@ -129,6 +137,8 @@ class DomainMigrationTests(unittest.IsolatedAsyncioTestCase):
             {"type": "entities", "entities": [f"sensor.{OLD}_humidex"]},
             {"type": "button", "tap_action": {"action": "navigate", "navigation_path": f"/{legacy.PANEL}/meteo"}}]}]})
         await hass.data["lovelace"].resources.async_create_item({"res_type": "module", "url": f"{legacy.ASSETS}/{legacy.CARD_FILE}?v=2.9.6"})
+        # A resource the user added under the former address: not the brick's own, listed and kept.
+        await hass.data["lovelace"].resources.async_create_item({"res_type": "module", "url": f"{legacy.ASSETS}/mon-theme.js"})
         (self.config / "automations.yaml").write_text(
             f"- id: '1'\n  alias: Bulletin\n  triggers:\n  - trigger: event\n    event_type: {legacy.ALERT_EVENT}\n"
             f"  actions:\n  - action: {OLD}.prevision\n    data:\n      entity_id: sensor.{OLD}_humidex\n", encoding="utf-8")
@@ -158,8 +168,15 @@ class DomainMigrationTests(unittest.IsolatedAsyncioTestCase):
         hass.set_state(CoreState.running)
         await hass.async_stop()
 
+    def written(self) -> dict[str, str]:
+        """The user's files, as they are."""
+        return {name: (self.config / name).read_text(encoding="utf-8")
+                for name in ("automations.yaml", "packages/meteo.yaml", "blueprints/automation/hestiaFB/gel.yaml")}
+
     async def test_nothing_is_lost(self):
+        files = self.written()
         hass = await self.start()
+        dashboard = await hass.data["lovelace"].dashboards[None].async_load(False)
         old = hass.config_entries.async_get_entry(self.old_id)
         await hass.config_entries.async_setup(old.entry_id)  # the former code is still installed
         await hass.async_block_till_done()
@@ -187,24 +204,18 @@ class DomainMigrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(alerts, {"alerts": {"vent": {"since": "2026-10-29T08:00:00+00:00"}}})
         self.assertEqual(await Store(hass, 1, "hestia_socle").async_load(), {"sidebar": False, "theme": "ha"})
         self.assertFalse((self.config / ".storage" / f"{OLD}.alertes.{self.old_id}").exists())
-        # What the interface wrote follows; the entity ids in it do not change.
-        dashboard = await hass.data["lovelace"].dashboards[None].async_load(False)
-        cards = dashboard["views"][0]["cards"]
-        self.assertEqual(cards[0], {"type": "custom:hestia-weather-card", "entry_id": entry.entry_id})
-        self.assertEqual(cards[1]["entities"], [f"sensor.{OLD}_humidex"])
-        self.assertEqual(cards[2]["tap_action"]["navigation_path"], "/hestia/meteo")
-        automations = (self.config / "automations.yaml").read_text(encoding="utf-8")
-        self.assertIn("event_type: hestia_weather_alerte", automations)
-        self.assertIn("action: hestia_weather.prevision", automations)
-        self.assertIn(f"entity_id: sensor.{OLD}_humidex", automations)
-        blueprint = (self.config / "blueprints" / "automation" / "hestiaFB" / "gel.yaml").read_text(encoding="utf-8")
-        self.assertIn("integration: hestia_weather", blueprint)
-        self.assertIn("/blueprints/automation/hestia_weather/gel.yaml", blueprint)
-        self.assertEqual([r["url"] for r in hass.data["lovelace"].resources.async_items()], [])
-        # Written by hand: left as it is, and listed with its line.
-        self.assertIn(f"{OLD}.prevision", (self.config / "packages" / "meteo.yaml").read_text(encoding="utf-8"))
+        # Nothing the user wrote is changed: files, blueprints, dashboard and the other integration's options stay as they were.
+        self.assertEqual(self.written(), files)
+        self.assertEqual(await hass.data["lovelace"].dashboards[None].async_load(False), dashboard)
+        [helper] = hass.config_entries.async_entries("template")
+        self.assertEqual(dict(helper.options), {"action": f"{OLD}.prevision"})
+        # Only the brick's own card resource under the former address goes; the user's one stays.
+        self.assertEqual([r["url"] for r in hass.data["lovelace"].resources.async_items()], [f"{legacy.ASSETS}/mon-theme.js"])
+        # The repair lists each of them: files with their lines (the former entry id too), the dashboard by its address.
         issues = ir.async_get(hass).issues
-        self.assertIn("packages/meteo.yaml (4)", issues[("hestia_weather", "migration_manual")].translation_placeholders["items"])
+        items = issues[("hestia_weather", "migration_manual")].translation_placeholders["items"].splitlines()
+        self.assertEqual(items, ["- /lovelace", "- Prévision du matin (template)", f"- {legacy.ASSETS}/mon-theme.js",
+                                 "- automations.yaml (5, 7)", "- packages/meteo.yaml (4)", "- blueprints/automation/hestiaFB/gel.yaml (4, 10)"])
         # The former code was running: its folder is gone, and a restart is asked for.
         self.assertFalse((self.config / "custom_components" / OLD).exists())
         self.assertIn(("hestia_weather", "migration_restart"), issues)
@@ -259,9 +270,60 @@ class DomainMigrationTests(unittest.IsolatedAsyncioTestCase):
         hass = await self.start()
         await self.new_version(hass)
         self.assertEqual([e.entry_id for e in hass.config_entries.async_entries("hestia_weather")], [entry.entry_id])
-        self.assertFalse(domain_migration.pending(hass))
+        self.assertFalse(await domain_migration.async_pending(hass))
         again = await domain_migration.async_carry_over(hass)
         self.assertEqual(again["entries"], {})
+        await self.stop(hass)
+
+
+    async def test_the_list_follows_what_the_user_changed(self):
+        """At each start the repair is looked at again: what the user changed leaves it, and it goes once all is done."""
+        hass = await self.start()
+        await self.new_version(hass)
+        await self.stop(hass)
+        # The user changes the automation and the package; the dashboard, the blueprint and the rest are left.
+        for name in ("automations.yaml", "packages/meteo.yaml"):
+            path = self.config / name
+            path.write_text(path.read_text(encoding="utf-8").replace(OLD, "hestia_weather").replace(legacy.ALERT_EVENT, "hestia_weather_alerte"),
+                            encoding="utf-8")
+        hass = await self.start()
+        await self.new_version(hass)
+        items = ir.async_get(hass).issues[("hestia_weather", "migration_manual")].translation_placeholders["items"]
+        self.assertNotIn("automations.yaml", items)
+        self.assertNotIn("meteo.yaml", items)
+        self.assertIn("gel.yaml", items)
+        status = await domain_migration.async_status(hass)
+        self.assertEqual([m["name"] for m in status["manual"]][:1], ["/lovelace"])
+        await self.stop(hass)
+        # Everything changed: the repair goes.
+        (self.config / "blueprints" / "automation" / "hestiaFB" / "gel.yaml").unlink()
+        hass = await self.start()
+        hass.config_entries._entries.pop(hass.config_entries.async_entries("template")[0].entry_id)
+        [entry] = hass.config_entries.async_entries("hestia_weather")
+        await hass.data["lovelace"].dashboards[None].async_save({"views": [{"cards": [{"type": "custom:hestia-weather-card", "entry_id": entry.entry_id}]}]})
+        await hass.data["lovelace"].resources.async_get_info()  # loaded on first use
+        for item in list(hass.data["lovelace"].resources.async_items()):
+            await hass.data["lovelace"].resources.async_delete_item(item["id"])
+        await self.new_version(hass)
+        self.assertNotIn(("hestia_weather", "migration_manual"), ir.async_get(hass).issues)
+        self.assertEqual((await domain_migration.async_status(hass))["manual"], [])
+        await self.stop(hass)
+
+    async def test_the_hub_never_touches_the_disk(self):
+        """The hub's overview asks for the status at each load: the former folder was looked at once, in the executor."""
+        hass = await self.start()
+        await self.new_version(hass)
+
+        def isdir(path):
+            if hass.loop_thread_id == threading.get_ident():
+                raise AssertionError("os.path.isdir in the event loop")
+            return real(path)
+        real = os.path.isdir
+        with patch("os.path.isdir", side_effect=isdir) as looked:
+            for _ in range(3):
+                status = await domain_migration.async_status(hass)
+            self.assertEqual(looked.call_count, 0)  # kept from the carrying over
+        self.assertEqual(status["state"], "done")
         await self.stop(hass)
 
 
