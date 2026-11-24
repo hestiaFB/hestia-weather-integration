@@ -6,7 +6,7 @@ import { css } from 'lit';
 
 /** Speed of the scrolling, in pixels per second: slow enough to be read while it moves. */
 const SPEED = 40;
-/** Gap between the end of the text and its next round, in pixels (the same as `.run` padding below). */
+/** Gap between the end of the text and its next round, in pixels. */
 const GAP = 40;
 /** Share of each round spent still, the start of the text in place (the keyframes of `nw-run` below). */
 const STILL = 0.2;
@@ -38,7 +38,8 @@ const Marquee = typeof HTMLElement === 'undefined' ? undefined : class HestiaWea
     const run = this.firstElementChild as HTMLElement | null;
     if (!run || !this.clientWidth) return;
     const moving = this.hasAttribute('moving');
-    const text = run.offsetWidth - (moving ? GAP : 0);
+    // The first copy keeps the width of the text, moving or not (see marqueeStyles).
+    const text = run.offsetWidth;
     // One pixel of tolerance: a text that just fits stays still.
     if (text <= this.clientWidth + 1) {
       if (moving) { this.removeAttribute('moving'); this.tell(0); }
@@ -60,18 +61,21 @@ const Marquee = typeof HTMLElement === 'undefined' ? undefined : class HestiaWea
 if (Marquee && !customElements.get('hestia-weather-marquee')) customElements.define('hestia-weather-marquee', Marquee);
 
 /** The scrolling line, for every shadow that shows one. Still at the start of each round, faded at the edges, paused under the pointer;
- *  the second copy follows the first only while it moves. Without motion, the line never scrolls: it takes two lines at most. */
+ *  the second copy follows the first only while it moves. Without motion, the line never scrolls: it takes two lines at most.
+ *  Moving or still, the line asks its parent for the same width (the text's): the second copy is out of the flow and the gap is a
+ *  position, not a padding. Otherwise a line that just does not fit grows as it starts to move, then fits, stops, shrinks and starts
+ *  again, and the whole row around it jumps in a loop (the vigilance pill of the tile, on a phone, 24 November). */
 export const marqueeStyles = css`
-  hestia-weather-marquee { display:block; min-width:0; overflow:hidden; white-space:nowrap; }
+  hestia-weather-marquee { display:block; position:relative; min-width:0; overflow:hidden; white-space:nowrap; }
   hestia-weather-marquee .run { display:inline-block; }
   hestia-weather-marquee .run + .run { display:none; }
   hestia-weather-marquee[moving] { mask-image:linear-gradient(90deg, transparent, #000 6px, #000 calc(100% - 18px), transparent); }
-  hestia-weather-marquee[moving] .run { padding-right:${GAP}px; animation:nw-run var(--nw-run-time, 12s) linear infinite; animation-play-state:var(--nw-motion, running); }
-  hestia-weather-marquee[moving] .run + .run { display:inline-block; }
+  hestia-weather-marquee[moving] .run { animation:nw-run var(--nw-run-time, 12s) linear infinite; animation-play-state:var(--nw-motion, running); }
+  hestia-weather-marquee[moving] .run + .run { display:inline-block; position:absolute; left:var(--nw-run, 0px); }
   @media (hover:hover) { :hover > hestia-weather-marquee[moving] .run { animation-play-state:paused; } }
   @keyframes nw-run { 0%, ${STILL * 100}% { transform:translateX(0); } 100% { transform:translateX(calc(-1 * var(--nw-run, 0px))); } }
   @media (prefers-reduced-motion:reduce) {
     hestia-weather-marquee, hestia-weather-marquee[moving] { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; white-space:normal; mask-image:none; }
-    hestia-weather-marquee .run, hestia-weather-marquee[moving] .run { display:inline; padding:0; animation:none; }
+    hestia-weather-marquee .run, hestia-weather-marquee[moving] .run { display:inline; position:static; animation:none; }
     hestia-weather-marquee .run + .run, hestia-weather-marquee[moving] .run + .run { display:none; } }
 `;

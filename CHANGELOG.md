@@ -1,3 +1,9 @@
+## 4.3.1 — La carte ne saute plus sur le téléphone
+
+### Corrections
+
+- Carte « Tuile » : sur un téléphone, avec une vigilance, le haut de la carte ne saute plus en boucle. La pastille « Vigilance jaune · Inondation » passait sans arrêt du texte entier au texte qui défile, et le temps du moment changeait de ligne à chaque fois. Le texte trop long défile maintenant sans changer la place qu'il prend.
+
 ## 4.3.0 — Hestia Weather ne touche plus à vos automatisations
 
 ### Avant de mettre à jour
