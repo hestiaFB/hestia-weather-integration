@@ -2,7 +2,7 @@
 
 [![release](https://img.shields.io/github/v/release/hestiaFB/hestia-weather-integration?cacheSeconds=86400)](https://github.com/hestiaFB/hestia-weather-integration/releases)
 [![Validate](https://github.com/hestiaFB/hestia-weather-integration/actions/workflows/validate.yml/badge.svg)](https://github.com/hestiaFB/hestia-weather-integration/actions/workflows/validate.yml)
-[![HACS](https://img.shields.io/badge/HACS-Custom-orange)](https://hacs.xyz)
+[![HACS](https://img.shields.io/badge/HACS-Default-41BDF5)](https://hacs.xyz)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/hestiaFB)
