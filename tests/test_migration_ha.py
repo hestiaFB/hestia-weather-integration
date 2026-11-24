@@ -27,6 +27,8 @@ AUTOMATIONS = f"""- id: '1'
   alias: Volets
   actions: []
 """
+USES = [{"kind": "automation", "name": "Pluie au jardin"}, {"kind": "helper", "name": "Pluie max"},
+        {"kind": "file", "name": "packages/pluie.yaml", "lines": [4]}]
 PACKAGE = f"template:\n  - sensor:\n      - name: Pluie\n        state: \"{{{{ states('sensor.{OLD}_pluie_24h') }}}}\"\n"
 
 
@@ -46,6 +48,10 @@ class MigrationTests(unittest.IsolatedAsyncioTestCase):
         self.entry = ConfigEntry(version=1, minor_version=1, domain="hestia_weather", title="Gardanne", data={}, source="user", options={},
                                  unique_id="Gardanne", discovery_keys={}, subentries_data=None)
         self.hass.config_entries._entries[self.entry.entry_id] = self.entry
+        # A helper of another integration that uses an old id in its options.
+        self.helper = ConfigEntry(version=1, minor_version=1, domain="min_max", title="Pluie max", data={}, source="user",
+                                  options={"entity_ids": [f"sensor.{OLD}_pluie_24h"]}, unique_id=None, discovery_keys={}, subentries_data=None)
+        self.hass.config_entries._entries[self.helper.entry_id] = self.helper
         registry = er.async_get(self.hass)
         for n, entity_id in enumerate((f"sensor.{OLD}_pluie_24h", f"weather.{OLD}", "sensor.ma_station_pluie")):
             domain, object_id = entity_id.split(".", 1)
@@ -60,8 +66,10 @@ class MigrationTests(unittest.IsolatedAsyncioTestCase):
         seen = await migration.preview(self.hass)
         self.assertEqual(seen["entities"], [{"from": f"sensor.{OLD}_pluie_24h", "to": "sensor.hestia_weather_pluie_24h"},
                                             {"from": f"weather.{OLD}", "to": "weather.hestia_weather"}])
-        self.assertEqual(seen["auto"], [{"kind": "automation", "name": "Pluie au jardin"}])
-        self.assertEqual(seen["manual"], [{"kind": "file", "name": "packages/pluie.yaml", "lines": [4]}])
+        # Everything that uses them is the user's to change: listed, never rewritten.
+        self.assertEqual(seen["auto"], [])
+        self.assertEqual(seen["manual"], USES)
+        self.assertEqual(seen["stale"], [])
         self.assertFalse(seen["undo"])
         self.assertIsNotNone(er.async_get(self.hass).async_get(f"sensor.{OLD}_pluie_24h"))
         self.assertEqual((self.config / "automations.yaml").read_text(encoding="utf-8"), AUTOMATIONS)
@@ -72,17 +80,22 @@ class MigrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(done["entities"], 2)
         self.assertIsNotNone(registry.async_get("sensor.hestia_weather_pluie_24h"))
         self.assertIsNotNone(registry.async_get("sensor.ma_station_pluie"))  # an id the user chose stays
-        self.assertIn("sensor.hestia_weather_pluie_24h", (self.config / "automations.yaml").read_text(encoding="utf-8"))
-        self.assertIn(f"{OLD}", (self.config / "packages" / "pluie.yaml").read_text(encoding="utf-8"))  # written by hand: left
+        # Only the entities: the automations, the files and the other integrations' options are never written.
+        self.assertEqual((self.config / "automations.yaml").read_text(encoding="utf-8"), AUTOMATIONS)
+        self.assertEqual((self.config / "packages" / "pluie.yaml").read_text(encoding="utf-8"), PACKAGE)
+        self.assertEqual(dict(self.helper.options), {"entity_ids": [f"sensor.{OLD}_pluie_24h"]})
         self.assertEqual(prefix(self.hass, self.entry), "hestia_weather")
         seen = await migration.preview(self.hass)
         self.assertEqual(seen["entities"], [])
         self.assertTrue(seen["undo"])
+        # What still uses an old id, until the user changes it.
+        self.assertEqual(seen["stale"], USES)
+        (self.config / "automations.yaml").write_text(AUTOMATIONS.replace(f"sensor.{OLD}_", "sensor.hestia_weather_"), encoding="utf-8")
+        self.assertEqual((await migration.preview(self.hass))["stale"], USES[1:])
 
         await migration.undo(self.hass)
         self.assertIsNotNone(registry.async_get(f"sensor.{OLD}_pluie_24h"))
         self.assertIsNotNone(registry.async_get(f"weather.{OLD}"))
-        self.assertEqual((self.config / "automations.yaml").read_text(encoding="utf-8"), AUTOMATIONS)
         self.assertEqual(prefix(self.hass, self.entry), f"{OLD}")
         self.assertFalse((await migration.preview(self.hass))["undo"])
 

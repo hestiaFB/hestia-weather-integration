@@ -113,15 +113,8 @@ def inventory(hass: HomeAssistant, options: Mapping[str, Any]) -> list[dict[str,
         else:
             chosen = (options.get("pollen_source") == "legacy" and (options.get("pollen_provider") or "polleninformation") == key
                       and bool(options.get("pollens")))
-        downloaded = False
-        hacs = hass.data.get("hacs")
-        if hacs is not None and repository:
-            try:
-                repo = hacs.repositories.get_by_full_name(repository)
-                downloaded = bool(repo is not None and repo.data.installed)
-            except (AttributeError, KeyError):
-                pass  # HACS's internals are optional: config entries and registry still work.
-        result.append({"id": key, "name": name, "description": t(benefit), "installed": domain in installed or downloaded,
+        # Installed: set up in Home Assistant. The Marketplace's own objects are not read (they are not an interface).
+        result.append({"id": key, "name": name, "description": t(benefit), "installed": domain in installed,
                        "configured": chosen,
                        "air_configured": options.get("air_source") not in ("none", "waqi") and bool(options.get("atmo_air_entity")) if key == "atmo" else False,
                        "pollen_configured": options.get("pollen_source") not in ("none", "legacy") and bool(options.get("atmo_pollen_entity")) if key == "atmo" else False,

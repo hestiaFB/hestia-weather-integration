@@ -210,8 +210,7 @@ Le nom technique de l’intégration est `hestia_weather` : l’action `hestia_w
 Installée sous son nom technique d’origine, l’intégration passe seule au nouveau au premier démarrage de la mise à jour :
 
 - vos lieux, réglages, alertes en cours, historiques et statistiques sont gardés ;
-- vos entités gardent leur nom, et donc vos automatisations et vos tableaux de bord aussi ;
-- les automatisations, scripts, scènes et tableaux de bord faits dans l’interface sont mis à jour ;
-- ce qui est écrit à la main en YAML n’est jamais modifié : une réparation dans **Paramètres** liste les fichiers et les lignes à changer.
+- vos entités gardent leur nom : ce qui les utilise continue de marcher ;
+- Hestia Weather ne modifie jamais vos automatisations, scripts, scènes, blueprints, tableaux de bord ni les réglages des autres intégrations. Ceux qui utilisent encore l’ancien nom (l’action, l’évènement, la carte) sont listés dans **Paramètres → Réparations**, avec les lignes à changer. La liste se met à jour à chaque démarrage et disparaît une fois tout changé.
 
-**Entités** : une nouvelle installation crée des `sensor.hestia_weather_…`. Installée avant la 2.9.4, vos entités gardent leur nom d’origine. Pour leur donner le nom Hestia, **Réglages généraux → Nom des entités** : un aperçu d’abord, puis vos automatisations, scripts, scènes et tableaux de bord suivent, et un retour en arrière reste possible.
+**Entités** : une nouvelle installation crée des `sensor.hestia_weather_…`. Installée avant la 2.9.4, vos entités gardent leur nom d’origine. Pour leur donner le nom Hestia, **Réglages généraux → Nom des entités** : un aperçu d’abord, avec la liste de ce qui les utilise ; seules les entités sont renommées, vous changez vous-même les automatisations et tableaux de bord de la liste. Un retour en arrière reste possible.

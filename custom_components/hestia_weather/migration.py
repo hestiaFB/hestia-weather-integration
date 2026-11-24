@@ -1,8 +1,8 @@
 """A home set up under the former name renames its entities (legacy.ENTITY_ROOT…) « hestia_weather… », from Réglages généraux, and back.
 
 Only when the user asks: the preview changes nothing. History and statistics follow the new ids (the recorder moves them).
-What uses the entities follows too: the automations, scripts and scenes the interface writes, the dashboards it keeps and the
-helpers' options. YAML written by hand is only shown, with its lines: Hestia-FB never rewrites it.
+Only the entities are renamed. What uses them (automations, scripts, scenes, dashboards, helpers, YAML written by hand) is
+never written: it is listed before, for the user to change, and after, as long as an old id is still used somewhere.
 """
 from __future__ import annotations
 
@@ -14,14 +14,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
-from homeassistant.util.file import write_utf8_file_atomic
 
 from .const import DOMAIN, LOGGER
 from .engine import legacy, renaming
 from .engine.i18n import t
 
 STORE_KEY = f"{DOMAIN}.migration"
-# The files the interface writes, rewritten; each with its kind and reloaded after.
+# The files the interface writes: each automation, script or scene is listed by its name.
 UI_FILES = (("automations.yaml", "automation", False), ("scripts.yaml", "script", True), ("scenes.yaml", "scene", False))
 # Never read: Home Assistant's own data, code, and what is not configuration.
 SKIPPED = {"custom_components", "deps", "tts", "www", "backups", "node_modules", "blueprints"}
@@ -88,59 +87,45 @@ async def _dashboard_config(dashboard: Any) -> dict[str, Any] | None:
         return None
 
 
+async def _uses(hass: HomeAssistant, mapping: dict[str, str]) -> list[dict[str, Any]]:
+    """What uses one of the mapping's ids, for the user to change: by name in what the interface keeps, by line in the
+    files. Nothing is written."""
+    uses: list[dict[str, Any]] = []
+    if not mapping:
+        return uses
+    for name, kind, keyed in UI_FILES:
+        text = await hass.async_add_executor_job(_read, hass.config.path(name))
+        uses += [{"kind": kind, "name": user} for user in renaming.users(text or "", mapping, keyed)]
+    for title, dashboard in _dashboards(hass):
+        # A dashboard written in YAML is found with the files.
+        if dashboard.mode == "storage" and (config := await _dashboard_config(dashboard)) is not None \
+                and renaming.rewrite_data(config, mapping)[1]:
+            uses.append({"kind": "dashboard", "name": title})
+    for entry in hass.config_entries.async_entries():
+        if entry.domain != DOMAIN and renaming.rewrite_data(dict(entry.options), mapping)[1]:
+            uses.append({"kind": "helper", "name": entry.title})
+    return uses + await hass.async_add_executor_job(_hand_written, hass.config.config_dir, mapping)
+
+
 async def preview(hass: HomeAssistant) -> dict[str, Any]:
-    """What renaming would do, without doing it; and whether a renaming can be undone."""
+    """What renaming would do, without doing it; whether a renaming can be undone, and what still uses the old ids then.
+    `manual`: what uses the entities, to change after renaming; `stale`: once renamed, what still uses an old id."""
     mapping, taken = plan(hass)
     done = await _store(hass).async_load()
-    auto: list[dict[str, Any]] = []
-    manual: list[dict[str, Any]] = []
-    if mapping:
-        for name, kind, keyed in UI_FILES:
-            text = await hass.async_add_executor_job(_read, hass.config.path(name))
-            auto += [{"kind": kind, "name": user} for user in renaming.users(text or "", mapping, keyed)]
-        for title, dashboard in _dashboards(hass):
-            config = await _dashboard_config(dashboard)
-            if config is not None and renaming.rewrite_data(config, mapping)[1]:
-                (auto if dashboard.mode == "storage" else manual).append({"kind": "dashboard", "name": title})
-        for entry in hass.config_entries.async_entries():
-            if entry.domain != DOMAIN and renaming.rewrite_data(dict(entry.options), mapping)[1]:
-                auto.append({"kind": "helper", "name": entry.title})
-        manual += await hass.async_add_executor_job(_hand_written, hass.config.config_dir, mapping)
-    return {"entities": [{"from": old, "to": new} for old, new in mapping.items()], "taken": taken, "auto": auto, "manual": manual,
-            "undo": bool(done and done.get("mapping")), "renamed_at": (done or {}).get("at"), "old": legacy.ENTITY_ROOT}
+    renamed = (done or {}).get("mapping") or {}
+    # `auto` stays empty: kept for a panel of an earlier version, which listed there what was rewritten.
+    return {"entities": [{"from": old, "to": new} for old, new in mapping.items()], "taken": taken, "auto": [],
+            "manual": await _uses(hass, mapping), "stale": await _uses(hass, renamed) if renamed and not mapping else [],
+            "undo": bool(renamed), "renamed_at": (done or {}).get("at"), "old": legacy.ENTITY_ROOT}
 
 
-async def _change(hass: HomeAssistant, mapping: dict[str, str]) -> dict[str, int]:
-    """Renames the entities, then everything that uses them. The same for going back, with the mapping turned round."""
-    registry, counts = er.async_get(hass), {"entities": 0, "files": 0, "dashboards": 0, "helpers": 0}
+def _change(hass: HomeAssistant, mapping: dict[str, str]) -> dict[str, int]:
+    """Renames the entities in Home Assistant's registry. The same for going back, with the mapping turned round."""
+    registry, counts = er.async_get(hass), {"entities": 0}
     for old, new in mapping.items():
         if registry.async_get(old) and not registry.async_get(new):
             registry.async_update_entity(old, new_entity_id=new)
             counts["entities"] += 1
-    for name, kind, _ in UI_FILES:
-        path = hass.config.path(name)
-        text = await hass.async_add_executor_job(_read, path)
-        changed, n = renaming.rewrite(text or "", mapping)
-        if n:
-            await hass.async_add_executor_job(write_utf8_file_atomic, path, changed)
-            counts["files"] += 1
-            if hass.services.has_service(kind, "reload"):
-                await hass.services.async_call(kind, "reload", blocking=True)
-    for _, dashboard in _dashboards(hass):
-        config = await _dashboard_config(dashboard)
-        if config is not None and dashboard.mode == "storage":
-            changed, n = renaming.rewrite_data(config, mapping)
-            if n:
-                await dashboard.async_save(changed)
-                counts["dashboards"] += 1
-    for entry in hass.config_entries.async_entries():
-        if entry.domain == DOMAIN:
-            continue
-        options, n = renaming.rewrite_data(dict(entry.options), mapping)
-        if n:
-            hass.config_entries.async_update_entry(entry, options=options)
-            hass.config_entries.async_schedule_reload(entry.entry_id)
-            counts["helpers"] += 1
     return counts
 
 
@@ -152,20 +137,20 @@ async def apply(hass: HomeAssistant) -> dict[str, int]:
     store = _store(hass)
     await store.async_save({"mapping": mapping, "at": dt_util.utcnow().isoformat()})
     try:
-        return await _change(hass, mapping)
+        return _change(hass, mapping)
     except Exception as err:
         LOGGER.exception("Renaming the entities failed: going back")
-        await _change(hass, {new: old for old, new in mapping.items()})
+        _change(hass, {new: old for old, new in mapping.items()})
         await store.async_remove()
         raise ValueError(t("Le renommage n’a pas abouti : tout a été remis comme avant ({error}).", error=err)) from err
 
 
 async def undo(hass: HomeAssistant) -> dict[str, int]:
-    """Back to the old ids, with what uses them."""
+    """Back to the old ids."""
     store = _store(hass)
     done = await store.async_load()
     if not done or not done.get("mapping"):
         raise ValueError(t("Aucun renommage à annuler."))
-    counts = await _change(hass, {new: old for old, new in done["mapping"].items()})
+    counts = _change(hass, {new: old for old, new in done["mapping"].items()})
     await store.async_remove()
     return counts

@@ -17,8 +17,6 @@ ASSETS = "/niak_weather-assets"
 CARD_FILE = "niak-weather-card.js"
 # Who published it then: its former folder is removed only when it is this brick.
 CODEOWNERS = ("@hestiaFB", "@Niakman13")
-# The separate card of the first versions, still installed by HACS in some homes.
-CARD_REPOSITORY = "hestiaFB/niak-weather"
 # The alert event: still fired next to the new one, so that an automation written by hand keeps working.
 ALERT_EVENT = "niak_weather_alerte"
 # The shared « Hestia » panel: its former address (still opened from bookmarks) and its settings file.

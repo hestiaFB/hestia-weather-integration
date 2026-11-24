@@ -36,14 +36,15 @@ Tout est calculé une fois, dans Home Assistant : la carte affiche, vos automati
 
 ## Installation
 
-1. Ajoutez le dépôt personnalisé `https://github.com/hestiaFB/hestia-weather-integration`, catégorie **Intégration** :
-   - Home Assistant 2026.11 ou plus récent : dans le **Marketplace** (Paramètres → Marketplace). Il demande d’abord de relier un compte GitHub.
-   - Avant 2026.11 : dans HACS, ⋮ → **Dépôts personnalisés**.
-2. Installez **Hestia Weather**, puis redémarrez Home Assistant.
-3. **Paramètres → Appareils et services → Ajouter une intégration → Hestia Weather.**
-4. Sur un tableau de bord : **Ajouter une carte → Hestia Weather**. La carte est fournie par l’intégration (depuis la 2.3) : rien d’autre à installer.
+1. Cherchez **Hestia Weather** dans HACS : le **Marketplace** depuis Home Assistant 2026.11 (Paramètres → Marketplace), **HACS** avant. Téléchargez-le, puis redémarrez Home Assistant.
 
-[![Ouvrir dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=hestiaFB&repository=hestia-weather-integration&category=integration)
+   [![Ouvrir dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=hestiaFB&repository=hestia-weather-integration&category=integration)
+2. **Paramètres → Appareils et services → Ajouter une intégration → Hestia Weather.**
+3. Sur un tableau de bord : **Ajouter une carte → Hestia Weather**. La carte est fournie par l’intégration (depuis la 2.3) : rien d’autre à installer.
+
+**Hestia Weather n’apparaît pas dans la recherche, ou vous voulez une ancienne version ?** Ajoutez le dépôt personnalisé `https://github.com/hestiaFB/hestia-weather-integration`, catégorie **Intégration**, puis reprenez à l’étape 1 :
+- Home Assistant 2026.11 ou plus récent : dans le **Marketplace**. Il demande d’abord de relier un compte GitHub.
+- Avant 2026.11 : dans HACS, ⋮ → **Dépôts personnalisés**.
 
 ## Configuration
 
@@ -127,12 +128,12 @@ Le nom technique de l’intégration est `hestia_weather` : l’action `hestia_w
 Installée sous son nom technique d’origine, l’intégration passe seule au nouveau au premier démarrage de la mise à jour :
 
 - vos lieux, réglages, alertes en cours, historiques et statistiques sont gardés ;
-- vos entités gardent leur nom, et donc vos automatisations et vos tableaux de bord aussi ;
-- les automatisations, scripts, scènes et tableaux de bord faits dans l’interface sont mis à jour ;
-- ce qui est écrit à la main en YAML n’est jamais modifié : une réparation dans **Paramètres** liste les fichiers et les lignes à changer.
+- vos entités gardent leur nom : ce qui les utilise continue de marcher ;
+- Hestia Weather ne modifie jamais vos automatisations, scripts, scènes, blueprints, tableaux de bord ni les réglages des autres intégrations. Ceux qui utilisent encore l’ancien nom (l’action, l’évènement, la carte) sont listés dans **Paramètres → Réparations**, avec les lignes à changer. La liste se met à jour à chaque démarrage et disparaît une fois tout changé ;
+- installée avec le Marketplace, une réparation vous demande peut-être de **retélécharger Hestia Weather une fois** pour garder les mises à jour.
 
 Hestia Weather 4.2.0 et Hestia Confort 3.1.0 vont ensemble : Confort y lit le ciel de maintenant et ne dit plus « Grand soleil » sous un ciel gris. Une Confort plus ancienne marche aussi, sans cette nouveauté. Mettez-les à jour ensemble.
 
 **La mise à jour est refusée** (« changed its domain from niak_… to hestia_… ») ? Suivez [le guide du passage au nom Hestia](docs/PASSAGE-HESTIA.md) : un dossier à supprimer, deux redémarrages, rien n’est perdu.
 
-**Entités** : une nouvelle installation crée des `sensor.hestia_weather_…`. Installée avant la 2.9.4, vos entités gardent leur nom d’origine. Pour leur donner le nom Hestia, **Réglages généraux → Nom des entités** : un aperçu d’abord, puis vos automatisations, scripts, scènes et tableaux de bord suivent, et un retour en arrière reste possible.
+**Entités** : une nouvelle installation crée des `sensor.hestia_weather_…`. Installée avant la 2.9.4, vos entités gardent leur nom d’origine. Pour leur donner le nom Hestia, **Réglages généraux → Nom des entités** : un aperçu d’abord, avec la liste de ce qui les utilise ; seules les entités sont renommées, vous changez vous-même les automatisations et tableaux de bord de la liste. Un retour en arrière reste possible.

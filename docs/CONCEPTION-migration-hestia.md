@@ -4,6 +4,10 @@
 `migration.py`, `engine/renaming.py`, commandes `niak_weather/rename/preview|apply|undo` dans `panel.py`, carte `renameFrame()` dans
 `frontend/panel.ts` ; tests `tests/test_renaming.py` et `tests/test_migration_ha.py`.
 
+**Changé en nov. 2026 (relecture HACS)** : seules les entités sont renommées. Les automatisations, scripts, scènes,
+tableaux de bord et réglages des autres intégrations ne sont plus réécrits : l'aperçu les liste (« À changer vous-même
+ensuite »), et après le renommage le cadre liste ce qui utilise encore un ancien nom. Ce qui suit est la conception d'origine.
+
 ## Ce qu'on a trouvé
 
 - Le code sait déjà choisir le préfixe (`sensor.py`, `prefix()`) :

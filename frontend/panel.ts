@@ -475,11 +475,10 @@ export class WeatherSetup extends LitElement {
   try{
    const reply=await this.ws<RenameReply>({type}),d=reply.done;
    this.rename=reply.preview;this.renameShown=false;this.renameAsk=false;
+   // Only the entities are renamed: what uses them is the user's to change (listed in the frame, `stale`).
    this.renameDone=type==='hestia_weather/rename/undo'?[t('Vos entités ont repris l’ancien nom « {old} ».',{old:reply.preview.old})]:[
     d.entities>1?t('{n} entités renommées.',{n:d.entities}):t('{n} entité renommée.',{n:d.entities}),
-    ...(d.files?[t('Automatisations, scripts et scènes mis à jour.')]:[]),
-    ...(d.dashboards?[d.dashboards>1?t('{n} tableaux de bord mis à jour.',{n:d.dashboards}):t('{n} tableau de bord mis à jour.',{n:d.dashboards})]:[]),
-    ...(d.helpers?[d.helpers>1?t('{n} assistants mis à jour.',{n:d.helpers}):t('{n} assistant mis à jour.',{n:d.helpers})]:[])];
+    ...(reply.preview.stale?.length?[t('Changez maintenant ce qui les utilise : la liste est ci-dessous.')]:[])];
   }catch(e){this.error=this.message(e);}
   finally{this.busy=false;}
  }
@@ -493,8 +492,10 @@ export class WeatherSetup extends LitElement {
   const done=this.renameDone.length?html`<div class="notice" role="status">${this.renameDone.map(l=>html`<p>${l}</p>`)}</div>`:nothing;
   if(!r.entities.length){
    const when=r.renamed_at?new Date(r.renamed_at).toLocaleDateString(this.hass?.language):'';
+   const stale=r.stale??[];
    return frame(t('Nom des entités'),html`${done}<p>${t('Vos entités portent le nom « hestia_weather ».')}</p>${when?html`<p class="hint">${t('Renommées le {date}.',{date:when})}</p>`:nothing}
-    ${this.renameAsk?html`<div class="notice" role="alertdialog"><p>${t('Revenir à l’ancien nom « {old} » ?',{old:r.old})}</p><p class="hint">${t('Les automatisations et tableaux de bord mis à jour reviennent aussi.')}</p>
+    ${stale.length?html`<h3>${t('Encore à changer vous-même')}</h3><p class="hint">${t('Ils utilisent encore l’ancien nom « {old} ». Hestia-FB ne les modifie pas.',{old:r.old})}</p><ul>${stale.map(u=>this.renameUse(u))}</ul>`:nothing}
+    ${this.renameAsk?html`<div class="notice" role="alertdialog"><p>${t('Revenir à l’ancien nom « {old} » ?',{old:r.old})}</p><p class="hint">${t('Ce que vous avez changé vers « hestia_weather » sera à remettre vous-même.')}</p>
      <div class="actions"><button @click=${()=>{this.renameAsk=false;}}>${t('Garder « hestia_weather »')}</button><button class="primary" ?disabled=${this.busy} @click=${()=>void this.runRename('hestia_weather/rename/undo')}>${t('Revenir à l’ancien nom')}</button></div></div>`
     :html`<button class="link" ?disabled=${this.busy} @click=${()=>{this.renameAsk=true;}}>${t('Revenir à l’ancien nom')}</button>`}`);
   }
@@ -504,9 +505,9 @@ export class WeatherSetup extends LitElement {
   return frame(t('Nom des entités'),html`${intro}
    <h3>${n>1?t('{n} entités renommées',{n}):t('{n} entité renommée',{n})}</h3>
    <ul class="hint">${r.entities.map(e=>html`<li>${e.from} → <strong>${e.to}</strong></li>`)}</ul>
-   <h3>${t('Mis à jour tout seuls')}</h3>
-   ${r.auto.length?html`<ul>${r.auto.map(u=>this.renameUse(u))}</ul>`:html`<p class="hint">${t('Aucune automatisation, aucun script ni tableau de bord ne les utilise.')}</p>`}
-   ${r.manual.length?html`<h3>${t('À corriger vous-même')}</h3><p class="hint">${t('Écrits à la main : Hestia-FB ne les modifie pas.')}</p><ul>${r.manual.map(u=>this.renameUse(u))}</ul>`:nothing}
+   <h3>${t('À changer vous-même ensuite')}</h3>
+   ${r.manual.length?html`<p class="hint">${t('Hestia-FB ne modifie ni vos automatisations ni vos tableaux de bord : après le renommage, remplacez-y les anciens noms.')}</p><ul>${r.manual.map(u=>this.renameUse(u))}</ul>`
+    :html`<p class="hint">${t('Aucune automatisation, aucun script ni tableau de bord ne les utilise.')}</p>`}
    ${r.taken.length?html`<h3>${t('Gardés tels quels')}</h3><p class="hint">${t('Leur nouveau nom est déjà pris.')}</p><ul class="hint">${r.taken.map(id=>html`<li>${id}</li>`)}</ul>`:nothing}
    <p>${t('L’historique et les statistiques sont conservés.')}</p>
    <p class="hint">${t('Hors de Home Assistant (Node-RED, applications…), changez les noms vous-même.')}</p>

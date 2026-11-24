@@ -8,8 +8,9 @@ Nothing the user has is lost:
    and devices follow, with their ids, names, areas and icons. Entity ids do not change: history and long-term
    statistics stay attached to them;
 2. the brick's .storage files (learning, alerts…) are copied under the new name;
-3. what the interface wrote (automations, scripts, scenes, dashboards, other integrations' options, blueprints imported
-   from this brick) is updated. YAML written by hand is never rewritten: a repair lists its files and lines;
+3. what the user has is never written: automations, scripts, scenes, blueprints, YAML written by hand, dashboards and
+   other integrations' settings that still use a former name are listed in a repair (files with their lines), for the
+   user to change. Only the dashboard resource the brick itself declared under its former name is removed;
 4. only then are the former entries removed, and the former folder custom_components/<former domain> when it is this
    brick's own: two copies are never loaded side by side.
 Entry ids change with the entries. A shared table (.storage/hestia_migration) keeps which new id each former one took,
@@ -33,6 +34,7 @@ import shutil
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Callable
+from urllib.parse import unquote, urlsplit
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryDisabler, ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -42,7 +44,6 @@ from homeassistant.helpers.storage import Store
 from homeassistant.loader import IntegrationNotFound, async_get_integration
 from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
-from homeassistant.util.file import write_utf8_file_atomic
 
 from .const import DOMAIN
 from .engine import legacy
@@ -51,25 +52,35 @@ LOGGER = logging.getLogger(__name__)
 TABLE = "hestia_migration"
 LOCK = "hestia_migration_lock"
 # Fired when a brick has carried its entries over: {"domain": new domain, "entries": {former id: new id}}.
+# `folder`: the former folder was removed (the Marketplace may then no longer follow the brick, see marketplace_link.py).
 DONE_EVENT = "hestia_migration_done"
-UI_FILES = (("automations.yaml", "automation"), ("scripts.yaml", "script"), ("scenes.yaml", "scene"))
+# Whether the former folder is there: read once in the executor, kept, and read again when the carrying over removes it.
+FOLDER = f"{DOMAIN}_former_folder"
 # Never read for hand-written YAML: Home Assistant's own data, code, and what is not configuration.
 SKIPPED = {"custom_components", "deps", "tts", "www", "backups", "node_modules", "blueprints"}
 BIGGEST = 2_000_000
 
 
-def pending(hass: HomeAssistant) -> bool:
+async def async_former_folder(hass: HomeAssistant, again: bool = False) -> bool:
+    """Whether the former folder custom_components/<former domain> is there; looked at in the executor, once."""
+    if again or FOLDER not in hass.data:
+        hass.data[FOLDER] = await hass.async_add_executor_job(os.path.isdir, _old_folder(hass))
+    return hass.data[FOLDER]
+
+
+async def async_pending(hass: HomeAssistant) -> bool:
     """Something of the former name is still there: its entries, or its folder next to this one."""
-    return bool(hass.config_entries.async_entries(legacy.DOMAIN)) or os.path.isdir(_old_folder(hass))
+    return bool(hass.config_entries.async_entries(legacy.DOMAIN)) or await async_former_folder(hass)
 
 
 async def async_setup_migration(hass: HomeAssistant) -> None:
     """From the brick's async_setup, before it reads any of its files: the new entry ids are chosen and the .storage
     files copied under the new name. Once Home Assistant has started (every integration set up, the former one
     included if still installed), the entries, entities and devices move."""
-    if not pending(hass):
+    if not await async_pending(hass):
         # Started again after the carrying over: nothing of the former name is loaded any more.
         ir.async_delete_issue(hass, DOMAIN, "migration_restart")
+        async_at_started(hass, _async_still_to_change)
         return
     try:
         await async_prepare(hass)
@@ -85,6 +96,32 @@ async def async_setup_migration(hass: HomeAssistant) -> None:
                                   translation_key="migration_failed")
 
     async_at_started(hass, run)
+
+
+async def _async_still_to_change(hass: HomeAssistant) -> None:
+    """While the repair lists what still uses a former name, it is looked at again at each start: what the user has
+    changed leaves the list, and the repair goes once nothing is left."""
+    try:
+        async with hass.data.setdefault(LOCK, asyncio.Lock()):
+            store, table = await _table(hass)
+            done = table["done"].get(DOMAIN)
+            if not done or not done.get("manual"):
+                return
+            done["manual"] = await _to_change(hass, done.get("entries", {}))
+            await store.async_save(table)
+            _manual_issue(hass, done["manual"])
+    except Exception:  # noqa: BLE001 - only a list: never keeps the brick from working
+        LOGGER.exception("What still uses the former name was not looked at again")
+
+
+def _manual_issue(hass: HomeAssistant, manual: list[dict[str, Any]]) -> None:
+    """The repair that lists what the user changes: files with their lines, dashboards, other integrations' entries."""
+    if not manual:
+        ir.async_delete_issue(hass, DOMAIN, "migration_manual")
+        return
+    items = "\n".join(f"- {m['name']}" + (f" ({', '.join(map(str, m['lines']))})" if m["lines"] else "") for m in manual)
+    ir.async_create_issue(hass, DOMAIN, "migration_manual", is_fixable=False, severity=ir.IssueSeverity.WARNING,
+                          translation_key="migration_manual", translation_placeholders={"items": items})
 
 
 async def async_resume(hass: HomeAssistant) -> bool:
@@ -105,10 +142,12 @@ async def async_status(hass: HomeAssistant) -> dict[str, Any] | None:
         return None
     done = done or {}
     issues = ir.async_get(hass).issues
-    loaded = legacy.DOMAIN in hass.config.components or os.path.isdir(_old_folder(hass))
+    # The folder was looked at once (async_former_folder): the hub's overview never touches the disk.
+    loaded = legacy.DOMAIN in hass.config.components or await async_former_folder(hass)
     return {"domain": DOMAIN, "state": "failed" if (DOMAIN, "migration_failed") in issues else "running" if waiting else "done",
             "at": done.get("at"), "entries": len(done.get("entries", {})), "entities": done.get("entities", 0),
             "devices": done.get("devices", 0), "stores": len(done.get("stores", [])),
+            # Counted by an earlier version, which still rewrote them; nothing is written any more: `manual` lists them.
             "updated": {k: done.get(k, 0) for k in ("files", "dashboards", "helpers", "blueprints")},
             "dashboards": done.get("dashboard_ids", []), "manual": done.get("manual", []), "restart": bool(done.get("restart")) and loaded}
 
@@ -184,9 +223,11 @@ def rekey(value: str, ids: dict[str, str]) -> str:
     return hook(value) if hook else value
 
 
-def lines_with(text: str) -> list[int]:
-    """The line numbers (from 1) where a former name is written: for the files Hestia-FB leaves to the user."""
+def lines_with(text: str, ids: dict[str, str] | None = None) -> list[int]:
+    """The line numbers (from 1) where a former name or a former entry id is written: for the user to change."""
     patterns = [re.compile(old) for old, _ in legacy.TEXT]
+    if pattern := ids_pattern(ids or {}):
+        patterns.append(pattern)
     return [n for n, line in enumerate(text.splitlines(), 1) if any(p.search(line) for p in patterns)]
 
 
@@ -239,36 +280,27 @@ def _load_raw(config_dir: str, key: str) -> dict[str, Any] | None:
     return raw if isinstance(raw, dict) and "data" in raw else None
 
 
-def _hand_written(config_dir: str) -> list[dict[str, Any]]:
-    """The YAML files that write a former name and that Hestia-FB leaves to the user: the file and its lines."""
-    found, ui = [], {name for name, _ in UI_FILES} | {"secrets.yaml"}
+def _yaml_files(config_dir: str, ids: dict[str, str]) -> list[dict[str, Any]]:
+    """The YAML files that write a former name, the ones the interface writes included: the file and its lines.
+    Hestia-FB never rewrites them: the user changes them."""
+    found = []
     for root, dirs, files in os.walk(config_dir):
         dirs[:] = sorted(d for d in dirs if d not in SKIPPED and not d.startswith("."))
         for name in sorted(files):
             relative = os.path.relpath(os.path.join(root, name), config_dir)
-            if not name.endswith((".yaml", ".yml")) or relative in ui:
+            if not name.endswith((".yaml", ".yml")) or relative == "secrets.yaml":
                 continue
             text = _read(os.path.join(root, name))
-            if text and (lines := lines_with(text)):
+            if text and (lines := lines_with(text, ids)):
                 found.append({"name": relative, "lines": lines})
-    return found
-
-
-def _blueprints(config_dir: str) -> tuple[list[str], list[dict[str, Any]]]:
-    """The blueprints imported from this brick (their source says so): rewritten. Others that write a former name: listed."""
-    ours, others = [], []
-    folder = f"/blueprints/automation/{legacy.DOMAIN}/"
+    # The blueprints, imported from this brick or not: listed too (blueprints/ is skipped above, it holds no configuration).
     for root, _, files in os.walk(os.path.join(config_dir, "blueprints")):
         for name in sorted(files):
             path = os.path.join(root, name)
             text = _read(path) if name.endswith((".yaml", ".yml")) else None
-            if not text or not (lines := lines_with(text)):
-                continue
-            if re.search(r"^\s*source_url:.*" + re.escape(folder), text, re.M):
-                ours.append(path)
-            else:
-                others.append({"name": os.path.relpath(path, config_dir), "lines": lines})
-    return ours, others
+            if text and (lines := lines_with(text, ids)):
+                found.append({"name": os.path.relpath(path, config_dir), "lines": lines})
+    return found
 
 
 # ——— Home Assistant ———
@@ -313,12 +345,12 @@ async def _copy_stores(hass: HomeAssistant, ids: dict[str, str]) -> list[str]:
         raw = await hass.async_add_executor_job(_load_raw, config_dir, key)
         if raw is None:
             continue
-        if not os.path.exists(os.path.join(config_dir, ".storage", new_key)):
+        if not await hass.async_add_executor_job(os.path.exists, os.path.join(config_dir, ".storage", new_key)):
             data, _ = rewrite_data(raw["data"], ids, names=False)
             await Store(hass, raw.get("version", 1), new_key, minor_version=raw.get("minor_version", 1)).async_save(data)
         copied.append(key)
     # The shared panel's settings (sidebar shown or not): copied once, by whichever brick comes first.
-    if not os.path.exists(os.path.join(config_dir, ".storage", "hestia_socle")):
+    if not await hass.async_add_executor_job(os.path.exists, os.path.join(config_dir, ".storage", "hestia_socle")):
         raw = await hass.async_add_executor_job(_load_raw, config_dir, legacy.SOCLE_KEY)
         if raw is not None and isinstance(raw["data"], dict):
             sidebar = raw["data"].get("sidebar", True) is not False
@@ -354,60 +386,45 @@ def _move_registries(hass: HomeAssistant, old: ConfigEntry, entry: ConfigEntry, 
     return moved[0], moved[1]
 
 
-async def _rewrite_users(hass: HomeAssistant, ids: dict[str, str]) -> dict[str, Any]:
-    """What the interface wrote, with the former names and entry ids changed; what was written by hand, listed."""
-    counts: dict[str, Any] = {"files": 0, "dashboards": 0, "helpers": 0, "blueprints": 0, "resources": 0, "dashboard_ids": []}
-    for name, kind in UI_FILES:
-        path = hass.config.path(name)
-        text = await hass.async_add_executor_job(_read, path)
-        changed, n = rewrite_text(text or "", ids)
-        if n:
-            await hass.async_add_executor_job(write_utf8_file_atomic, path, changed)
-            counts["files"] += 1
-            if hass.services.has_service(kind, "reload"):
-                await hass.services.async_call(kind, "reload", blocking=True)
+async def _to_change(hass: HomeAssistant, ids: dict[str, str]) -> list[dict[str, Any]]:
+    """What still uses a former name or a former entry id, for the user to change: nothing of it is written.
+    Files with their lines, dashboards by their address, other integrations' entries by their title and domain."""
     manual: list[dict[str, Any]] = []
     for dashboard in _dashboards(hass):
+        # A dashboard written in YAML is found with the files.
+        if getattr(dashboard, "mode", None) != "storage":
+            continue
         try:
             config = await dashboard.async_load(False)
-        except Exception:  # noqa: BLE001 - an empty dashboard has no configuration yet; a broken YAML one cannot be read
+        except Exception:  # noqa: BLE001 - an empty dashboard has no configuration yet
             continue
-        changed, n = rewrite_data(config, ids)
-        if not n:
-            continue
-        if getattr(dashboard, "mode", None) == "storage":
-            await dashboard.async_save(changed)
-            counts["dashboards"] += 1
-            counts["dashboard_ids"].append(getattr(dashboard, "url_path", None) or "default")
-        else:
-            manual.append({"name": (dashboard.config or {}).get("title") or "ui-lovelace.yaml", "lines": []})
+        if rewrite_data(config, ids)[1]:
+            manual.append({"name": "/" + (getattr(dashboard, "url_path", None) or "lovelace"), "lines": []})
     for entry in hass.config_entries.async_entries():
-        if entry.domain in (DOMAIN, legacy.DOMAIN):
-            continue
-        options, n = rewrite_data(dict(entry.options), ids)
-        if n:
-            hass.config_entries.async_update_entry(entry, options=options)
-            hass.config_entries.async_schedule_reload(entry.entry_id)
-            counts["helpers"] += 1
-    ours, others = await hass.async_add_executor_job(_blueprints, hass.config.config_dir)
-    for path in ours:
-        text = await hass.async_add_executor_job(_read, path)
-        changed, n = rewrite_text(text or "", ids)
-        if n:
-            await hass.async_add_executor_job(write_utf8_file_atomic, path, changed)
-            counts["blueprints"] += 1
-    if ours and hass.services.has_service("automation", "reload"):
-        await hass.services.async_call("automation", "reload", blocking=True)
+        if entry.domain not in (DOMAIN, legacy.DOMAIN) and rewrite_data(dict(entry.options), ids)[1]:
+            manual.append({"name": f"{entry.title} ({entry.domain})", "lines": []})
+    manual += await _resources(hass)
+    return manual + await hass.async_add_executor_job(_yaml_files, hass.config.config_dir, ids)
+
+
+async def _resources(hass: HomeAssistant) -> list[dict[str, Any]]:
+    """The dashboard resource the brick declared itself under its former name (its card) is removed: nothing serves it
+    any more, and the brick declares its card again under the new name. Any other resource there is listed."""
     resources = getattr(hass.data.get("lovelace"), "resources", None)
-    if resources is not None and hasattr(resources, "async_delete_item"):
-        if not getattr(resources, "loaded", True):
-            await resources.async_get_info()
-        for item in list(resources.async_items() or []):
-            if str(item.get("url", "")).startswith(legacy.ASSETS + "/"):
-                await resources.async_delete_item(item["id"])
-                counts["resources"] += 1
-    counts["manual"] = manual + others + await hass.async_add_executor_job(_hand_written, hass.config.config_dir)
-    return counts
+    if resources is None or not hasattr(resources, "async_delete_item"):
+        return []
+    if not getattr(resources, "loaded", True):
+        await resources.async_get_info()
+    own = f"{legacy.ASSETS}/{getattr(legacy, 'CARD_FILE', '')}"
+    listed = []
+    for item in list(resources.async_items() or []):
+        url = str(item.get("url", ""))
+        path = unquote(urlsplit(url).path)
+        if path == own:
+            await resources.async_delete_item(item["id"])
+        elif path.startswith(legacy.ASSETS + "/"):
+            listed.append({"name": url, "lines": []})
+    return listed
 
 
 async def _ids(hass: HomeAssistant, store: Store[dict[str, Any]], table: dict[str, Any]) -> list[tuple[ConfigEntry, ConfigEntry, bool]]:
@@ -461,27 +478,25 @@ async def async_carry_over(hass: HomeAssistant) -> dict[str, Any]:
             if entry.disabled_by is ConfigEntryDisabler.USER and old.disabled_by is None:
                 await hass.config_entries.async_set_disabled_by(entry.entry_id, None)
         mine = {old.entry_id: entry.entry_id for old, entry, _ in news}
-        result = await _rewrite_users(hass, mine)
+        manual = await _to_change(hass, mine)
         for key in copied:
             await Store(hass, 1, key).async_remove()
-        if await hass.async_add_executor_job(_remove_old_folder, _old_folder(hass)):
-            restart = True
+        removed = await hass.async_add_executor_job(_remove_old_folder, _old_folder(hass))
+        await async_former_folder(hass, again=True)
+        restart = restart or removed
 
-        manual = result.pop("manual")
         if manual:
-            items = "\n".join(f"- {m['name']}" + (f" ({', '.join(map(str, m['lines']))})" if m["lines"] else "") for m in manual)
-            ir.async_create_issue(hass, DOMAIN, "migration_manual", is_fixable=False, severity=ir.IssueSeverity.WARNING,
-                                  translation_key="migration_manual", translation_placeholders={"items": items})
+            _manual_issue(hass, manual)
         if restart:
             ir.async_create_issue(hass, DOMAIN, "migration_restart", is_fixable=False, severity=ir.IssueSeverity.WARNING,
                                   translation_key="migration_restart")
         ir.async_delete_issue(hass, DOMAIN, "migration_failed")
         done = {"at": dt_util.utcnow().isoformat(), "entries": mine, "stores": copied, "manual": manual, "restart": restart,
-                "entities": moved[0], "devices": moved[1], **result}
+                "entities": moved[0], "devices": moved[1]}
         if news or copied or restart:
             table["done"][DOMAIN] = done
             await store.async_save(table)
-            hass.bus.async_fire(DONE_EVENT, {"domain": DOMAIN, "entries": mine})
+            hass.bus.async_fire(DONE_EVENT, {"domain": DOMAIN, "entries": mine, "folder": removed})
             LOGGER.info("Carried over to %s: %s", DOMAIN, done)
     await _start_siblings(hass)
     return done

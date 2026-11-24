@@ -160,13 +160,16 @@ class PanelTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([o["key"] for o in others(self.hass)], ["vigicrues"])
         self.assertTrue(others(self.hass)[0]["use"])
 
-    async def test_hacs_download_counts_as_installed_before_an_integration_is_added(self):
+    async def test_the_marketplace_is_not_read_for_the_extensions(self):
+        # Its objects are not an interface (HACS review): an extension is installed once Home Assistant has it set up.
         from types import SimpleNamespace
         from custom_components.hestia_weather.extensions import inventory
-        self.hass.data["hacs"] = SimpleNamespace(repositories=SimpleNamespace(get_by_full_name=lambda repo:
-            SimpleNamespace(data=SimpleNamespace(installed=True)) if repo == "kamaradclimber/vigieau" else None))
+
+        def touched(_):
+            raise AssertionError("the Marketplace's objects were read")
+        self.hass.data["hacs"] = SimpleNamespace(repositories=SimpleNamespace(get_by_full_name=touched))
         extensions = {x["id"]: x for x in inventory(self.hass, {})}
-        self.assertTrue(extensions["vigieau"]["installed"])
+        self.assertFalse(extensions["vigieau"]["installed"])
         self.assertFalse(extensions["vigieau"]["configured"])
         self.assertIn("Blitzortung.org Lightning Detector", extensions["blitzortung"]["install"])
 

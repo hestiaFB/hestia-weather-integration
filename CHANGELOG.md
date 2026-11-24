@@ -1,3 +1,22 @@
+## À venir — Hestia Weather ne touche plus à vos automatisations
+
+### Avant de mettre à jour
+
+- Seulement si Hestia Weather est encore installée sous son ancien nom technique (avant la 3.0) : au passage au nom « hestia_weather », vos automatisations, scripts, scènes, blueprints, tableaux de bord et les réglages des autres intégrations ne sont plus changés pour vous. Une réparation dans **Paramètres → Réparations** les liste, avec les lignes à changer. Les autres maisons n’ont rien à faire.
+
+### Améliorations
+
+- Passage au nom Hestia : Hestia Weather ne modifie plus rien de ce qui vous appartient. Ce qui utilise encore l’ancien nom est listé dans une réparation : fichiers avec leurs lignes, tableaux de bord avec leur adresse, réglages des autres intégrations avec leur nom. La liste se met à jour à chaque démarrage et disparaît une fois tout changé.
+- Le cadre « Passage au nom Hestia » de l’accueil dit « À changer vous-même », avec la même liste.
+- Nom des entités : seules les entités sont renommées. L’aperçu montre ce qui les utilise, à changer vous-même ensuite ; après le renommage, le cadre liste ce qui utilise encore l’ancien nom.
+- Après le passage au nom Hestia, un simple message dit de retélécharger Hestia Weather une fois dans **Paramètres → Marketplace** pour garder les mises à jour. Hestia Weather ne télécharge plus rien lui-même, et ne lit plus le Marketplace. Le message part tout seul à la mise à jour suivante.
+- Installation : le README commence par la recherche de Hestia Weather dans HACS ou le Marketplace. Le dépôt personnalisé reste possible, pour les anciennes versions.
+
+### Corrections
+
+- L’accueil du panneau Hestia-FB ne lit plus le disque à chaque ouverture : la présence de l’ancien dossier est vérifiée une fois, sans bloquer Home Assistant. Les autres lectures du disque au démarrage passent aussi hors de la boucle de Home Assistant.
+- Extensions : une extension est dite « installée » quand Home Assistant l’a ajoutée, sans lire le Marketplace.
+
 ## 4.2.0 — Le ciel de maintenant, et le nouvel accueil
 
 ### Nouveautés

@@ -1,114 +1,39 @@
-"""Hestia Weather followed again by Home Assistant's Marketplace, after the change of technical name.
+"""After the change of technical name, a repair says how to get Hestia Weather's updates from the Marketplace again.
 
-The Marketplace (Home Assistant 2026.11, formerly HACS) knows an integration by the folder it installed it in, and refuses
-an update that would install it in another one. A home updated through the bridge (2.9.9) runs from
-custom_components/hestia_weather, a folder the Marketplace did not write: once the former folder is gone, it takes Hestia-FB
-Weather as no longer installed and offers no update any more. A repair offers to download the same version again: the
-Marketplace then follows the new folder, and the updates come back.
+The Marketplace (Home Assistant 2026.11, formerly HACS) knows an integration by the folder it installed it in. A home
+updated through the bridge (2.9.9) runs from custom_components/hestia_weather, a folder the Marketplace did not write:
+once the carrying over has removed the former folder, the Marketplace may take Hestia Weather as no longer installed and
+offer no update any more. Downloading Hestia Weather again in « Paramètres › Marketplace » mends it.
 
-The same when the former folder was downloaded again by hand while the bridge was the newest version: nothing runs
-from it (its places were carried over), but the Marketplace follows it and refuses the new name; the repair removes it
-first. It is only offered when the version the Marketplace offers is under the new name (3 or later): downloading a former
-one would bring the former folder back. The Marketplace's insides are read with care: if they change, nothing is shown, and
-« Paramètres › Marketplace › Hestia Weather › Télécharger » does the same by hand.
+Only what Hestia Weather knows itself is used: the carrying over has just removed the former folder (domain_migration's
+DONE_EVENT, `folder`). The Marketplace is neither read nor driven from here: the repair is a message, which the user may
+dismiss once done, and which goes by itself at the next update of Hestia Weather (updates come again).
 """
 from __future__ import annotations
 
-from datetime import timedelta
-import logging
 from typing import Any
 
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.helpers.event import async_track_time_interval
-from homeassistant.helpers.start import async_at_started
 
 from .const import DOMAIN
-from .engine import legacy
+from .domain_migration import DONE_EVENT
 
-LOGGER = logging.getLogger(__name__)
-REPOSITORY = "hestiaFB/hestia-weather-integration"
-MARKETPLACE = "marketplace"
-ISSUE = "marketplace_untracked"
-# The first version under the new name: an older one offered by the Marketplace must not be downloaded.
-FIRST_MAJOR = 3
-EVERY = timedelta(hours=6)
+ISSUE = "marketplace_download_again"
 
 
-def _repository(hass: HomeAssistant) -> Any | None:
-    """This repository as the Marketplace keeps it, or None (no Marketplace, not listed, or insides changed)."""
-    try:
-        entries = hass.config_entries.async_entries(MARKETPLACE)
-        manager = getattr(entries[0], "runtime_data", None) if entries else None
-        return manager.repositories.get_by_full_name(REPOSITORY) if manager is not None else None
-    except Exception:  # noqa: BLE001 - the Marketplace's insides may change: then nothing is offered
-        LOGGER.debug("Marketplace not read", exc_info=True)
-        return None
-
-
-def _major(version: str) -> int:
-    try:
-        return int(version.lstrip("v").split(".")[0])
-    except ValueError:
-        return 0
-
-
-def offered(hass: HomeAssistant) -> str | None:
-    """The version to download again when the Marketplace no longer follows Hestia Weather; None when all is well."""
-    repository = _repository(hass)
-    if repository is None:
-        return None
-    try:
-        installed, domain = repository.data.installed, repository.data.domain
-        version = str(repository.data.last_version or "")
-    except Exception:  # noqa: BLE001
-        return None
-    if _major(version) < FIRST_MAJOR:
-        return None
-    if not installed:
-        return version
-    # The former folder downloaded again by hand, with nothing left to run (its places were carried over).
-    if domain == legacy.DOMAIN and not hass.config_entries.async_entries(legacy.DOMAIN):
-        return version
-    return None
-
-
-def async_check(hass: HomeAssistant) -> None:
-    """Shows the repair while the Marketplace does not follow Hestia Weather, removes it once it does."""
-    if (version := offered(hass)) is None:
+@callback
+def async_setup_marketplace_link(hass: HomeAssistant, version: str) -> None:
+    """Before the carrying over starts (async_setup_migration), so that its end is heard."""
+    issue = ir.async_get(hass).async_get_issue(DOMAIN, ISSUE)
+    if issue is not None and (issue.data or {}).get("version") != version:
+        # Another version is installed since the message: the updates came again.
         ir.async_delete_issue(hass, DOMAIN, ISSUE)
-        return
-    ir.async_create_issue(hass, DOMAIN, ISSUE, is_fixable=True, is_persistent=False, severity=ir.IssueSeverity.WARNING,
-                          translation_key=ISSUE, translation_placeholders={"version": version.lstrip("v")})
 
-
-async def async_track_again(hass: HomeAssistant) -> bool:
-    """The Marketplace downloads the offered version again; True when it follows Hestia Weather again."""
-    if offered(hass) is None:
-        return True
-    repository = _repository(hass)
-    try:
-        if repository.data.installed:
-            await repository.uninstall()  # the former folder, empty of places: removed first
-        try:
-            # Read again first: the Marketplace may still keep the former folder's name, and would write there.
-            await repository.update_repository(ignore_issues=True, force=True)
-        except Exception:  # noqa: BLE001 - offline for a moment: the download below says whether it worked
-            LOGGER.debug("Hestia Weather not read again before its download", exc_info=True)
-        await repository.async_install_repository()
-        installed = bool(repository.data.installed)
-    except Exception:  # noqa: BLE001 - the repair then says how to do it by hand
-        LOGGER.warning("The Marketplace could not download Hestia Weather again", exc_info=True)
-        return False
-    async_check(hass)
-    return installed
-
-
-def async_setup_marketplace_link(hass: HomeAssistant) -> None:
-    """Checked once Home Assistant has started (the Marketplace has read its list), then every 6 hours."""
     @callback
-    def check(_: Any) -> None:
-        async_check(hass)
+    def carried_over(event: Event[dict[str, Any]]) -> None:
+        if event.data.get("domain") == DOMAIN and event.data.get("folder"):
+            ir.async_create_issue(hass, DOMAIN, ISSUE, is_fixable=False, is_persistent=True, severity=ir.IssueSeverity.WARNING,
+                                  translation_key=ISSUE, data={"version": version})
 
-    async_at_started(hass, check)
-    async_track_time_interval(hass, check, EVERY, cancel_on_shutdown=True)
+    hass.bus.async_listen(DONE_EVENT, carried_over)
