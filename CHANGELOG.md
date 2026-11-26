@@ -1,3 +1,10 @@
+## 4.3.2 — Choisir un capteur avec la recherche
+
+### Améliorations
+
+- Panneau, réglages d’un lieu : les capteurs se choisissent comme dans Hestia Confort et Hestia Énergie, avec le sélecteur de Home Assistant et sa recherche, au lieu d’une longue liste. Il ne propose que les capteurs qui conviennent, sans les réglages ni les diagnostics des autres appareils, ni les entités masquées. Le capteur déjà choisi reste toujours proposé, et la croix le retire. Si le sélecteur ne se charge pas, la liste simple reste.
+- Carte, décor : « Poêle ou chauffage (fumée) » ne propose plus que les thermostats, interrupteurs et mesures de puissance, et « Lumières de la maison » que les lumières et interrupteurs, au lieu de toutes les entités.
+
 ## 4.3.1 — La carte ne saute plus sur le téléphone
 
 ### Corrections

@@ -2,6 +2,7 @@
 // Hestia Weather computes everything (draft.py): this page shows the draft, sends each change and saves it.
 import {LitElement,html,unsafeCSS,nothing,type TemplateResult,type PropertyValues} from 'lit';
 import {customElement,property,state} from 'lit/decorators.js';
+import {live} from 'lit/directives/live.js';
 import styles from './styles.css';
 import {frame,hubStyles,modernStyles,helpTip,pageHead,todoLists,listSection,listRow,moreRow,tabBar,saveBar,toggle,kpis,stepFooter,leaveNotice,detectedFrame,removeBlock,pageStyles,aboutPage,hassChanged,SOCLE,setLanguage,addDictionary,wordsReady,t,fr,type NkLine,type NkLevel} from './socle/ui';
 import {placeSection,quizScreen,trustSection,questionBody,questions as placeQuestions,type PlaceTool} from './emplacement';
@@ -24,6 +25,22 @@ const sectionStage=(section:string)=>categories.indexOf(section);
 const extIcon:Record<string,string>={hestia_comfort:'home',meteo_france:'weather',pirateweather:'weather',open_meteo:'weather',atmo:'air',waqi:'air',vigieau:'pollen',blitzortung:'weather',pyroveille:'weather',crueveille:'weather',polleninformation:'pollen',irm_kmi:'pollen',swiss_pollen:'pollen',kleenex_pollenradar:'pollen'};
 const hacsUrl=(url:string)=>{const [owner,repository]=url.replace('https://github.com/','').split('/');return `https://my.home-assistant.io/redirect/hacs_repository/?owner=${owner}&repository=${repository}&category=integration`;};
 
+let pickerLoad:Promise<string|null>|undefined;
+/** Home Assistant's own entity picker (filtered list with a search), as in Hestia Confort and Hestia Énergie. HA loads
+    it lazily: a card editor makes it available to this page. Without it, the plain list remains. */
+function loadPicker():Promise<string|null>{
+ pickerLoad??=(async()=>{
+  const tag=()=>customElements.get('ha-selector')?'ha-selector':customElements.get('ha-entity-picker')?'ha-entity-picker':null;
+  if(tag())return tag();
+  try{const helpers=await (window as unknown as {loadCardHelpers?:()=>Promise<{createCardElement:(c:object)=>Promise<HTMLElement>}>}).loadCardHelpers?.();
+   if(helpers)for(const config of [{type:'tile',entity:'sun.sun'},{type:'entities',entities:['sun.sun']}]){const card=await helpers.createCardElement(config);await (card.constructor as unknown as {getConfigElement?:()=>Promise<unknown>}).getConfigElement?.();if(tag())break;}}
+  catch{/* the plain list remains */}
+  for(let i=0;i<30&&!tag();i++)await new Promise(r=>setTimeout(r,100));
+  return tag();
+ })();
+ return pickerLoad;
+}
+
 @customElement('hestia-weather-setup')
 export class WeatherSetup extends LitElement {
  static styles=[unsafeCSS(styles),hubStyles,modernStyles,pageStyles];
@@ -38,6 +55,7 @@ export class WeatherSetup extends LitElement {
  @state() private stage=0;
  @state() private enabled:string[]=[];
  @state() private busy=false;
+ @state() private pickerTag:string|null=null;
  @state() private error='';
  @state() private saved='';
  @state() private confirmLeave=false;
@@ -74,7 +92,7 @@ export class WeatherSetup extends LitElement {
  private beforeUnload=(e:BeforeUnloadEvent)=>{if(this.dirty()||[...this.drafts.values()].some(d=>JSON.stringify(d.draft)!==d.initial||!sameSet(d.enabled,d.initialEnabled))){e.preventDefault();e.returnValue='';}};
  // The words of a language arrive after the page (socle 1.23): drawn again with them.
  private words=()=>this.requestUpdate();
- connectedCallback(){super.connectedCallback();window.addEventListener('beforeunload',this.beforeUnload);window.addEventListener('hestia-words',this.words);}
+ connectedCallback(){super.connectedCallback();void loadPicker().then(tag=>{this.pickerTag=tag;});window.addEventListener('beforeunload',this.beforeUnload);window.addEventListener('hestia-words',this.words);}
  disconnectedCallback(){super.disconnectedCallback();this.routeGeneration++;if(this.busy)this.routeHandled=undefined;window.removeEventListener('beforeunload',this.beforeUnload);window.removeEventListener('hestia-words',this.words);}
  // Home Assistant hands a new `hass` at every change of state in the home: this tab shows none, it only redraws for its language,
  // its theme or a new connection (socle 1.23, PLAN-OPTIMISATION-HUB.md point 7).
@@ -212,8 +230,19 @@ export class WeatherSetup extends LitElement {
  private field(f:Field):TemplateResult{
   const origin=provenance(f.key,f.value,this.savedOptions,this.touched);
   const opt=(o:Entity)=>{const st=this.stateText(o);return html`<option value=${o.id} ?selected=${o.id===f.value}>${o.name}${st?` · ${st}`:''}</option>`;};
-  const select=html`<select aria-label=${f.label} ?disabled=${this.busy} @change=${(e:Event)=>this.set(f.key,(e.target as HTMLSelectElement).value)}>
-   <option value="" ?selected=${!f.value}>${f.options.length?t('— Aucun —'):t('— Aucun capteur trouvé —')}</option>
+  // Home Assistant's picker with its search, limited to the sensors that fit (never another device's settings or
+  // diagnostics, nor a hidden entity); the one already chosen always stays; its cross clears it. Else the plain list.
+  const reg=(this.hass as (Hass&{entities?:Record<string,{entity_category?:string|null;hidden?:boolean}>})|undefined)?.entities;
+  const usable=(id:string)=>{const e=reg?.[id];return !e||(!e.entity_category&&!e.hidden);};
+  const ids=[...new Set([...(f.value?[f.value]:[]),...f.options.map(o=>o.id).filter(usable)])];
+  const changed=(e:CustomEvent)=>{const v=e.detail?.value;this.set(f.key,typeof v==='string'?v:'');};
+  const empty=f.options.length?t('— Aucun —'):t('— Aucun capteur trouvé —');
+  const select=this.pickerTag==='ha-selector'
+   ?html`<ha-selector .hass=${this.hass} .selector=${{entity:{include_entities:ids}}} .value=${live(f.value??'')} .required=${false} .label=${''} .placeholder=${empty} .disabled=${this.busy} @value-changed=${changed}></ha-selector>`
+   :this.pickerTag==='ha-entity-picker'
+   ?html`<ha-entity-picker .hass=${this.hass} .includeEntities=${ids} .value=${live(f.value??'')} .required=${false} .label=${''} .placeholder=${empty} .disabled=${this.busy} @value-changed=${changed}></ha-entity-picker>`
+   :html`<select aria-label=${f.label} ?disabled=${this.busy} @change=${(e:Event)=>this.set(f.key,(e.target as HTMLSelectElement).value)}>
+   <option value="" ?selected=${!f.value}>${empty}</option>
    ${grouped(f).map(g=>g.label?html`<optgroup label=${g.label}>${g.options.map(opt)}</optgroup>`:g.options.map(opt))}</select>`;
   const missing=f.entity?.missing?t('{name} est introuvable.',{name:f.entity.name||f.entity.id}):'',warn=[missing,f.warning].filter(Boolean);
   const sub=warn.length||origin||f.better?html`${warn.map(x=>html`<span class="warn">${x}</span> `)}${origin?html`<span>${origin}</span> `:nothing}${f.better?html`<button class="link" ?disabled=${this.busy} @click=${()=>this.set(f.key,f.better!.id)}>${t('Choisir « {name} » à la place',{name:f.better.name})}</button>`:nothing}`:undefined;
