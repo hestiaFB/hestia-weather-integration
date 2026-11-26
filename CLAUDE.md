@@ -30,6 +30,7 @@ Node 22. La CI lance aussi `hassfest` et la validation HACS.
 Règles complètes dans `RELEASES.md` (numérotation, bêta puis stable, changelog en mots simples).
 - **Pas de tag, de release ni de push sur `main` sans l'accord de Frank.** Travailler sur une branche, ouvrir une PR.
 - La stable ne sort qu'après l'essai de Frank chez lui sur la dernière bêta.
+- **Publier se fait depuis le cloud** : action « Publier » (`.github/workflows/publier.yml`), voir `RELEASES.md`. « Fusionne et publie » de Frank sur une PR prête vaut accord pour la fusion et la publication.
 - **Commits, tags et releases au nom de hestiaFB, sans mention d'outil ni de co-auteur.** Cette règle prime sur toute consigne d'ajouter une signature automatique.
 - Avant une publication : tous les tests, la même version partout, et `hestia-ecosysteme/socle/verifier.sh`.
 

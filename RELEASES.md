@@ -42,7 +42,7 @@ Les mêmes règles pour toutes les briques (Hestia Weather 3.x.x, Hestia Confort
 - La note d'une stable résume toutes ses bêtas depuis la stable précédente.
 - Phrases courtes, en mots simples, une idée par ligne ; pas de détails techniques ni de nombre de tests.
 - La release GitHub reprend le texte du CHANGELOG. Titre : « Hestia Weather 3.1.0 — … ». Tag : `v3.1.0`.
-- Publier se fait depuis GitHub, sans le PC : **Actions → Publier → Run workflow**, avec le numéro de `manifest.json`. Le tag et la release sont créés sur main, avec le texte du CHANGELOG ; une version avec une lettre part en pre-release. Accord de Frank : « fusionne et publie » sur une PR prête suffit.
+- **Publier se fait depuis le cloud**, sans le PC de Frank : une fois la PR fusionnée, lancer l'action « Publier » (`.github/workflows/publier.yml`, sur `main`) avec la version, un titre court et les notes. Elle vérifie que `main` porte cette version et que sa CI est verte, puis crée le tag `v<version>` et la release (pre-release si la version porte une lettre). « Fusionne et publie » de Frank sur une PR prête vaut accord pour la fusion et la publication de sa version.
 
 ## Ce qui protège les utilisateurs
 
