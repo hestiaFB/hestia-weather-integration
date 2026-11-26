@@ -61,6 +61,10 @@ const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
 const FIRE_CALM = fr('Seulement en cas de feu');
 const FIRE_CALM_HELP = fr('Cachée tant qu’aucun feu ne brûle dans le rayon surveillé ; visible pendant la modification du tableau de bord.');
 const SETTINGS = '/config/integrations/integration/hestia_weather';
+// The décor's entities, limited to what can say « on » (as the card reads them): a heater or a stove (its thermostat,
+// switch or power), the lights of the house.
+const SMOKE = [{ domain: ['climate', 'switch', 'input_boolean', 'binary_sensor', 'fan', 'water_heater'] }, { domain: 'sensor', device_class: 'power' }];
+const LIGHTS = [{ domain: ['light', 'switch', 'input_boolean', 'binary_sensor'] }];
 /** The kinds of alerts a card can leave out, in words (issue #22). */
 const KIND_WORDS: Record<AlertKind, string> = { official: fr('Vigilances officielles'), storm: fr('Orages'), rain: fr('Pluie'), wind: fr('Vent'),
   temperature: fr('Chaleur, froid et gel'), fog: fr('Brouillard'), uv: fr('Indice UV'), air: fr('Air et pollens'), water: fr('Restrictions d’eau (Vigieau)'),
@@ -184,7 +188,7 @@ export class HestiaWeatherCardEditor extends LitElement {
       ...toggles('glass_effect'),
       { name: 'decor', required: true, selector: { select: { mode: 'dropdown', options: [['sky', t('Ciel seul')], ['countryside', t('Maison de campagne')], ['village', t('Village')],
         ['city', t('Ville')], ['apartment', t('Appartement')], ['mountain', t('Montagne')], ['seaside', t('Bord de mer')]].map(([value, label]) => ({ value, label })) } } },
-      ...(this.config?.decor && this.config.decor !== 'sky' ? [{ name: 'decor_sky_only', selector: { boolean: {} } }, { name: 'decor_smoke_entity', selector: { entity: {} } }, { name: 'decor_lights_entity', selector: { entity: {} } }] : [])], true);
+      ...(this.config?.decor && this.config.decor !== 'sky' ? [{ name: 'decor_sky_only', selector: { boolean: {} } }, { name: 'decor_smoke_entity', selector: { entity: { filter: SMOKE } } }, { name: 'decor_lights_entity', selector: { entity: { filter: LIGHTS } } }] : [])], true);
     const spans: Array<[string, string]> = [['6h', t('6 dernières heures')], ['1d', t('24 dernières heures')], ['2d', t('2 derniers jours')], ['7d', t('7 derniers jours')]];
     const choice = (name: string, options: Array<[string, string]>) => ({ name, required: true, selector: { select: { mode: 'dropdown',
       options: options.map(([value, label]) => ({ value, label })) } } });
