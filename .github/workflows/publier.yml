@@ -1,0 +1,101 @@
+name: Publier
+
+# Publishes the version in manifest.json: tag v<version> + GitHub release, under hestiaFB's name.
+# - Automatically, once Validate is green on main, when the merged PR carries the label "publier".
+# - Or by hand (Actions > Publier > Run workflow), to retry a publication.
+# Title and notes come from the CHANGELOG.md section "## <version> — <title>".
+# A version with a letter (4.4.0b1) goes out as a pre-release, otherwise as the latest stable.
+
+on:
+  workflow_run:
+    workflows: [Validate]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: publier
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    steps:
+      - name: La PR fusionnée porte-t-elle l'étiquette « publier » ?
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -eu
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          labels=$(gh api "repos/${{ github.repository }}/commits/$SHA/pulls" --jq '[.[] | select(.merged_at != null) | .labels[].name] | join(",")')
+          echo "Étiquettes de la PR fusionnée : ${labels:-aucune}"
+          case ",$labels," in
+            *,publier,*) echo "go=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "go=false" >> "$GITHUB_OUTPUT"; echo "Pas d'étiquette « publier » : rien n'est publié." >> "$GITHUB_STEP_SUMMARY" ;;
+          esac
+      - uses: actions/checkout@v4
+        if: steps.pr.outputs.go == 'true'
+        with:
+          # The commit Validate checked, or main for a manual run.
+          ref: ${{ github.event.workflow_run.head_sha || 'main' }}
+          fetch-depth: 0
+      - name: Lire la version et le CHANGELOG
+        if: steps.pr.outputs.go == 'true'
+        id: v
+        env:
+          PUBLIER_TOKEN: ${{ secrets.PUBLIER_TOKEN }}
+        run: |
+          set -eu
+          if [ -z "$PUBLIER_TOKEN" ]; then
+            echo "::error::Le secret PUBLIER_TOKEN manque : sans lui la release ne serait pas au nom de hestiaFB. Rien n'est publié."
+            exit 1
+          fi
+          version=$(python3 -c "import json;print(json.load(open('custom_components/hestia_weather/manifest.json'))['version'])")
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "::error::Le tag v$version existe déjà : rien n'est publié. Monter la version avant de publier."
+            exit 1
+          fi
+          python3 - "$version" "$RUNNER_TEMP/notes.md" "$RUNNER_TEMP/titre.txt" <<'PY'
+          import re, sys
+          version, notes_path, title_path = sys.argv[1:]
+          text = open("CHANGELOG.md", encoding="utf-8").read()
+          m = re.search(r"^## " + re.escape(version) + r"[ \t]+[—–-][ \t]+(.+)$", text, re.M)
+          if not m:
+              print(f"::error::CHANGELOG.md n'a pas de section « ## {version} — titre » : rien n'est publié.")
+              sys.exit(1)
+          rest = text[m.end():]
+          nxt = re.search(r"^## ", rest, re.M)
+          notes = (rest[: nxt.start()] if nxt else rest).strip()
+          if not notes:
+              print(f"::error::La section {version} du CHANGELOG est vide : rien n'est publié.")
+              sys.exit(1)
+          open(notes_path, "w", encoding="utf-8").write(notes + "\n")
+          open(title_path, "w", encoding="utf-8").write(f"{version} — {m.group(1).strip()}")
+          PY
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Créer le tag et la release
+        if: steps.pr.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.PUBLIER_TOKEN }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          set -eu
+          sha=$(git rev-parse HEAD)
+          case "$VERSION" in
+            *[a-z]*) kind="--prerelease" ;;
+            *) kind="--latest" ;;
+          esac
+          gh release create "v$VERSION" --repo "${{ github.repository }}" --target "$sha" \
+            --title "$(cat "$RUNNER_TEMP/titre.txt")" --notes-file "$RUNNER_TEMP/notes.md" $kind
+          echo "Publiée : v$VERSION sur $sha ($kind)" >> "$GITHUB_STEP_SUMMARY"

@@ -41,7 +41,8 @@ Les mêmes règles pour toutes les briques (Hestia Weather 3.x.x, Hestia Confort
 - **Bientôt retiré**, quand un retrait est annoncé.
 - La note d'une stable résume toutes ses bêtas depuis la stable précédente.
 - Phrases courtes, en mots simples, une idée par ligne ; pas de détails techniques ni de nombre de tests.
-- La release GitHub reprend le texte du CHANGELOG. Titre : « Hestia Weather 3.1.0 — … ». Tag : `v3.1.0`.
+- La release GitHub reprend le texte du CHANGELOG. Titre : « 3.1.0 — … » (le titre de la section du CHANGELOG). Tag : `v3.1.0`.
+- **Publier se fait depuis le cloud**, sans le PC de Frank : la PR porte la version montée partout et une section `## <version> — <titre>` en haut de `CHANGELOG.md`. Sur « fusionne et publie » de Frank (accord complet), lui mettre l'étiquette `publier` puis la fusionner : une fois Validate vert sur `main`, l'action « Publier » (`.github/workflows/publier.yml`) crée le tag `v<version>` et la release (titre et notes tirés du CHANGELOG, pre-release si la version porte une lettre), au nom de hestiaFB par le secret `PUBLIER_TOKEN`. Sans ce secret, sans section ou avec un tag déjà là, elle échoue sans rien publier. Pour réessayer : Actions › Publier › Run workflow.
 
 ## Ce qui protège les utilisateurs
 

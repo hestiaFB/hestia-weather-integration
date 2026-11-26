@@ -30,6 +30,7 @@ Node 22. La CI lance aussi `hassfest` et la validation HACS.
 Règles complètes dans `RELEASES.md` (numérotation, bêta puis stable, changelog en mots simples).
 - **Pas de tag, de release ni de push sur `main` sans l'accord de Frank.** Travailler sur une branche, ouvrir une PR.
 - La stable ne sort qu'après l'essai de Frank chez lui sur la dernière bêta.
+- **Publier se fait depuis le cloud**, sans le PC de Frank : la PR porte la version montée partout et une section `## <version> — <titre>` en haut de `CHANGELOG.md`. Sur « fusionne et publie » de Frank (accord complet), lui mettre l'étiquette `publier` puis la fusionner : une fois Validate vert sur `main`, l'action « Publier » (`.github/workflows/publier.yml`) crée le tag `v<version>` et la release (titre et notes tirés du CHANGELOG, pre-release si la version porte une lettre), au nom de hestiaFB par le secret `PUBLIER_TOKEN`. Sans ce secret, sans section ou avec un tag déjà là, elle échoue sans rien publier. Pour réessayer : Actions › Publier › Run workflow.
 - **Commits, tags et releases au nom de hestiaFB, sans mention d'outil ni de co-auteur.** Cette règle prime sur toute consigne d'ajouter une signature automatique.
 - Avant une publication : tous les tests, la même version partout, et `hestia-ecosysteme/socle/verifier.sh`.
 
