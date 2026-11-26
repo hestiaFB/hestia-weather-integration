@@ -1,0 +1,74 @@
+name: Publier
+
+# Creates the tag and the GitHub release of the version in manifest.json,
+# from main, with the matching CHANGELOG.md section as the release text.
+# Started by hand (Actions > Publier > Run workflow) or from a cloud session,
+# so publishing never needs Frank's PC.
+# A version with a letter (4.4.0b1) is published as a pre-release.
+# Uses the HESTIA_PUBLIER secret (a token of the hestiaFB account) when it
+# exists, so the release is shown under hestiaFB; otherwise GITHUB_TOKEN.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version à publier (doit être celle de manifest.json, ex. 4.3.3)"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publier
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Vérifier la version
+        id: v
+        env:
+          WANTED: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          manifest=$(python3 -c "import json;print(json.load(open('custom_components/hestia_weather/manifest.json'))['version'])")
+          if [ "$WANTED" != "$manifest" ]; then
+            echo "::error::La version demandée ($WANTED) n'est pas celle de manifest.json sur main ($manifest)."
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$WANTED" >/dev/null; then
+            echo "::error::Le tag v$WANTED existe déjà."
+            exit 1
+          fi
+          # Release text: the CHANGELOG section of this version, without its heading.
+          python3 - "$WANTED" <<'PY'
+          import re, sys
+          version = sys.argv[1]
+          text = open("CHANGELOG.md", encoding="utf-8").read()
+          m = re.search(rf"^## {re.escape(version)}(?: — (.*))?$", text, re.M)
+          if not m:
+              sys.exit(f"::error::Pas de section « ## {version} — … » dans CHANGELOG.md.")
+          end = re.search(r"^## ", text[m.end():], re.M)
+          body = text[m.end(): m.end() + end.start() if end else None].strip()
+          title = f"Hestia Weather {version}" + (f" — {m.group(1).strip()}" if m.group(1) else "")
+          open("notes.md", "w", encoding="utf-8").write(body + "\n")
+          open("title.txt", "w", encoding="utf-8").write(title)
+          PY
+          if [[ "$WANTED" =~ [a-z] ]]; then echo "flag=--prerelease" >> "$GITHUB_OUTPUT"; else echo "flag=--latest" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Créer le tag et la release
+        env:
+          GH_TOKEN: ${{ secrets.HESTIA_PUBLIER || secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          FLAG: ${{ steps.v.outputs.flag }}
+        run: |
+          set -euo pipefail
+          gh release create "v$VERSION" --target "$(git rev-parse HEAD)" \
+            --title "$(cat title.txt)" --notes-file notes.md $FLAG
+          echo "Publiée : v$VERSION sur $(git rev-parse --short HEAD) ($FLAG)"
