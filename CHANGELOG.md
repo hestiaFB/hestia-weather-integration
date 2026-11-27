@@ -1,3 +1,13 @@
+## 4.3.3 — La vigilance dans la frise, la pression à masquer
+
+### Améliorations
+
+- Carte, alertes à ne pas montrer : la pression peut maintenant se cocher, comme les orages ou la pluie. Cochée, l'alerte de pression ne s'affiche plus sur cette carte (Mini, Alerte, Événements, tuile). Elle reste sur la carte complète.
+
+### Corrections
+
+- Carte « Événements » : pendant une vigilance, la phrase au-dessus de la frise la dit maintenant en premier, par exemple « Vigilance jaune · Vent violent ». Avant, seule la bande hachurée de la frise la montrait.
+
 ## 4.3.2 — Choisir un capteur avec la recherche
 
 ### Améliorations

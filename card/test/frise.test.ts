@@ -29,6 +29,12 @@ describe('The banner’s timeline', () => {
   it('keeps the official vigilance out of the timeline: it has its own pill above', () => {
     expect(buildFrise([], [vigilance], hours, NOW).items).toEqual([]);
   });
+  it('says the official vigilance first in the « Événements » card on its own, which has no pill above (issue #50)', () => {
+    const f = buildFrise([], [vigilance, measured], hours, NOW, [point('La pression monte')], true);
+    expect(f.items.map(i => [i.label, i.text, i.alert, i.now])).toEqual([['Vigilance orange', 'Orages', 2, true], ['Maintenant', 'La pression monte', undefined, true]]);
+    expect(f.groups[0]).toMatchObject({ clock: 'Maintenant', items: [0, 1], alert: 2 });
+    expect(f.band?.level).toBe(2);
+  });
   it('follows the integration’s own list when it sends one, the points less than an hour apart sharing a label', () => {
     const f = buildFrise([point('Vieille liste')], [measured], hours, NOW, [
       point('La pression monte'),

@@ -37,8 +37,9 @@ const kind = (s: Slot) => s.condition === 'sunny' && s.night ? 'night' : KINDS[s
 export const hourLabel = hourText;
 const level = (n: number) => Math.min(3, Math.max(1, n)) as 1 | 2 | 3;
 
-/** `timeline` comes from the integration (2.0.5 and later); without it, the timeline is made of the bubble's points and the alert measured at home. */
-export function buildFrise(points: TickerPoint[], alerts: AlertPoint[], hours: Slot[], now: number, timeline?: TickerPoint[]): Frise {
+/** `timeline` comes from the integration (2.0.5 and later); without it, the timeline is made of the bubble's points and the alert measured at home.
+ *  `official`: the official vigilance leads the sentence too, for the « Événements » card on its own, which has no pill above (issue #50). */
+export function buildFrise(points: TickerPoint[], alerts: AlertPoint[], hours: Slot[], now: number, timeline?: TickerPoint[], official = false): Frise {
   const dated = hours.filter((h): h is Slot & { time: number } => h.time !== undefined);
   const last = dated[dated.length - 1];
   const span = Math.max(SHORTEST, Math.min(LONGEST, last ? last.time + HOUR - now : LONGEST));
@@ -48,7 +49,8 @@ export function buildFrise(points: TickerPoint[], alerts: AlertPoint[], hours: S
   const point = (p: TickerPoint): FriseItem => ({ label: p.label, icon: p.icon, text: p.text, theme: p.theme,
     alert: p.alert ? level(p.level) : p.level >= 2 ? level(p.level) : undefined, ...timed(p.at, p.clock) });
   const measured = alerts.filter(a => !a.official).map((a): FriseItem => ({ label: a.label ?? t('Maintenant'), icon: a.icon, text: a.text, theme: a.theme, alert: level(a.level), ...timed(a.at, a.clock) }));
-  const all = timeline ? timeline.map(point) : [...measured, ...points.map(point)];
+  const vigilances = official ? alerts.filter(a => a.official).map((a): FriseItem => ({ label: a.label ?? t('Vigilance'), icon: a.icon, text: a.text, alert: level(a.level), ...timed() })) : [];
+  const all = [...vigilances, ...(timeline ? timeline.map(point) : [...measured, ...points.map(point)])];
   const items = [...all.filter(i => i.now), ...all.filter(i => !i.now).sort((a, b) => a.at! - b.at!)];
 
   const group = (indexes: number[], at: number, clock: string): FriseGroup => {
@@ -89,10 +91,10 @@ export function buildFrise(points: TickerPoint[], alerts: AlertPoint[], hours: S
   }
 
   // Météo-France's vigilance holds for the day: its band runs to midnight, or to the end of the track.
-  const official = alerts.filter(a => a.official);
+  const vigilant = alerts.filter(a => a.official);
   // Midnight read on the forecast hours, in the home's time zone (not the browser's).
   const midnight = dated.find(h => h.hour === 0 && h.time > now)?.time;
-  const band = official.length ? { to: midnight === undefined ? 1 : x(midnight), level: level(Math.max(...official.map(a => a.level))) } : undefined;
+  const band = vigilant.length ? { to: midnight === undefined ? 1 : x(midnight), level: level(Math.max(...vigilant.map(a => a.level))) } : undefined;
 
   return { items, groups, segments, marks, band };
 }

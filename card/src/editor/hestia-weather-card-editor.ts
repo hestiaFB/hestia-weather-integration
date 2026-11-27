@@ -68,7 +68,7 @@ const LIGHTS = [{ domain: ['light', 'switch', 'input_boolean', 'binary_sensor'] 
 /** The kinds of alerts a card can leave out, in words (issue #22). */
 const KIND_WORDS: Record<AlertKind, string> = { official: fr('Vigilances officielles'), storm: fr('Orages'), rain: fr('Pluie'), wind: fr('Vent'),
   temperature: fr('Chaleur, froid et gel'), fog: fr('Brouillard'), uv: fr('Indice UV'), air: fr('Air et pollens'), water: fr('Restrictions d’eau (Vigieau)'),
-  fire: fr('Feux de forêt (PyroVeille)'), river: fr('Rivière (CrueVeille)') };
+  fire: fr('Feux de forêt (PyroVeille)'), river: fr('Rivière (CrueVeille)'), pressure: fr('Pression') };
 
 /** The formats in three kinds, chosen first: the list of formats then holds only that kind's. Each kind opens on its first format. */
 type Kind = 'large' | 'piece' | 'small';

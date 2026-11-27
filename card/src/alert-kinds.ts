@@ -1,6 +1,6 @@
 import type { AlertKind } from './types';
 
-/** The kind of an alert or a point, from its signal (issue #22); none for what no setting hides (the pressure). */
+/** The kind of an alert or a point, from its signal (issue #22); the pressure too since issue #49. */
 export function alertKind(key?: string): AlertKind | undefined {
   if (!key) return undefined;
   if (key === 'official' || key === 'water' || key === 'fire' || key === 'river' || key === 'uv') return key;
@@ -10,6 +10,7 @@ export function alertKind(key?: string): AlertKind | undefined {
   if (key.startsWith('fog')) return 'fog';
   if (key.startsWith('temperature') || key === 'comfort-gap' || key === 'freeze-future' || key === 'frost-night') return 'temperature';
   if (/^(air|pollen|atmo|legacy)/.test(key)) return 'air';
+  if (key.startsWith('pressure')) return 'pressure';
   return undefined;
 }
 
@@ -30,6 +31,7 @@ export function familyOf(icon: string | undefined, official: boolean, key?: stri
   if (/sun-wireless|weather-sunny-alert/.test(i)) return 'uv';
   if (/thermometer|snowflake|ice/.test(i)) return 'temperature';
   if (/molecule|air-filter|flower|grass|tree|leaf|fruit|pollen/.test(i)) return 'air';
+  if (/gauge/.test(i)) return 'pressure';
   return undefined;
 }
 

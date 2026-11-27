@@ -103,8 +103,8 @@ describe('The alerts a card leaves out (issue #22)', () => {
   const storm: TickerPoint = { group: 'future', label: 'À venir', icon: 'mdi:x', text: 'Orage vers 18 h', level: 2, key: 'storm' };
   const pollen: TickerPoint = { group: 'environment', label: 'Pollens', icon: 'mdi:x', text: 'Pollens forts', level: 2, key: 'pollen-false' };
   it('knows the kind of each signal', () => {
-    expect(['official', 'storm-near', 'rain-now', 'wind-rain', 'wind-future', 'frost-night', 'fog-later', 'air-true', 'legacy-sensor.x', 'pressure'].map(alertKind))
-      .toEqual(['official', 'storm', 'rain', 'rain', 'wind', 'temperature', 'fog', 'air', 'air', undefined]);
+    expect(['official', 'storm-near', 'rain-now', 'wind-rain', 'wind-future', 'frost-night', 'fog-later', 'air-true', 'legacy-sensor.x', 'pressure', 'comfort'].map(alertKind))
+      .toEqual(['official', 'storm', 'rain', 'rain', 'wind', 'temperature', 'fog', 'air', 'air', 'pressure', undefined]);
   });
   it('the Mini skips Vigieau and shows the next point that needs attention', () => {
     const v = view({ alerts: [water], points: [storm] });
