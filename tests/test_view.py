@@ -214,3 +214,13 @@ def test_temperature_and_humidity_cards_fall_back_on_the_weather_service_history
     assert v.humidity.entity == "weather.home" and v.humidity.periods[0].series[0].value == 90
     assert v.humidity.description == "Point de rosée 17,6 °C" or v.humidity.description == "Humidité du bulletin"
     assert to_json(v)["temperature"]["periods"][0]["series"][0][1] == -1.5
+
+
+def test_passes_where_each_kind_of_alert_shows_to_the_card_and_keeps_only_the_known_choices() -> None:
+    # Issue #22: « Frise seulement » and « Jamais » are kept; « Partout » is the default, never saved; the card applies them.
+    settings = Settings.from_options({"weather_entity": "weather.home", "alert_places": {"water": "frise", "pressure": "never", "storm": "all", "rain": "x"}})
+    assert dict(settings.alert_places) == {"water": "frise", "pressure": "never"}
+    assert Settings.from_options({"weather_entity": "weather.home", "alert_places": "frise"}).alert_places == {}
+    shown = to_json(view({"alert_places": {"water": "frise"}}, {}))
+    assert shown["alertPlaces"] == {"water": "frise"}
+    assert "alertPlaces" not in to_json(view({}, {}))

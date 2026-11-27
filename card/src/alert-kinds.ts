@@ -35,6 +35,13 @@ export function familyOf(icon: string | undefined, official: boolean, key?: stri
   return undefined;
 }
 
+/** Where Hestia Weather's settings put this alert or point (issue #22): everywhere (undefined), on the timeline only, or on no card. */
+export function placeOf(places: Readonly<Record<string, string>> | undefined, a: { key?: string; icon?: string; official?: boolean; group?: string }): 'frise' | 'never' | undefined {
+  if (!places) return undefined;
+  const kind = familyOf(a.icon, !!a.official || a.group === 'official', a.key), place = kind ? places[kind] : undefined;
+  return place === 'frise' || place === 'never' ? place : undefined;
+}
+
 /** Whether a card set to leave out `hidden` shows this alert or point: the one rule of every card (Mini, Alert, Events, tiles). */
 export const shown = (hidden: readonly AlertKind[] = [], a: { key?: string; icon?: string; official?: boolean; group?: string }): boolean => {
   if (!hidden.length) return true;

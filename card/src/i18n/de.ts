@@ -547,6 +547,8 @@ export const DE: Record<string, string> = {
   // The Mini's temperature, words and alerts left out (issue #22)
   'Place de la température': 'Position der Temperatur',
   'Le temps qu’il fait en mots': 'Wetter in Worten',
+  'Pendant une alerte, alterner avec les valeurs': 'Bei einer Warnung mit den Werten abwechseln',
+  'Sur un téléphone, l’alerte et les valeurs se montrent à tour de rôle, toutes les 5 secondes. Décoché, l’alerte prend toute la ligne.': 'Auf dem Handy erscheinen Warnung und Werte abwechselnd, alle 5 Sekunden. Nicht angehakt nimmt die Warnung die ganze Zeile ein.',
   'Le lieu et le temps du moment, à côté du rond. Décoché, la ligne garde le rond et les valeurs ; une alerte garde ses mots.': 'Ort und aktuelles Wetter neben dem Kreis. Abgewählt behält die Zeile den Kreis und die Werte; eine Warnung behält ihre Worte.',
   'À droite, en fin de ligne': 'Rechts, am Zeilenende',
   'À gauche, après le rond': 'Links, nach dem Kreis',

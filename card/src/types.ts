@@ -64,6 +64,8 @@ export interface WeatherCardConfig {
   mini_temperature?: 'left' | 'right';
   /** Mini: the place and the weather in words (shown by default); off, the line keeps the round and the values. An alert keeps its words. */
   mini_words?: boolean;
+  /** Mini: during an alert, its words and the values take turns on a narrow card (issue #22). On by default. */
+  mini_alternate?: boolean;
   /** The kinds of alerts left out, whatever their level: Mini and Alert (issue #22), Events and tiles (issue #33). « water » for Vigieau, « air » for the air and pollens… */
   hidden_alerts?: AlertKind[];
   /** The Records card: one line per record (list, default) or four cases (cases). */

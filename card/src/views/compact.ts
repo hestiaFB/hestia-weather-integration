@@ -4,7 +4,7 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import { colon, hourText, t } from '../i18n';
 import type { AlertPoint, TickerPoint, WeatherView } from '../view';
 import type { AlertKind, MiniValue, WeatherCardConfig } from '../types';
-import { shown } from '../alert-kinds';
+import { placeOf, shown } from '../alert-kinds';
 export { alertKind, shown } from '../alert-kinds';
 import { alertBubble, bubble, chip, label, nf, scrolling, tint } from '../ui/parts';
 import { hoursChart, week } from './forecasts';
@@ -13,7 +13,7 @@ import { litOf } from '../astro';
 import type { PressTarget } from './tile';
 
 /** One value of the Mini's line: its icon, its words and, when it deserves a look, the colour of its meaning. */
-export interface MiniItem { key: MiniValue; icon: string; text: string; value: number; theme?: string }
+export interface MiniItem { key: MiniValue; icon: string; text: string; value: number; theme?: string; entity?: string }
 
 /** A number of a chip (« 78 % », « 1 013 hPa »), whatever the language's separators. */
 const chipNumber = (v: WeatherView, icon: string): number | undefined => {
@@ -29,6 +29,12 @@ const lastGust = (v: WeatherView): number | undefined => {
 /** The moon's icon for its phase (0 new, .5 full). */
 const MOON_ICONS = ['mdi:moon-new', 'mdi:moon-waxing-crescent', 'mdi:moon-first-quarter', 'mdi:moon-waxing-gibbous', 'mdi:moon-full', 'mdi:moon-waning-gibbous', 'mdi:moon-last-quarter', 'mdi:moon-waning-crescent'];
 const moonIcon = (phase: number) => MOON_ICONS[phaseIndex(phase)];
+/** The sensor a value comes from: a tap on the value opens its details (issue #22). None for what Hestia computes (the sun, the moon). */
+const chipEntity = (v: WeatherView, icon: string) => v.extras?.find(c => c.icon === icon)?.entity;
+const ENTITY: Partial<Record<MiniValue, (v: WeatherView) => string | undefined>> = {
+  temperature: v => v.now.temperatureEntity, feel: v => v.comfort?.entity, wind: v => v.wind?.entity, gust: v => v.wind?.entity, rain: v => v.rain?.entity,
+  humidity: v => v.humidity?.entity ?? chipEntity(v, 'mdi:water-percent'), pressure: v => v.pressure?.entity, uv: v => chipEntity(v, 'mdi:sun-wireless-outline'),
+};
 const MINI: Record<MiniValue, { icon: string; iconOf?: (n: number) => string; read: (v: WeatherView) => number | undefined; text: (n: number) => string; theme: (n: number) => string | undefined }> = {
   temperature: { icon: 'mdi:thermometer', read: v => v.now.temperature, text: n => `${nf(n)}°`, theme: n => n >= 35 ? 'level3' : n >= 30 ? 'heat' : n <= 0 ? 'cold' : undefined },
   feel: { icon: 'mdi:human-handsdown', read: v => v.now.feels ?? v.comfort?.feels, text: n => `${nf(n)}°`, theme: n => n >= 35 ? 'level3' : n >= 27 ? 'heat' : n <= 8 ? 'cold' : undefined },
@@ -47,7 +53,7 @@ const MINI: Record<MiniValue, { icon: string; iconOf?: (n: number) => string; re
 export function miniItems(v: WeatherView, which: ReadonlyArray<MiniValue>): MiniItem[] {
   return which.flatMap(key => {
     const m = MINI[key], n = m?.read(v);
-    return m && n !== undefined && Number.isFinite(n) ? [{ key, icon: m.iconOf ? m.iconOf(n) : m.icon, text: m.text(n), value: n, theme: m.theme(n) }] : [];
+    return m && n !== undefined && Number.isFinite(n) ? [{ key, icon: m.iconOf ? m.iconOf(n) : m.icon, text: m.text(n), value: n, theme: m.theme(n), entity: ENTITY[key]?.(v) || undefined }] : [];
   });
 }
 
@@ -55,10 +61,11 @@ export function miniItems(v: WeatherView, which: ReadonlyArray<MiniValue>): Mini
  *  When the most serious is left out, the next point that needs attention takes its place. */
 export function miniAlert(v: WeatherView, which: 'official' | 'all' | 'none' = 'official', hidden: readonly AlertKind[] = []): AlertPoint | undefined {
   if (which === 'none') return undefined;
-  const alerts = v.alerts.filter(a => shown(hidden, a));
+  const here = (a: Parameters<typeof shown>[1]) => shown(hidden, a) && !placeOf(v.alertPlaces, a);
+  const alerts = v.alerts.filter(here);
   const official = alerts.find(a => a.official);
   if (which !== 'all' || official) return official;
-  const point = v.points.find(p => p.level >= 1 && p.group !== 'official' && shown(hidden, p));
+  const point = v.points.find(p => p.level >= 1 && p.group !== 'official' && here(p));
   return alerts[0] ?? (point && { level: Math.min(3, point.level) as 1 | 2 | 3, label: point.label, text: point.text, icon: point.icon, source: '', official: false,
     entity: point.entity, key: point.key });
 }
@@ -69,7 +76,7 @@ const skyTheme = (c: string) => ['rainy', 'pouring', 'snowy', 'snowy-rainy', 'ha
 /** One line, as Hestia Confort's (issue #22): a tinted round with the sky (or the vigilance), the place and the weather in words,
  *  the chosen values, then the temperature large. Words and values that do not fit scroll; the temperature always stays. */
 export function renderMini(v: WeatherView, holdTarget: PressTarget,
-                           c: Pick<WeatherCardConfig, 'mini_values' | 'mini_alerts' | 'mini_temperature' | 'mini_words' | 'hidden_alerts'> = {}): TemplateResult {
+                           c: Pick<WeatherCardConfig, 'mini_values' | 'mini_alerts' | 'mini_temperature' | 'mini_words' | 'mini_alternate' | 'hidden_alerts'> = {}): TemplateResult {
   const n = v.now, alert = miniAlert(v, c.mini_alerts, c.hidden_alerts), chosen = c.mini_values ?? ['temperature'];
   // Issue #22: the temperature just after the round, and the line without the weather in words (an alert keeps its words).
   const left = c.mini_temperature === 'left', words = c.mini_words !== false || !!alert;
@@ -77,22 +84,30 @@ export function renderMini(v: WeatherView, holdTarget: PressTarget,
   const place = v.location ? t('Météo à {place}', { place: v.location }) : t('Météo');
   const theme = alert ? (!alert.official && alert.theme) || `level${alert.level}` : skyTheme(n.condition);
   const said = alert ? html`${alert.label ? `${alert.label} · ` : ''}${alert.text}` : n.label;
-  const values = items.map(i => html`<span class=${`mini-val${i.theme ? ' ink' : ''}`} style=${i.theme ? tint(i.theme) : ''}><ha-icon icon=${i.icon}></ha-icon>${i.text}</span>`);
-  const big = temp ? html`<span class=${`mini-t${temp.theme ? ' ink' : ''}`} style=${temp.theme ? tint(temp.theme) : ''}>${nf(temp.value)}<small>°</small></span>` : nothing;
-  return html`<div class=${`nw-mini${holdTarget === 'none' ? ' still' : ''}${alert ? ' alerting' : ''}${left ? ' left' : ''}${words ? '' : ' wordless'}`} role=${holdTarget === 'none' ? 'group' : 'button'} tabindex=${holdTarget === 'none' ? -1 : 0}
+  // A value with a sensor opens its details (issue #22); the copy that scrolls behind it is not a second stop for the keyboard.
+  const press = (i: MiniItem, copy = false) => i.entity ? { entity: i.entity, role: 'button', tab: copy ? -1 : 0 } : { entity: nothing, role: nothing, tab: nothing };
+  const values = (copy: boolean) => items.map(i => { const p = press(i, copy);
+    return html`<span class=${`mini-val${i.theme ? ' ink' : ''}`} style=${i.theme ? tint(i.theme) : ''} data-entity=${p.entity} role=${p.role} tabindex=${p.tab}><ha-icon icon=${i.icon}></ha-icon>${i.text}</span>`; });
+  const tp = temp ? press(temp) : undefined;
+  const big = temp ? html`<span class=${`mini-t${temp.theme ? ' ink' : ''}`} style=${temp.theme ? tint(temp.theme) : ''} data-entity=${tp!.entity} role=${tp!.role} tabindex=${tp!.tab}>${nf(temp.value)}<small>°</small></span>` : nothing;
+  // During an alert, on a narrow card, the alert's words and the values take turns (issue #22) instead of the values going away.
+  const alternate = !!alert && items.length > 0 && words && c.mini_alternate !== false;
+  return html`<div class=${`nw-mini${holdTarget === 'none' ? ' still' : ''}${alert ? ' alerting' : ''}${alternate ? ' alternate' : ''}${left ? ' left' : ''}${words ? '' : ' wordless'}`} role=${holdTarget === 'none' ? 'group' : 'button'} tabindex=${holdTarget === 'none' ? -1 : 0}
       aria-label=${holdTarget === 'none' ? place : colon(place, holdTarget === 'page' ? t('appui pour la page météo') : t('appui pour la carte complète'))}>
     <span class="mini-orb" style=${tint(theme)} title=${alert?.source ?? ''}><ha-icon icon=${alert ? alert.icon : n.icon}></ha-icon></span>
     ${left ? big : nothing}
-    ${words ? html`<span class="mini-text">${v.location ? html`<span class="mini-place">${scrolling(v.location)}</span>` : nothing}
+    <span class="mini-mid">${words ? html`<span class="mini-text">${v.location ? html`<span class="mini-place">${scrolling(v.location)}</span>` : nothing}
       <b class=${alert ? 'ink' : ''} style=${alert ? tint(theme) : ''} role=${alert ? 'status' : nothing}>${scrolling(said)}</b></span>` : nothing}
-    ${values.length ? html`<hestia-weather-marquee class="mini-vals"><span class="run">${values}</span><span class="run" aria-hidden="true">${values}</span></hestia-weather-marquee>` : nothing}
+    ${items.length ? html`<hestia-weather-marquee class="mini-vals"><span class="run">${values(false)}</span><span class="run" aria-hidden="true">${values(true)}</span></hestia-weather-marquee>` : nothing}</span>
     ${left ? nothing : big}
   </div>`;
 }
 
 /** What deserves to be seen now: the vigilances, the alert measured at home, then the serious points of the coming hours. */
 export function alertItems(v: WeatherView, hidden: readonly AlertKind[] = []): { alerts: WeatherView['alerts']; points: TickerPoint[] } {
-  return { alerts: v.alerts.filter(a => shown(hidden, a)), points: v.points.filter(p => p.level >= 2 && p.group !== 'official' && shown(hidden, p)) };
+  // Hestia Weather's « Frise seulement » and « Jamais » (issue #22) keep an alert off this card too.
+  const here = (a: Parameters<typeof shown>[1]) => shown(hidden, a) && !placeOf(v.alertPlaces, a);
+  return { alerts: v.alerts.filter(here), points: v.points.filter(p => p.level >= 2 && p.group !== 'official' && here(p)) };
 }
 
 /** Only while there is something serious; the card hides itself otherwise (a placeholder while the dashboard is being edited). */
@@ -247,10 +262,20 @@ export const compactStyles = css`
   .mini-t.ink small { color:inherit; opacity:.8; }
   @container (max-width:360px) { .nw-mini { gap:10px; } }
   /* A vigilance comes first on a narrow card: it takes the values' room, so its words can be read. */
-  @container (max-width:480px) { .nw-mini.alerting .mini-vals { display:none; } }
+  @container (max-width:480px) { .nw-mini.alerting:not(.alternate) .mini-vals { display:none; } }
+  /* The words and the values in one place, taking turns every 5 s (issue #22); wider, they sit side by side. */
+  .mini-mid { display:contents; }
+  @container (max-width:480px) {
+    .nw-mini.alternate .mini-mid { display:grid; flex:1 1 auto; min-width:0; align-items:center; }
+    .nw-mini.alternate .mini-mid > * { grid-area:1 / 1; min-width:0; animation:nw-mini-turn 10s var(--nw-ease) infinite; animation-play-state:var(--nw-motion, running); }
+    .nw-mini.alternate .mini-mid > .mini-vals { animation-delay:-5s; justify-self:start; margin-left:0; } }
+  @keyframes nw-mini-turn { 0%, 46% { opacity:1; visibility:visible; translate:0 0; } 50% { opacity:0; visibility:hidden; translate:0 -40%; }
+    51%, 96% { opacity:0; visibility:hidden; translate:0 40%; } 100% { opacity:1; visibility:visible; translate:0 0; } }
   @container (max-width:250px) { .mini-vals { display:none; } }
   @media (prefers-reduced-motion:reduce) {
     .alerting .mini-orb::after { animation:none; }
+    /* Without motion, no turns: the alert keeps the line, as before. */
+    .nw-mini.alternate .mini-mid > * { animation:none; } .nw-mini.alternate .mini-mid > .mini-vals { display:none; }
     /* Without motion, the values that do not fit leave from the end, whole. */
     .mini-vals, .mini-vals[moving] { display:block; height:20px; overflow:hidden; -webkit-line-clamp:unset; }
     .mini-vals .run, .mini-vals[moving] .run { display:flex; flex-wrap:wrap; justify-content:flex-end; column-gap:12px; row-gap:24px; padding:0; }

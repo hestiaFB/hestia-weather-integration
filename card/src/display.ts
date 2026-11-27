@@ -1,6 +1,6 @@
 import type { AirPanel, ChartPeriodId, MeasureView, PressureView, RainPeriodId, RainView, WeatherView, WindView } from './view';
 import type { WeatherCardConfig } from './types';
-import { shown } from './alert-kinds';
+import { placeOf, shown } from './alert-kinds';
 
 /** The view as this card shows it: the integration computes everything, the card's display settings leave out what they hide. */
 /** The pressure over the chosen period, when the integration sends it; six hours otherwise. */
@@ -34,15 +34,20 @@ export function displayed(v: WeatherView, config: WeatherCardConfig, tile: boole
   const brief = tile || chosen || (config.smart_brief !== false && config.show_synthesis !== false);
   const hidden = config.hidden_alerts ?? [];
   const keep = <T extends { key?: string; icon?: string; official?: boolean; group?: string }>(list: T[]) => hidden.length ? list.filter(a => shown(hidden, a)) : list;
+  // Hestia Weather's settings (issue #22): « never » leaves every card, « frise » stays only on the timeline.
+  const places = v.alertPlaces;
+  const placed = <T extends { key?: string; icon?: string; official?: boolean; group?: string }>(list: T[], timeline: boolean) =>
+    places ? list.filter(a => { const p = placeOf(places, a); return !p || (timeline && p === 'frise'); }) : list;
   // Without details, the whole « Détail » fold goes: its list and the publication date it also holds.
   const details = (panels: AirPanel[]) => config.show_atmo_details === false ? panels.map(p => ({ ...p, details: [], updated: '' })) : panels;
   return {
     ...v,
     // The families left out on this card (issue #33): gone from the bubble, the timeline and the line; the full card keeps them elsewhere.
     brief: brief ? v.brief : undefined,
-    alerts: brief ? keep(v.alerts) : [],
-    points: brief ? keep(v.points) : [],
-    timeline: brief ? v.timeline && keep(v.timeline) : [],
+    alerts: brief ? keep(placed(v.alerts, false)) : [],
+    friseAlerts: brief && places ? keep(placed(v.alerts, true)) : undefined,
+    points: brief ? keep(placed(v.points, false)) : [],
+    timeline: brief ? v.timeline && keep(placed(v.timeline, true)) : [],
     // A tile whose blocks are chosen keeps the bulletin: its moments come from it.
     bulletin: config.show_bulletin === false && !(tile && config.tile_blocks?.length) && !chosen ? undefined : v.bulletin,
     pressure: v.pressure && pressureOver(v.pressure, config.pressure_span ?? '6h'),

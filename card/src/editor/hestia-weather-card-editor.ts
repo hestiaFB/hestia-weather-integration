@@ -10,7 +10,7 @@ import { findStations } from '../views/rivers';
 const defaults: Partial<WeatherCardConfig> = { format: 'full', show_synthesis: true, show_bulletin: true, show_today: true, show_predictions: true,
   collapse_today: false, collapse_predictions: false, smart_brief: true, weather_animations: true, weather_animation_quality: 'standard', decor: 'sky',
   show_atmo_details: true, show_atmo_tomorrow: true, glass_effect: true, tile_blocks: ['bulletin', 'events'], forecast_tab: 'hours', pressure_span: '6h', wind_span: '6h', rain_span: '7d', clock: 'none', now_frame: 'opaque',
-  records_period: 'both', records_source: 'station', records_layout: 'list', mini_values: ['temperature'], mini_alerts: 'official', mini_temperature: 'right', mini_words: true, hidden_alerts: [], temperature_span: '6h', river_span: '2d', show_title: true };
+  records_period: 'both', records_source: 'station', records_layout: 'list', mini_values: ['temperature'], mini_alerts: 'official', mini_temperature: 'right', mini_words: true, mini_alternate: true, hidden_alerts: [], temperature_span: '6h', river_span: '2d', show_title: true };
 export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   entry_id: fr('Lieu'), format: fr('Format'),
   weather_animations: fr('Ciel animé et halos'), weather_animation_quality: fr('Qualité des animations'), glass_effect: fr('Effet verre dépoli'),
@@ -24,7 +24,7 @@ export const labels: Partial<Record<keyof WeatherCardConfig, string>> = {
   hold_action: fr('Appui long'), tap_action: fr('Appui'), pressure_span: fr('Courbe de pression'), wind_span: fr('Courbe du vent'), rain_span: fr('Barres de pluie'), clock: fr('Heure dans le bandeau'), now_frame: fr('Cadre de « En ce moment »'),
   mini_values: fr('Valeurs de la ligne'), mini_alerts: fr('Alertes sur la ligne'), temperature_span: fr('Période des courbes'), show_title: fr('Titres'), records_period: fr('Période'), records_source: fr('Source'), records_layout: fr('Disposition'),
   rivers: fr('Stations suivies'), river_span: fr('Période des courbes'),
-  mini_temperature: fr('Place de la température'), mini_words: fr('Le temps qu’il fait en mots'), hidden_alerts: fr('Alertes à ne pas montrer'),
+  mini_temperature: fr('Place de la température'), mini_words: fr('Le temps qu’il fait en mots'), mini_alternate: fr('Pendant une alerte, alterner avec les valeurs'), hidden_alerts: fr('Alertes à ne pas montrer'),
 };
 /** One line under the settings that need it. */
 const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
@@ -55,6 +55,7 @@ const helpers: Partial<Record<keyof WeatherCardConfig, string>> = {
   records_source: fr('La station : ce que vos capteurs ont mesuré, avec l’heure. Le lieu : l’archive Open-Meteo depuis 1940, valeurs un peu adoucies.'),
   rivers: fr('Une station par entrée CrueVeille. Rien de coché : toutes, dans l’ordre de Home Assistant.'),
   mini_words: fr('Le lieu et le temps du moment, à côté du rond. Décoché, la ligne garde le rond et les valeurs ; une alerte garde ses mots.'),
+  mini_alternate: fr('Sur un téléphone, l’alerte et les valeurs se montrent à tour de rôle, toutes les 5 secondes. Décoché, l’alerte prend toute la ligne.'),
   hidden_alerts: fr('Cochées, ces alertes ne s’affichent jamais sur cette carte, même sérieuses. Elles restent sur la carte complète.'),
 };
 /** The fire card's own words for the switch it shares with the lightning card. */
@@ -200,7 +201,7 @@ export class HestiaWeatherCardEditor extends LitElement {
       { name: 'mini_values', selector: { select: { multiple: true, reorder: true, mode: 'list', options: ([['temperature', t('Température')], ['feel', t('Ressenti')],
         ['wind', t('Vent')], ['gust', t('Rafales')], ['rain', t('Pluie du jour')], ['humidity', t('Humidité')], ['pressure', t('Pression')], ['uv', t('Indice UV')], ['sunrise', t('Lever du soleil')], ['sunset', t('Coucher du soleil')], ['moon', t('Lune (part éclairée)')]] as Array<[string, string]>)
         .map(([value, label]) => ({ value, label })) } } },
-      choice('mini_temperature', [['right', t('À droite, en fin de ligne')], ['left', t('À gauche, après le rond')]]), ...toggles('mini_words'),
+      choice('mini_temperature', [['right', t('À droite, en fin de ligne')], ['left', t('À gauche, après le rond')]]), ...toggles('mini_words', 'mini_alternate'),
       choice('mini_alerts', [['official', t('Vigilances officielles')], ['all', t('Toutes les alertes')], ['none', t('Aucune')]]),
       ...(this.config?.mini_alerts === 'none' ? [] : [hide])], true),
       group(t('Fonctionnalités'), 'mdi:tune-variant', path)];

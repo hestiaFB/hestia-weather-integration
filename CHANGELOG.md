@@ -1,3 +1,14 @@
+## 4.4.0 — La petite carte garde ses valeurs, et chaque alerte à sa place
+
+### Nouveautés
+
+- Panneau Hestia-FB, onglet Alertes : « Où montrer les alertes ». Pour chaque sorte d’alerte (vigilances, orages, pluie, Vigieau, pression…), trois choix valables pour toutes les cartes : « Partout », « Frise seulement » ou « Jamais ». En « Frise seulement », l’alerte reste dans la frise mais ne prend plus la Mini ni la carte Alerte. En « Jamais », elle ne s’affiche sur aucune carte ; ses capteurs restent, pour vos automatisations.
+
+### Améliorations
+
+- Mini : pendant une alerte, sur un téléphone, l’alerte et vos valeurs se montrent à tour de rôle, toutes les 5 secondes, au lieu de faire disparaître les valeurs. Le rond garde la couleur de l’alerte. Un réglage de la carte permet de garder l’ancien comportement.
+- Mini : un appui sur une valeur (température, ressenti, vent, pression…) ouvre son capteur et sa courbe. Un appui ailleurs sur la ligne ouvre toujours la carte complète.
+
 ## 4.3.3 — La vigilance dans la frise, la pression à masquer
 
 ### Améliorations

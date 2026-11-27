@@ -92,7 +92,7 @@ export function renderSingle(v: WeatherView, format: SingleFormat, blocks: CardB
 function eventsPanel(v: WeatherView): TemplateResult {
   // The card is the frame: no title nor glass around the timeline, whose sentence already says what comes.
   return html`<section aria-label=${t('Événements')}>${v.points.length || v.alerts.length || v.hours.length || v.timeline?.length
-    ? html`<hestia-frise bare .points=${v.points} .alerts=${v.alerts} .hours=${v.hours} .timeline=${v.timeline}></hestia-frise>`
+    ? html`<hestia-frise bare .points=${v.points} .alerts=${v.friseAlerts ?? v.alerts} .hours=${v.hours} .timeline=${v.timeline}></hestia-frise>`
     : html`<p class="nw-empty">${t('Événements indisponibles pour le moment.')}</p>`}</section>`;
 }
 
