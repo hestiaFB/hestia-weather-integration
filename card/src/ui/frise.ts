@@ -57,9 +57,9 @@ export class HestiaFrise extends LitElement {
 
   protected willUpdate(changed: PropertyValues<this>) {
     const now = Date.now() / 1000;
-    if (!changed.has('points') && !changed.has('alerts') && !changed.has('hours') && !changed.has('timeline') && now - this.built < STALE) return;
+    if (!changed.has('points') && !changed.has('alerts') && !changed.has('bare') && !changed.has('hours') && !changed.has('timeline') && now - this.built < STALE) return;
     const shown = this.frise.items[this.index]?.text;
-    this.frise = buildFrise(this.points, this.alerts, this.hours, now, this.timeline); this.built = now;
+    this.frise = buildFrise(this.points, this.alerts, this.hours, now, this.timeline, this.bare); this.built = now;
     // The point on show stays on show if it is still there: nothing moves when the view is refreshed.
     const keep = this.frise.items.findIndex(i => i.text === shown);
     this.index = keep >= 0 ? keep : 0; this.leaving = undefined;

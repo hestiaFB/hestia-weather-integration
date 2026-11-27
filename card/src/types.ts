@@ -134,7 +134,7 @@ export interface WeatherCardConfig {
 }
 
 /** The kinds of alerts a card can leave out (issue #22). */
-export const ALERT_KINDS = ['official', 'storm', 'rain', 'wind', 'temperature', 'fog', 'uv', 'air', 'water', 'fire', 'river'] as const;
+export const ALERT_KINDS = ['official', 'storm', 'rain', 'wind', 'temperature', 'fog', 'uv', 'air', 'water', 'fire', 'river', 'pressure'] as const;
 export type AlertKind = typeof ALERT_KINDS[number];
 
 /** What the Mini's line can show (issue #22). */

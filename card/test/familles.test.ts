@@ -18,6 +18,11 @@ describe('The family of an event', () => {
     expect(familyOf('mdi:fire-alert', false)).toBe('fire');
     expect(familyOf('mdi:waves', false)).toBe('river');
   });
+  it('reads the pressure, by its signal or its icon, so a card can leave it out (issue #49)', () => {
+    expect(familyOf('mdi:gauge', false, 'pressure')).toBe('pressure');
+    expect(familyOf('mdi:gauge', false, 'pressure-future')).toBe('pressure');
+    expect(familyOf('mdi:gauge', false)).toBe('pressure');
+  });
   it('leaves an unknown icon in no family: it always shows', () => {
     expect(familyOf('mdi:information-outline', false)).toBeUndefined();
   });
