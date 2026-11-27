@@ -98,7 +98,7 @@ export function nowBlock(v: WeatherView, kicker: boolean, extra: unknown = nothi
 
 /** « Événements »: the timeline of the coming hours, with the points of now and of the next hours over the forecast sky. Shared with the banner. */
 export const frise = (v: WeatherView) => v.points.length || v.alerts.length || v.hours.length || v.timeline?.length
-  ? html`<div class="nw-events">${label(t('Événements'))}<hestia-frise .points=${v.points} .alerts=${v.alerts} .hours=${v.hours} .timeline=${v.timeline}></hestia-frise></div>` : nothing;
+  ? html`<div class="nw-events">${label(t('Événements'))}<hestia-frise .points=${v.points} .alerts=${v.friseAlerts ?? v.alerts} .hours=${v.hours} .timeline=${v.timeline}></hestia-frise></div>` : nothing;
 
 export function renderTile(v: WeatherView, sky: TemplateResult, s: TileState): TemplateResult {
   // The top keeps the official vigilance, one pill folded, the others opening under it. What the station measures leads the scrolling bubble,

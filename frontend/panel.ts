@@ -278,6 +278,11 @@ export class WeatherSetup extends LitElement {
   return html`${listSection(t('Alertes et saison'),p.fields.slice(1).filter(f=>!['water_restriction_entity','lightning_entity','fire_entity','river_entity'].includes(f.key)).map(f=>this.field(f)))}
    ${listSection(t('Orages et éclairs'),[...this.integrationRow(ext('blitzortung'),!!lightning?.options.length),...(lightning?[this.field(lightning)]:[])])}
    ${risks.length?listSection(t('Feux et crues'),risks):nothing}`;}
+ /** « Où montrer les alertes » (issue #22): for each kind, everywhere, on the timeline only, or on no card. The cards apply it. */
+ private placesSection(v:View){const a=v.alert_places;if(!a)return nothing;
+  return listSection(t('Où montrer les alertes'),a.kinds.map(k=>{const value=a.values[k.value]??'all';
+   return listRow({name:k.label,label:k.label,value:html`<select aria-label=${k.label} ?disabled=${this.busy} @change=${(e:Event)=>void this.change({op:'alert_place',key:k.value,value:(e.target as HTMLSelectElement).value})}>${a.choices.map(c=>html`<option value=${c.value} ?selected=${c.value===value}>${c.label}</option>`)}</select>`});}),
+   {help:html`<ul><li>${t('Partout : la frise, la Mini, la carte Alerte et la tuile.')}</li><li>${t('Frise seulement : l’alerte reste dans la frise, mais ne prend jamais la Mini ni la carte Alerte.')}</li><li>${t('Jamais : elle ne s’affiche sur aucune carte. Ses capteurs restent, pour vos automatisations.')}</li></ul>`});}
  private prevision(v:View){const p=v.prevision;
   return html`${this.forecastSection(v)}${this.alertSections(v)}
    ${listSection('',moreRow(t('Réglages avancés'),'',html`<p class="hint nk-more-note">${t('Laissés vides, Hestia-FB prend le soleil de Home Assistant.')}</p>${p.advanced.map(f=>this.field(f))}${this.textRow('forecast_source',t('Nom de la source des prévisions'),p.forecast_source,'')}`))}
@@ -604,7 +609,7 @@ export class WeatherSetup extends LitElement {
    case 'emplacement':{const place=v.station.place,q=place?placeQuestions(place).find(x=>x.key===screen.question):undefined;
     if(!place||!q)return nothing;
     return html`${this.guideHead(q.title,q.why)}${questionBody({view:place,busy:this.busy,answer:(key:string,value:unknown)=>void this.change({op:'place',key,value}),tool:this.placeTool,setTool:x=>{this.placeTool=x;}},q)}`;}
-   case 'alerts':return html`${head}${this.alertSections(v)}${this.waterSection(v)}${this.refreshSources()}`;
+   case 'alerts':return html`${head}${this.alertSections(v)}${this.waterSection(v)}${this.placesSection(v)}${this.refreshSources()}`;
    case 'air':return html`${head}${this.airSection(v)}${this.refreshSources()}`;
    case 'pollens':return html`${head}${this.pollenSections(v)}${this.refreshSources()}`;
    case 'bricks':return html`${head}${this.bricksSection(v)}`;

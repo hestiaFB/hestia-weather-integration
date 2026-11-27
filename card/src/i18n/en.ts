@@ -546,6 +546,8 @@ export const EN: Record<string, string> = {
   // The Mini's temperature, words and alerts left out (issue #22)
   'Place de la température': 'Temperature position',
   'Le temps qu’il fait en mots': 'Weather in words',
+  'Pendant une alerte, alterner avec les valeurs': 'During an alert, take turns with the values',
+  'Sur un téléphone, l’alerte et les valeurs se montrent à tour de rôle, toutes les 5 secondes. Décoché, l’alerte prend toute la ligne.': 'On a phone, the alert and the values show in turn, every 5 seconds. Unticked, the alert takes the whole line.',
   'Le lieu et le temps du moment, à côté du rond. Décoché, la ligne garde le rond et les valeurs ; une alerte garde ses mots.': 'The place and the current weather, next to the round. Unchecked, the line keeps the round and the values; an alert keeps its words.',
   'À droite, en fin de ligne': 'On the right, at the end of the line',
   'À gauche, après le rond': 'On the left, after the round',

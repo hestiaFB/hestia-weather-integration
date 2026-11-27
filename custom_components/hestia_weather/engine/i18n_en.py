@@ -902,4 +902,13 @@ EN: dict[str, str] = {
     "l’intégration CrueVeille": "the CrueVeille integration",
     "l’intégration PyroVeille": "the PyroVeille integration",
     "{count} autres feux dans le secteur": "{count} other fires in the area",
+    "Vigilances officielles": "Official warnings",
+    "Chaleur, froid et gel": "Heat, cold and frost",
+    "Indice UV": "UV index",
+    "Air et pollens": "Air and pollen",
+    "Rivière (CrueVeille)": "River (CrueVeille)",
+    "Partout": "Everywhere",
+    "Frise seulement": "Timeline only",
+    "Jamais": "Never",
+    "Choix inconnu.": "Unknown choice.",
 }

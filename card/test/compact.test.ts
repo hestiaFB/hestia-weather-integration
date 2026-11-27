@@ -79,6 +79,13 @@ describe('The Mini (issue #22)', () => {
     expect(items.map(i => [i.key, i.value, i.theme ?? null])).toEqual([['uv', 6, 'heat'], ['feel', 7.5, 'cold'], ['wind', 45, 'wind'], ['gust', 70, 'wind'],
       ['rain', 0, null], ['humidity', 92, 'watch'], ['pressure', 990, 'pressure'], ['temperature', 36.2, 'level3']]);
   });
+  it('knows the sensor of each value, for a tap to open it; none for what Hestia computes (issue #22)', () => {
+    const w = view({ ...v, now: { ...v.now, temperatureEntity: 'sensor.t' }, comfort: { entity: 'sensor.ressenti' } as WeatherView['comfort'],
+      wind: { ...v.wind, entity: 'sensor.vent' } as WeatherView['wind'], pressure: { value: 990, entity: 'sensor.p' } as WeatherView['pressure'],
+      extras: [{ ...v.extras[0], entity: 'sensor.h' }, v.extras[1]] });
+    expect(miniItems(w, ['temperature', 'feel', 'wind', 'pressure', 'humidity', 'uv', 'rain']).map(i => [i.key, i.entity ?? null]))
+      .toEqual([['temperature', 'sensor.t'], ['feel', 'sensor.ressenti'], ['wind', 'sensor.vent'], ['pressure', 'sensor.p'], ['humidity', 'sensor.h'], ['uv', null], ['rain', null]]);
+  });
   it('leaves out a value it does not know', () => {
     expect(miniItems(view({ now: { temperature: 12 } as WeatherView['now'], extras: [] }), ['humidity', 'gust', 'temperature']).map(i => i.key)).toEqual(['temperature']);
   });
@@ -117,6 +124,17 @@ describe('The alerts a card leaves out (issue #22)', () => {
     const v = view({ alerts: [water], points: [storm, pollen] });
     expect(alertItems(v, ['water', 'air'])).toEqual({ alerts: [], points: [storm] });
     expect(alertItems(v, ['water', 'air', 'storm'])).toEqual({ alerts: [], points: [] });
+  });
+  it('follows Hestia Weather’s « Frise seulement » and « Jamais »: off the Mini and the Alert card, the timeline keeps « frise » (issue #22)', () => {
+    const v = view({ alerts: [water, { ...vigilance, key: 'official' }], points: [storm, pollen], timeline: [storm, pollen],
+      alertPlaces: { water: 'frise', storm: 'never' }, air: { today: [], tomorrow: [] } as unknown as WeatherView['air'] });
+    expect(alertItems(v)).toEqual({ alerts: [v.alerts[1]], points: [pollen] });
+    expect(miniAlert(view({ ...v, alerts: [water], points: [storm] }), 'all')).toBeUndefined();
+    const shownOn = displayed(v, { type: 'custom:hestia-weather-card' }, true);
+    expect(shownOn.alerts.map(a => a.key)).toEqual(['official']);
+    expect(shownOn.friseAlerts?.map(a => a.key)).toEqual(['water', 'official']);
+    expect(shownOn.points).toEqual([pollen]);
+    expect(shownOn.timeline).toEqual([pollen]);
   });
   it('an alert from an older integration, without its kind, always shows', () => {
     expect(shown(['water'], { text: 'x' } as unknown as AlertPoint)).toBe(true);

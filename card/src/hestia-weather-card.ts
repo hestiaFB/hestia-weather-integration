@@ -448,8 +448,14 @@ export class HestiaWeatherCard extends LitElement {
     this.act(e.shiftKey ? this.holdTarget : this.tapTarget);
   };
   /** Mini and alert: a tap opens the full card (or the weather page). */
-  private tap = (e: Event) => { if (!(e.target as HTMLElement).closest('dialog')) this.act(this.holdTarget); };
+  private tap = (e: Event) => {
+    if ((e.target as HTMLElement).closest('dialog')) return;
+    // A value of the Mini opens its sensor's details (issue #22); the rest of the line, the full card.
+    if (this.onValue(e)) this.openEntity(e); else this.act(this.holdTarget);
+  };
+  private onValue = (e: Event) => e.composedPath().some(el => el instanceof HTMLElement && el.hasAttribute('data-entity') && !!el.closest('.nw-mini'));
   private tapKey = (e: KeyboardEvent) => {
+    if (['Enter', ' '].includes(e.key) && this.onValue(e)) { e.preventDefault(); this.openEntity(e); return; }
     if (!['Enter', ' '].includes(e.key) || (e.target as HTMLElement).closest('dialog') || this.holdTarget === 'none') return;
     e.preventDefault(); this.act(this.holdTarget);
   };

@@ -50,6 +50,12 @@ SHADES = (("", N_("Je ne sais pas")), ("never", N_("Plein soleil")), ("morning",
 # Where the station stands (docs/STATION-EMPLACEMENT.md): the answers each question takes; "" is « Je ne sais pas ».
 PLACE = {"station_side": station_place.PLACES, "station_wall": station_place.WALLS, "station_height": station_place.HEIGHTS,
          "station_ground": station_place.GROUNDS, "station_shade": station_place.SHADES, "rain_gauge_shelter": station_place.GAUGES}
+# Where each kind of alert shows on the cards (issue #22): the card's kinds (card/src/types.ts ALERT_KINDS), with its words.
+ALERT_KINDS = (("official", N_("Vigilances officielles")), ("storm", N_("Orages")), ("rain", N_("Pluie")), ("wind", N_("Vent")),
+               ("temperature", N_("Chaleur, froid et gel")), ("fog", N_("Brouillard")), ("uv", N_("Indice UV")), ("air", N_("Air et pollens")),
+               ("water", N_("Restrictions d’eau (Vigieau)")), ("fire", N_("Feux de forêt (PyroVeille)")), ("river", N_("Rivière (CrueVeille)")),
+               ("pressure", N_("Pression")))
+ALERT_CHOICES = (("all", N_("Partout")), ("frise", N_("Frise seulement")), ("never", N_("Jamais")))
 MODELS = (("gw2000a", "Ecowitt GW2000A", N_("Passerelle Ecowitt et ses capteurs")),
           ("ws90", "Ecowitt WS90", N_("Capteur tout-en-un, souvent via Zigbee2MQTT")),
           (detection.NETATMO, "Netatmo", N_("Station Netatmo et ses modules : extérieur, pluviomètre, anémomètre")),
@@ -162,6 +168,13 @@ class Draft(_SourceSteps):
         op, value, s = change.get("op"), change.get("value"), self.sources
         if op == "place":
             return self._place(str(change.get("key")), value)
+        if op == "alert_place":
+            key = change.get("key")
+            if key not in dict(ALERT_KINDS) or value not in dict(ALERT_CHOICES):
+                return t("Choix inconnu.")
+            places = {k: v for k, v in (s.get("alert_places") or {}).items() if k != key}
+            s["alert_places"] = {**places, key: value} if value != "all" else places
+            return ""
         if op == "set" and change.get("key") in SIMPLE:
             s[change["key"]] = bool(value) if change["key"] in ("station_history", "open_meteo_pressure") else (value or "")
         elif op == "station":
@@ -310,7 +323,13 @@ class Draft(_SourceSteps):
                 # The same, as this draft would save them: the « Extensions » step's switches follow it.
                 "in_draft": inventory(self.hass, self.sources),
                 "official": official(self.hass, self.entry.entry_id if self.entry else None), "prevision": self._prevision(), "station": self._station(), "air": self._air(),
-                "pollen": self._pollens(), "entities": self.entities(), "summary": self._summary(), "needs": self.needs()}
+                "pollen": self._pollens(), "entities": self.entities(), "summary": self._summary(), "needs": self.needs(),
+                "alert_places": self._alert_places()}
+
+    def _alert_places(self) -> dict[str, Any]:
+        """Where each kind of alert shows on the cards (issue #22), as the « Alertes » tab offers it."""
+        return {"kinds": [{"value": k, "label": t(label)} for k, label in ALERT_KINDS], "choices": [{"value": k, "label": t(label)} for k, label in ALERT_CHOICES],
+                "values": dict(self.sources.get("alert_places") or {})}
 
     def _prevision(self) -> dict[str, Any]:
         states, registry, _ = self._read()

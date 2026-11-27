@@ -44,6 +44,8 @@ export interface View {
  entities:{new:boolean;families:Family[]};
  summary:{weather:string;station:string;air:string;pollen:string};
  needs:string[];
+ /** « Où montrer les alertes » (issue #22): each kind of alert, everywhere, on the timeline only, or never (draft.py `_alert_places`). */
+ alert_places?:{kinds:Choice[];choices:Choice[];values:Record<string,string>};
 }
 export type Sources=Record<string,unknown>;
 export interface DraftReply {draft:Sources;view:View;error:string}

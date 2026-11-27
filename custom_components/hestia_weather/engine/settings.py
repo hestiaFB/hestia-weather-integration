@@ -45,6 +45,10 @@ class LegacyPollen:
     error_entity: str = ""
 
 
+ALERT_PLACES = ("all", "frise", "never")
+"""Where a kind of alert shows on the cards (issue #22): everywhere, on the timeline only, or on no card. Only the last two are saved."""
+
+
 @dataclass(frozen=True)
 class Settings:
     weather_entity: str
@@ -129,6 +133,9 @@ class Settings:
     pollens: tuple[LegacyPollen, ...] = ()
     pollen_station: str | None = None
     """Swiss Pollen station code or Kleenex config entry id, shared by the selected species."""
+    alert_places: Mapping[str, str] = field(default_factory=dict)
+    """Where each kind of alert shows on the cards, by the card's kind (« storm », « water »…): « frise » or « never » (issue #22).
+    The integration only keeps it; the card knows the kinds and applies it."""
 
     @classmethod
     def from_options(cls, options: Mapping[str, Any]) -> Settings:
@@ -139,6 +146,8 @@ class Settings:
             value = options.get(key)
             if value not in (None, ""):
                 values[key] = value
+        places = options.get("alert_places")
+        values["alert_places"] = ({str(k): v for k, v in places.items() if v in ALERT_PLACES[1:]} if isinstance(places, Mapping) else {})
         if "wind_shelter" in values:
             shelter = values["wind_shelter"]
             values["wind_shelter"] = tuple(str(s) for s in shelter) if isinstance(shelter, (list, tuple)) else None

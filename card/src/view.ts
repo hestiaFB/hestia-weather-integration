@@ -206,6 +206,10 @@ export interface WeatherView {
   comfort?: ComfortView; rain?: RainView; wind?: WindView; pressure?: PressureView; extras: Chip[];
   /** The temperature and the humidity on their own card (issue #21, integration 3.6.0 and later). */
   temperature?: MeasureView; humidity?: MeasureView;
+  /** Where each kind of alert shows (issue #22, integration 4.4 and later): « frise » on the timeline only, « never » on no card. */
+  alertPlaces?: Record<string, 'frise' | 'never'>;
+  /** Set by the card (display.ts): the alerts the timeline keeps, those set to « Frise seulement » included. */
+  friseAlerts?: AlertPoint[];
   hours: Slot[]; days: DayForecast[];
   air: { today: AirPanel[]; tomorrow: AirPanel[] };
   /** Blitzortung's storm, when it is chosen in the integration (from 2.9). */

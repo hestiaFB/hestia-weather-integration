@@ -342,6 +342,8 @@ class WeatherView:
     humidity: MeasureView | None = None
     fire: FireView | None = None
     water: WaterView | None = None
+    alert_places: Mapping[str, str] | None = None
+    """Where each kind of alert shows on the cards (issue #22): « frise » or « never », by the card's kind; absent is everywhere."""
 
 
 def place_name(name: str) -> str:
@@ -390,7 +392,7 @@ def build_view(get: Getter, settings: Settings, w: LocalWeather, brief: Brief | 
         extras=_extras(get, settings, w, now, zone), hours=forecast_slots(hours, now, zone, w.sunrise, w.sunset), days=forecast_days(days, hours, now, zone),
         air=Air(_air(get, settings, now, zone, False), _air(get, settings, now, zone, True)),
         lightning=_lightning(settings, lightning), temperature=temperature, humidity=humidity,
-        fire=_fire(fires, wind_from), water=_water(water.read(get, settings)))
+        fire=_fire(fires, wind_from), water=_water(water.read(get, settings)), alert_places=dict(settings.alert_places) or None)
 
 
 def _fire(seen: fire.Fires | None, wind_from: float | None) -> FireView | None:
